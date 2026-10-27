@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**What We Sow** is a single-player, browser-based farming game combining the accessible, addictive gameplay of classic FarmVille with a morally consequential narrative spanning approximately 40 in-game years, as a lone farm grows into a small farming community.
+**What We Sow** is a single-player, browser-based farming game combining the accessible, addictive gameplay of classic FarmVille with a morally consequential narrative spanning 40 in-game years, or 160 seasonal turns, as a lone farm grows into a small farming community.
 
 Players build and expand a farm through simple, satisfying farming mechanics while making difficult choices that shape their family, community, environment, and legacy.
 
@@ -40,8 +40,10 @@ Interactions should be immediate, visually satisfying, and rewarding. Avoid unne
 
 ### Time and Progression
 
-- The game spans approximately 40 in-game years.
+- Each turn represents one season: spring, summer, fall, or winter.
+- Each year consists of four seasonal turns. A complete game spans exactly 40 in-game years, for a total of 160 turns.
 - Years provide the overarching progression structure, with seasons governing farming activity.
+- Every season reskins the farm's visuals to match the current season, including the palette, terrain, vegetation, and environmental details.
 - Use accelerated in-game time rather than real-world waiting periods.
 - Each year should offer meaningful economic progress and new opportunities.
 - Major narrative events occur at predefined or conditionally triggered points throughout the timeline.
@@ -72,6 +74,8 @@ The narrative unfolds primarily through **mandatory character dialogues** at imp
 The player's final farm and relationships should tell the story of the life they lived.
 
 ## Art Direction
+
+Use [the concept art](docs/images/art-direction.png) as the primary visual reference for palette, crop and animal silhouettes, buildings, seasonal variation, and UI styling. It is an art reference, not a gameplay specification; preserve the fixed farm-management perspective described below.
 
 **Visual style:** Classic FarmVille's presentation and layout, rendered in a charming, polished pixel-art aesthetic inspired by Stardew Valley.
 
@@ -117,7 +121,7 @@ Build incrementally, prioritizing a playable game over architectural complexity.
 2. **Progression:** Seasons, years, farm expansion, buildings, upgrades, and economic balancing.
 3. **Narrative framework:** Character dialogue, branching choices, persistent consequences, and conditional events.
 4. **Integrated vertical slice:** Several playable years demonstrating how narrative choices alter farming mechanics and future events, including other farmers arriving and the first conflicts between individualist and collectivist farmers.
-5. **Full game:** Approximately 40 years of progression, evolving characters, meaningful decisions, and multiple possible legacies.
+5. **Full game:** 40 years across 160 seasonal turns, evolving characters, meaningful decisions, and multiple possible legacies.
 6. **Polish:** Visual effects, audio, balancing, usability, and performance.
 
 **Hackathon target:** a polished vertical slice (step 4). Steps 5 and 6 come after the hackathon; never trade away a working slice to start them.
@@ -135,3 +139,7 @@ Build incrementally, prioritizing a playable game over architectural complexity.
 - When evaluating features, ask: **Does this make farming more satisfying, or make the player's choices more meaningful?**
 
 **North star:** Create a farming game that's enjoyable to play moment to moment, but becomes memorable because of what the player chooses to do over a lifetime.
+
+## Local Development and Validation
+
+Read [docs/development.md](docs/development.md) for setup, playtest state, architecture boundaries, and Cloudflare Pages configuration. Use `pnpm dev --instance validation-<task-id>` for your own local instance, then run `pnpm validate` after substantive changes. Inspect changed UI paths with Playwright, capture and inspect current screenshots, and stop your instance after validation. Keep playtest tools gated by `import.meta.env.DEV` so production builds exclude them.
