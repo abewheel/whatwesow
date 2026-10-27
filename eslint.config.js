@@ -9,6 +9,29 @@ export default tseslint.config(
       "playwright-report/**",
     ],
   },
+  ...["micro", "macro"].map((domain) => ({
+    files: [`src/${domain}/**/*.ts`],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                `**/${domain === "micro" ? "macro" : "micro"}/**`,
+                "**/game/**",
+                "**/storage/**",
+                "**/dev/**",
+                "phaser",
+              ],
+              message:
+                "Domain rules stay independent. Coordinate through src/game.",
+            },
+          ],
+        },
+      ],
+    },
+  })),
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

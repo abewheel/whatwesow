@@ -43,3 +43,36 @@ test("imports and exports saves", async ({ page }) => {
   const download = await downloaded;
   expect(download.suggestedFilename()).toBe("what-we-sow-save.json");
 });
+
+test("isolated domain editors compose, reject invalid edits, and persist", async ({
+  page,
+}) => {
+  await page.goto("/?instance=validation-domains");
+  await expect(page.locator("#save-status")).toHaveText(
+    "Saved on this browser",
+  );
+  await page.getByLabel("Work on").selectOption("micro");
+  await page.getByLabel("Game state JSON").fill('{"coins":777,"year":40}');
+  await page.getByRole("button", { name: "Apply state" }).click();
+  await expect(page.locator("#season")).toContainText(
+    "Year 1 · spring · 777 coins",
+  );
+  await page.getByLabel("Work on").selectOption("macro");
+  await page.getByLabel("Starting point").selectOption("late");
+  await page.getByRole("button", { name: "Load preset" }).click();
+  await page.getByRole("button", { name: "Apply state" }).click();
+  await expect(page.locator("#season")).toContainText(
+    "Year 40 · winter · 777 coins",
+  );
+  await page
+    .getByLabel("Game state JSON")
+    .fill('{"year":41,"season":"winter"}');
+  await page.getByRole("button", { name: "Apply state" }).click();
+  await expect(page.locator("#dev-status")).toContainText("year 1–40");
+  await page.getByRole("button", { name: "Read current state" }).click();
+  await expect(page.getByLabel("Game state JSON")).toHaveValue(/"year": 40/);
+  await page.reload();
+  await expect(page.locator("#season")).toContainText(
+    "Year 40 · winter · 777 coins",
+  );
+});

@@ -1,37 +1,43 @@
-export const seasons = ["spring", "summer", "fall", "winter"] as const;
-export type GameState = {
-  version: 1;
-  year: number;
-  season: (typeof seasons)[number];
-  coins: number;
-};
+import {
+  initialMicroState,
+  parseMicroState,
+  type MicroState,
+} from "../micro/state";
+import {
+  initialMacroState,
+  parseMacroState,
+  type MacroState,
+} from "../macro/state";
+export { seasons } from "../macro/state";
+
+// Keep the existing save format stable. Only this integration layer joins domains.
+export type GameState = { version: 1 } & MicroState & MacroState;
 export const initialState = (): GameState => ({
   version: 1,
-  year: 1,
-  season: "spring",
-  coins: 100,
+  ...initialMicroState(),
+  ...initialMacroState(),
 });
 export function parseState(value: unknown): GameState {
   if (!value || typeof value !== "object")
     throw new Error("State must be an object.");
-  const s = value as Record<string, unknown>;
-  if (
-    s.version !== 1 ||
-    !Number.isInteger(s.year) ||
-    Number(s.year) < 1 ||
-    Number(s.year) > 40 ||
-    !seasons.includes(s.season as GameState["season"]) ||
-    !Number.isSafeInteger(s.coins) ||
-    Number(s.coins) < 0
-  ) {
-    throw new Error(
-      "Use version 1, year 1–40, a valid season, and a nonnegative whole coin balance.",
-    );
-  }
-  return {
-    version: 1,
-    year: s.year as number,
-    season: s.season as GameState["season"],
-    coins: s.coins as number,
-  };
+  if ((value as Record<string, unknown>).version !== 1)
+    throw new Error("Use version 1.");
+  return { version: 1, ...parseMicroState(value), ...parseMacroState(value) };
+}
+export type Domain = "micro" | "macro";
+export function readDomain(
+  state: GameState,
+  domain: Domain,
+): MicroState | MacroState {
+  return domain === "micro" ? parseMicroState(state) : parseMacroState(state);
+}
+export function replaceDomain(
+  state: GameState,
+  domain: Domain,
+  value: unknown,
+): GameState {
+  return parseState({
+    ...state,
+    ...(domain === "micro" ? parseMicroState(value) : parseMacroState(value)),
+  });
 }

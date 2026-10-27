@@ -9,6 +9,10 @@ pnpm dev
 
 Open the printed URL. Vite reloads changes immediately. The page contains a Phaser farm surface and HTML overlays; no farming or narrative systems exist yet.
 
+## Choose your work
+
+Micro owns farming rules and money; macro owns lifetime progression and narrative. Read [game boundaries](game-boundaries.md) for ownership and integration contracts, then [playtesting recipes](playtesting.md) for isolated domain editing and automation.
+
 ## Jump to a state
 
 In local development, use **Playtest tools** to load a preset, edit JSON, and apply it. Invalid states leave the current save untouched. Presets only fill the editor; **Apply state** saves and updates the view.
@@ -32,7 +36,8 @@ Validation runs lint, types, state-boundary tests, a production build, and brows
 
 ## Structure
 
-- `src/game/state.ts`: serializable state and validation. Keep future simulation transitions pure.
+- `src/micro/` and `src/macro/`: independent state, validation, and future pure rules.
+- `src/game/state.ts`: save composition and domain integration.
 - `src/game/scene.ts`: Phaser rendering. No game rules here.
 - `src/storage/save.ts`: IndexedDB boundary.
 - `src/main.ts`: application startup and HTML UI.

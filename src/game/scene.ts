@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { GameState } from "./state";
+import type { MacroState } from "../macro/state";
 
 const seasons = {
   spring: {
@@ -38,7 +38,7 @@ const seasons = {
 
 export class FarmScene extends Phaser.Scene {
   private ground?: Phaser.GameObjects.Graphics;
-  private season: GameState["season"] = "spring";
+  private season: MacroState["season"] = "spring";
   constructor() {
     super("farm");
   }
@@ -47,7 +47,7 @@ export class FarmScene extends Phaser.Scene {
     this.draw();
     this.scale.on("resize", this.draw, this);
   }
-  setState(state: GameState) {
+  setState(state: MacroState) {
     this.season = state.season;
     if (this.ground) this.draw();
   }
