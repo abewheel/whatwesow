@@ -37,7 +37,7 @@ test("uses the far corner of a 128-square farm with a viewport-sized canvas", as
   await page.locator("#mode-build").click();
   await page.locator('[data-build="oak"]').click();
   await page.getByRole("button", { name: "Land 126,127", exact: true }).click();
-  await expect(page.locator("#farm-message")).toContainText("Oak tree built");
+  await expect(page.locator("#farm-message")).toContainText("Oak tree planted");
   await page.reload();
   await expect(page.locator('[data-cell="126,127"]')).toHaveAttribute(
     "data-structure",

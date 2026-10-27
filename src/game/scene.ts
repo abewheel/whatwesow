@@ -8,6 +8,8 @@ import type { MacroState } from "../macro/state";
 import { crops, initialMicroState, type MicroState } from "../micro/state";
 import {
   buildings,
+  isTree,
+  hasRipeFruit,
   cellAllowed,
   cellKey,
   WORLD_SIZE,
@@ -65,12 +67,18 @@ export class FarmScene extends Phaser.Scene {
       frameWidth: 181,
       frameHeight: 181,
     });
+    this.load.image("farm-states", "/art/farm-states.png");
     this.load.image("farm-spring", "/art/farm-atlas.png");
     this.load.image("farm-fall", "/art/farm-atlas-fall.png");
     this.load.image("farm-winter", "/art/farm-atlas-winter.png");
   }
   create() {
-    for (const key of ["farm-spring", "farm-fall", "farm-winter"]) {
+    for (const key of [
+      "farm-spring",
+      "farm-fall",
+      "farm-winter",
+      "farm-states",
+    ]) {
       const texture = this.textures.get(key),
         source = texture.getSourceImage();
       for (let i = 0; i < 6; i++)
@@ -261,21 +269,44 @@ export class FarmScene extends Phaser.Scene {
       const size =
         (((item.width + item.height) * 64) / 2) *
         (item.width === 1 ? 1.08 : 0.94);
+      const working = !!(s.pendingConstruction || s.pendingUpgrade);
+      const stateAtlas = isTree(s.kind)
+        ? s.pendingConstruction || (s.kind === "apple" && !hasRipeFruit(s))
+        : working;
+      const frame = isTree(s.kind)
+        ? s.pendingConstruction
+          ? 5
+          : 2
+        : item.frame;
       scenery.add(
         this.add
-          .image(back.x, front.y - 2, atlas, item.frame)
+          .image(
+            back.x,
+            front.y - 2,
+            stateAtlas ? "farm-states" : atlas,
+            stateAtlas ? frame : item.frame,
+          )
           .setOrigin(0.5, 0.96)
-          .setDisplaySize(size, size)
+          .setDisplaySize(
+            s.pendingConstruction && isTree(s.kind) ? size * 0.8 : size,
+            s.pendingConstruction && isTree(s.kind) ? size * 0.8 : size,
+          )
           .setDepth(front.y),
       );
+      if (isTree(s.kind)) continue;
       const label = this.add
-        .text(back.x, front.y + 5, `${item.name} · ${s.level}`, {
-          fontFamily: "Georgia",
-          fontSize: "13px",
-          color: "#493621",
-          backgroundColor: "#fff0ca",
-          padding: { x: 5, y: 3 },
-        })
+        .text(
+          back.x,
+          front.y + 5,
+          `${item.name} · ${working ? "⚒" : s.level}`,
+          {
+            fontFamily: "Georgia",
+            fontSize: "13px",
+            color: working ? "#77756c" : "#493621",
+            backgroundColor: "#fff0ca",
+            padding: { x: 5, y: 3 },
+          },
+        )
         .setOrigin(0.5, 0);
       label.setDepth(front.y + 1);
       scenery.add(label);

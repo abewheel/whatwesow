@@ -95,14 +95,14 @@ The inventory contains **28 asset types: 10 buildings, 5 trees, 10 crops, and 3 
 | Other plants | 3 types × 4 seasons × 3 conditions | 36 |
 | Total | Base combinations plus fruit-ready overlays | 1,116 |
 
-These are coverage requirements, not a demand for 1,116 separate PNG files. Modular seasonal, damage, and fruit overlays may cover multiple combinations when the final composite is visually correct. Every valid combination still needs a reviewable preview. For orchard fruit, the unladen mature sprite is in the tree-maturity count; a fruit-ready overlay is additional. Its snow/frost treatment must match the season without implying that winter fruit production is already a rule.
+These are coverage requirements, not a demand for 1,116 separate PNG files. Modular seasonal, damage, and fruit overlays may cover multiple combinations when the final composite is visually correct. Every valid combination still needs a reviewable preview. For orchard fruit, the unladen mature sprite is in the tree-maturity count; a fruit-ready overlay is additional. Its snow/frost treatment must match the season. Fruit currently regrows every season, including winter; the state atlas does not yet provide a complete seasonal family.
 
 The proposed upgrade count and new plant stages are production assumptions. If a design changes, revise the table and counts before generating art. Existing soil levels 0–3 affect harvest value but do not upgrade the crop silhouette. Soil, fences, paths, gates, and irrigation need their own supporting terrain/prop checklist; animals, characters, and product icons also remain separate from this building-and-plant inventory. The animated farmer and current HUD artwork are documented in [art assets](art-assets.md#farmer-and-hud).
 
 ## Existing coverage and gaps
 
 - The three existing atlases contain six maintained, base/adult sprite cells each: farmhouse, barn, apple tree, well, garden shed, flowering tree. This is 18 authored cells. Spring artwork is reused with a tint for summer; there is no dedicated summer atlas.
-- The mature orchard tree is currently drawn with fruit in spring and summer. It needs an unladen base plus a fruit-ready overlay to support harvest state later.
+- The orchard tree now has ripe and picked visuals, and a sapling visual while growing. The state atlas also supplies four construction silhouettes used by the current building families. These variants are not yet a complete seasonal or upgrade art family.
 - Current crops use generic procedural stems and colored ripe produce, not crop-specific authored growth sprites. There are 9 logical growth values across the three playable crops, but the silhouettes still need distinct art.
 - The old grid preview includes a procedural flower garden; it is not yet a placeable construction item. It needs distinct seasonal and condition artwork.
 - Building ownership and upgrade levels are now persisted. The atlas still lacks distinct upgrade art, tree maturity, decaying, and dilapidated families. Condition mechanics are not implemented.

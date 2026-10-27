@@ -4,9 +4,9 @@ Read this after the repository's `AGENTS.md` and `README.md`. It describes the i
 
 ## Current playable scope
 
-- Plant turnips, carrots, and corn; advance growth manually; harvest for coins; buy plots and soil improvements.
+- Plant turnips, carrots, and corn in their allowed seasons; end a turn to grow crops across seasons; harvest crops and ripe fruit for coins; buy plots and soil improvements.
 - Place, repeat, move, and upgrade structures on a 128 × 128 estate. Pan, jump to coordinates, and zoom from 25% to 200%.
-- Advance through four seasons across 40 years, ending at turn 160. Seasonal structure income and authored construction unlocks work, but the full lifetime economy is not balanced.
+- Advance through four seasons across 40 years, ending at turn 160. Construction and upgrades charge immediately, complete next season, and then apply their benefits. Fruit trees regrow after picking; markets pay seasonal income. Authored construction unlocks work, but the full lifetime economy is not balanced.
 - Apply macro farm policies and explicit losses through integration. Narrative dialogue, authored community decisions, relationships, animals, and the legacy ending are still future work.
 - See seasonal scenery, exterior woodland and river, and an animated farmer who walks to adjacent work positions. Actions commit before their visual animation; farmer movement is presentation, not a labor or timing rule.
 - Autosave locally, export/import saves, and edit development-only playtest states. Current saves are version 3; versions 1 and 2 migrate.

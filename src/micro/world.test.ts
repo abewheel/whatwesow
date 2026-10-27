@@ -6,7 +6,7 @@ import {
   seedCost,
   type MicroState,
 } from "./state";
-import { actOnFarm } from "./rules";
+import { actOnFarm, growCrops, completeUpgrades } from "./rules";
 import {
   buildings,
   canPlace,
@@ -40,6 +40,8 @@ describe("estate construction", () => {
       ).state;
       expect(original.structures).toHaveLength(0);
       expect(state.coins).toBe(1000000 - item.cost);
+      expect(state.structures[0].pendingConstruction).toBe(true);
+      state = completeUpgrades(state);
       const id = state.structures[0].id;
       for (let level = 1; level < item.levels; level++) {
         const turn = upgradeTurn(kind, level);
@@ -47,10 +49,13 @@ describe("estate construction", () => {
           actOnFarm(state, { type: "upgrade", id }, turn - 1),
         ).toThrow(/unlocks/);
         state = actOnFarm(state, { type: "upgrade", id }, turn).state;
+        expect(state.structures[0].level).toBe(level);
+        expect(state.structures[0].pendingUpgrade).toBe(true);
+        state = completeUpgrades(state);
         expect(state.structures[0].level).toBe(level + 1);
       }
       expect(() => actOnFarm(state, { type: "upgrade", id }, 160)).toThrow(
-        /fully/,
+        /fully|next season/,
       );
     },
   );
@@ -96,7 +101,9 @@ describe("estate construction", () => {
       cell: { row: 5, col: 5 },
     }).state;
     const id = state.structures.at(-1)!.id;
+    state = completeUpgrades(state);
     state = actOnFarm(state, { type: "upgrade", id }, 9).state;
+    state = completeUpgrades(state);
     const moved = actOnFarm(
       state,
       { type: "move", id, cell: { row: 8, col: 8 } },
@@ -126,17 +133,18 @@ describe("estate construction", () => {
       state = actOnFarm(
         state,
         { type: "build", kind, cell: { row: 0, col: i * 4 } },
-        160,
+        159,
       ).state;
+    state = completeUpgrades(state);
     expect(harvestValue(state, "corn")).toBe(34 + 1 + 2 + 15 + 8 + 30);
-    expect(seasonalIncome(state)).toBe(156);
+    expect(seasonalIncome(state)).toBe(150);
     expect(seedCost(state, "corn")).toBe(11);
     state = actOnFarm(
       state,
       { type: "plant", plot: 0, crop: "corn" },
-      160,
+      157,
     ).state;
-    state = actOnFarm(state, { type: "grow" }, 160).state;
+    state = growCrops(state);
     expect(state.plots[0]?.growth).toBe(2);
   });
   it("validates imported footprints, IDs, and layout sizes", () => {
@@ -165,14 +173,14 @@ it("supports the full 128-square estate and rejects footprints beyond it", () =>
   const far = actOnFarm(
     start,
     { type: "build", kind: "barn", cell: { row: 125, col: 125 } },
-    160,
+    159,
   ).state;
   expect(far.structures.at(-1)).toMatchObject({ row: 125, col: 125 });
   expect(() =>
     actOnFarm(
       start,
       { type: "build", kind: "shed", cell: { row: 127, col: 127 } },
-      160,
+      159,
     ),
   ).toThrow(/outside/);
   const plotted = actOnFarm(start, {

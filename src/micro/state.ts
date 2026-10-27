@@ -10,9 +10,30 @@ import {
   type Structure,
 } from "./world";
 export const crops = {
-  turnip: { name: "Turnip", seed: 4, sale: 9, steps: 1, color: 0xf4d5b6 },
-  carrot: { name: "Carrot", seed: 7, sale: 18, steps: 2, color: 0xec8c39 },
-  corn: { name: "Corn", seed: 12, sale: 34, steps: 3, color: 0xf1ce55 },
+  turnip: {
+    name: "Turnip",
+    seed: 4,
+    sale: 9,
+    steps: 1,
+    plantingSeasons: ["spring", "fall"],
+    color: 0xf4d5b6,
+  },
+  carrot: {
+    name: "Carrot",
+    seed: 7,
+    sale: 18,
+    steps: 2,
+    plantingSeasons: ["spring", "summer"],
+    color: 0xec8c39,
+  },
+  corn: {
+    name: "Corn",
+    seed: 12,
+    sale: 34,
+    steps: 3,
+    plantingSeasons: ["spring"],
+    color: 0xf1ce55,
+  },
 } as const;
 export type CropId = keyof typeof crops;
 export type Plot = { crop: CropId; growth: number } | null;
@@ -20,6 +41,7 @@ export type MicroState = {
   coins: number;
   plots: Plot[];
   soilLevel: number;
+  pendingSoilUpgrade?: true;
   plotCells: Cell[];
   structures: Structure[];
   nextStructureId: number;
@@ -54,6 +76,11 @@ export function parseMicroState(value: unknown): MicroState {
     Number(s.soilLevel) > 3
   )
     throw new Error("Use soilLevel 0–3.");
+  if (
+    s.pendingSoilUpgrade !== undefined &&
+    (s.pendingSoilUpgrade !== true || Number(s.soilLevel) >= 3)
+  )
+    throw new Error("Invalid pending soil upgrade.");
   const plots = s.plots.map((value: unknown): Plot => {
     if (value === null) return null;
     if (!value || typeof value !== "object") throw new Error("Invalid plot.");
@@ -98,7 +125,33 @@ export function parseMicroState(value: unknown): MicroState {
       Number(b.level) > buildings[kind].levels
     )
       throw new Error("Invalid building ID or level.");
+    if (
+      b.pendingUpgrade !== undefined &&
+      (b.pendingUpgrade !== true || Number(b.level) >= buildings[kind].levels)
+    )
+      throw new Error("Invalid pending building upgrade.");
+    if (
+      b.pendingConstruction !== undefined &&
+      (b.pendingConstruction !== true ||
+        b.level !== 1 ||
+        b.pendingUpgrade !== undefined)
+    )
+      throw new Error("Invalid pending construction.");
+    if (
+      b.fruitReady !== undefined &&
+      (kind !== "apple" ||
+        typeof b.fruitReady !== "boolean" ||
+        (b.pendingConstruction && b.fruitReady))
+    )
+      throw new Error("Invalid fruit readiness.");
     return {
+      ...(typeof b.fruitReady === "boolean"
+        ? { fruitReady: b.fruitReady }
+        : {}),
+      ...(b.pendingConstruction === true
+        ? { pendingConstruction: true as const }
+        : {}),
+      ...(b.pendingUpgrade === true ? { pendingUpgrade: true as const } : {}),
       ...parseCell(b),
       kind,
       id: b.id as number,
@@ -135,6 +188,9 @@ export function parseMicroState(value: unknown): MicroState {
   )
     throw new Error("Plots need unique stable IDs below nextPlotId.");
   return {
+    ...(s.pendingSoilUpgrade === true
+      ? { pendingSoilUpgrade: true as const }
+      : {}),
     nextStructureId: s.nextStructureId as number,
     nextPlotId: s.nextPlotId as number,
     plotIds: [...s.plotIds] as number[],
@@ -152,9 +208,16 @@ export const harvestValue = (state: MicroState, crop: CropId) =>
   crops[crop].sale +
   state.soilLevel * 3 +
   state.structures.reduce(
-    (sum, b) => sum + buildings[b.kind].bonus * b.level,
+    (sum, b) =>
+      sum + (b.pendingConstruction ? 0 : buildings[b.kind].bonus * b.level),
     0,
   ) +
   (crop === "corn" ? buildingLevel(state, "mill") * 15 : 0);
 export const seedCost = (state: MicroState, crop: CropId) =>
   Math.max(1, crops[crop].seed - buildingLevel(state, "shed"));
+
+export function canPlant(crop: CropId, turn: number): boolean {
+  return (crops[crop].plantingSeasons as readonly string[]).includes(
+    ["spring", "summer", "fall", "winter"][(turn - 1) % 4],
+  );
+}

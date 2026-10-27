@@ -93,7 +93,7 @@ it("migrates version 2 crops, soil, and money to unique placed plots", () => {
   );
   expect(readDomain(migrated, "macro")).toEqual({ year: 25, season: "winter" });
 });
-it("advances exactly 160 seasons and pays orchard income once per transition", async () => {
+it("advances exactly 160 seasons and never pays fruit-tree income automatically", async () => {
   const { advanceSeason } = await import("./state");
   const { turnNumber } = await import("../macro/state");
   let state = initialState();
@@ -102,7 +102,7 @@ it("advances exactly 160 seasons and pays orchard income once per transition", a
   for (let turn = 2; turn <= 160; turn++) {
     state = advanceSeason(state).state;
     expect(turnNumber(state)).toBe(turn);
-    expect(state.coins).toBe(100 + 6 * (turn - 1));
+    expect(state.coins).toBe(100);
   }
   expect(state.year).toBe(40);
   expect(state.season).toBe("winter");
@@ -150,4 +150,207 @@ it("clears omitted optional macro policy when replacing that domain", () => {
   expect(readDomain(replaced, "macro")).toEqual({ year: 2, season: "summer" });
   expect(replaced.farmPolicy).toBeUndefined();
   expect(readDomain(replaced, "micro")).toEqual(readDomain(state, "micro"));
+});
+
+it("grows crops only across seasonal turns and pays crop coins at harvest", async () => {
+  const { advanceSeason, farmContext } = await import("./state");
+  const { actOnFarm } = await import("../micro/rules");
+  const start = initialState();
+  const planted = replaceDomain(
+    start,
+    "micro",
+    actOnFarm(
+      start,
+      { type: "plant", plot: 0, crop: "carrot" },
+      farmContext(start),
+    ).state,
+  );
+  const summer = advanceSeason(planted).state;
+  expect(summer.season).toBe("summer");
+  expect(summer.plots[0]?.growth).toBe(1);
+  expect(summer.coins).toBe(93);
+  expect(() =>
+    actOnFarm(
+      summer,
+      { type: "plant", plot: 1, crop: "corn" },
+      farmContext(summer),
+    ),
+  ).toThrow(/spring/);
+  const fall = advanceSeason(summer).state;
+  expect(fall.plots[0]?.growth).toBe(2);
+  expect(fall.coins).toBe(93);
+  expect(
+    actOnFarm(fall, { type: "harvest", plot: 0 }, farmContext(fall)).state
+      .coins,
+  ).toBe(111);
+  expect(planted.plots[0]?.growth).toBe(0);
+  expect(advanceSeason(fall).state.plots[0]?.growth).toBe(2);
+});
+
+it("charges upgrades once, persists pending work, then completes before new-turn benefits", async () => {
+  const { advanceSeason, farmContext } = await import("./state");
+  const { actOnFarm } = await import("../micro/rules");
+  const { seedCost, harvestValue } = await import("../micro/state");
+  let state = { ...initialState(), year: 4, coins: 1000 };
+  state.structures.push(
+    { id: 2, kind: "shed", row: 0, col: 0, level: 1 },
+    { id: 3, kind: "apple", row: 0, col: 3, level: 1 },
+  );
+  state.nextStructureId = 4;
+  for (const action of [
+    { type: "upgrade", id: 2 },
+    { type: "upgrade", id: 3 },
+    { type: "improve" },
+  ] as const)
+    state = replaceDomain(
+      state,
+      "micro",
+      actOnFarm(state, action, farmContext(state)).state,
+    );
+  expect(state.coins).toBe(680);
+  expect(seedCost(state, "turnip")).toBe(3);
+  expect(harvestValue(state, "turnip")).toBe(9);
+  expect(() =>
+    actOnFarm(state, { type: "upgrade", id: 2 }, farmContext(state)),
+  ).toThrow(/underway/);
+  expect(() =>
+    actOnFarm(state, { type: "improve" }, farmContext(state)),
+  ).toThrow(/underway/);
+  const saved = parseState(JSON.parse(JSON.stringify(state)));
+  expect(saved.structures[1].pendingUpgrade).toBe(true);
+  expect(saved.pendingSoilUpgrade).toBe(true);
+  const next = advanceSeason(saved).state;
+  expect(next.coins).toBe(680);
+  expect(seedCost(next, "turnip")).toBe(2);
+  expect(harvestValue(next, "turnip")).toBe(12);
+  expect(next.pendingSoilUpgrade).toBeUndefined();
+  expect(next.structures[1].pendingUpgrade).toBeUndefined();
+  expect(advanceSeason(next).state.soilLevel).toBe(1);
+  expect(saved.soilLevel).toBe(0);
+  expect(() =>
+    actOnFarm({ ...next, coins: 10000 }, { type: "upgrade", id: 2 }, 160),
+  ).toThrow(/next season/);
+});
+
+it("reserves and saves paid construction, activating benefits only next season", async () => {
+  const { actOnFarm } = await import("../micro/rules");
+  const { seedCost, harvestValue } = await import("../micro/state");
+  const { seasonalIncome } = await import("../micro/world");
+  const { advanceSeason, farmContext, applyMacroChange } =
+    await import("./state");
+  let state = { ...initialState(), year: 32, coins: 20000 };
+  for (const [index, kind] of (
+    ["shed", "barn", "market", "apple"] as const
+  ).entries()) {
+    state = replaceDomain(
+      state,
+      "micro",
+      actOnFarm(
+        state,
+        { type: "build", kind, cell: { row: 0, col: index * 4 } },
+        farmContext(state),
+      ).state,
+    );
+  }
+  expect(state.coins).toBe(7280);
+  expect(seedCost(state, "turnip")).toBe(4);
+  expect(harvestValue(state, "turnip")).toBe(9);
+  expect(seasonalIncome(state)).toBe(0);
+  expect(() =>
+    actOnFarm(state, { type: "upgrade", id: 2 }, farmContext(state)),
+  ).toThrow(/finish/);
+  expect(() =>
+    actOnFarm(
+      state,
+      { type: "build", kind: "shed", cell: { row: 0, col: 0 } },
+      farmContext(state),
+    ),
+  ).toThrow(/occupied/);
+  const saved = parseState(JSON.parse(JSON.stringify(state)));
+  expect(saved.structures[1].pendingConstruction).toBe(true);
+  const moved = replaceDomain(
+    saved,
+    "micro",
+    actOnFarm(
+      saved,
+      { type: "move", id: 2, cell: { row: 5, col: 0 } },
+      farmContext(saved),
+    ).state,
+  );
+  expect(moved.structures[1].pendingConstruction).toBe(true);
+  const next = advanceSeason(moved).state;
+  expect(next.coins).toBe(7430);
+  expect(seedCost(next, "turnip")).toBe(3);
+  expect(harvestValue(next, "turnip")).toBe(11);
+  expect(next.structures.every((s) => !s.pendingConstruction)).toBe(true);
+  const lost = applyMacroChange(saved, saved, {
+    removeStructureIds: [2, 3, 4, 5],
+  }).state;
+  expect(advanceSeason(lost).state.coins).toBe(7280);
+  expect(() =>
+    actOnFarm(
+      next,
+      { type: "build", kind: "shed", cell: { row: 10, col: 0 } },
+      160,
+    ),
+  ).toThrow(/next season/);
+});
+
+it("harvests fruit once per season, keeps the tree, and regrows without automatic income", async () => {
+  const { advanceSeason, farmContext } = await import("./state");
+  const { actOnFarm } = await import("../micro/rules");
+  const { hasRipeFruit } = await import("../micro/world");
+  let state = { ...initialState(), year: 2, coins: 1000 };
+  state = replaceDomain(
+    state,
+    "micro",
+    actOnFarm(
+      state,
+      { type: "build", kind: "apple", cell: { row: 14, col: 18 } },
+      farmContext(state),
+    ).state,
+  );
+  const id = state.structures.at(-1)!.id;
+  expect(() =>
+    actOnFarm(state, { type: "harvestFruit", id }, farmContext(state)),
+  ).toThrow(/no ripe fruit/);
+  state = advanceSeason(state).state;
+  expect(state.coins).toBe(940);
+  expect(hasRipeFruit(state.structures.at(-1)!)).toBe(true);
+  state = replaceDomain(
+    state,
+    "micro",
+    actOnFarm(state, { type: "harvestFruit", id }, farmContext(state)).state,
+  );
+  expect(state.coins).toBe(946);
+  expect(state.structures.at(-1)).toMatchObject({
+    id,
+    kind: "apple",
+    fruitReady: false,
+  });
+  state = parseState(JSON.parse(JSON.stringify(state)));
+  expect(() =>
+    actOnFarm(state, { type: "harvestFruit", id }, farmContext(state)),
+  ).toThrow(/no ripe fruit/);
+  state = replaceDomain(
+    state,
+    "micro",
+    actOnFarm(
+      state,
+      { type: "move", id, cell: { row: 18, col: 16 } },
+      farmContext(state),
+    ).state,
+  );
+  expect(hasRipeFruit(state.structures.at(-1)!)).toBe(false);
+  state = advanceSeason(state).state;
+  expect(state.coins).toBe(946);
+  state.farmPolicy = { productionMultiplier: 0.5 };
+  state.structures.at(-1)!.level = 2;
+  expect(
+    actOnFarm(state, { type: "harvestFruit", id }, farmContext(state)).state
+      .coins,
+  ).toBe(952);
+  const unpicked = advanceSeason(advanceSeason(state).state).state;
+  expect(unpicked.coins).toBe(946);
+  expect(hasRipeFruit(unpicked.structures.at(-1)!)).toBe(true);
 });

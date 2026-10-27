@@ -24,6 +24,13 @@ test("plant, grow, harvest, replant, reinvest and persist through actual farm pl
     ["Carrot", 2, 116],
     ["Corn", 3, 138],
   ] as const) {
+    await page.getByLabel("Work on").selectOption("macro");
+    await page
+      .getByLabel("Game state JSON")
+      .fill(JSON.stringify({ year: 1, season: "spring" }));
+    await page
+      .getByRole("button", { name: "Apply state", exact: true })
+      .click();
     await page
       .locator("#crop-options")
       .getByRole("button", { name: new RegExp(crop) })
@@ -43,9 +50,7 @@ test("plant, grow, harvest, replant, reinvest and persist through actual farm pl
       "This crop is not ready yet.",
     );
     for (let i = 0; i < steps; i++) {
-      await page
-        .getByRole("button", { name: "Advance growth", exact: true })
-        .click();
+      await page.getByRole("button", { name: "End turn", exact: true }).click();
       await expect(
         page.getByRole("button", {
           name: new RegExp(
@@ -75,13 +80,19 @@ test("plant, grow, harvest, replant, reinvest and persist through actual farm pl
   await expect(page.locator("#farm-summary")).toContainText("10 plots");
   await page.locator("#mode-upgrade").click();
   await page.getByRole("button", { name: /Improve soil/ }).click();
-  await expect(page.locator("#farm-summary")).toContainText("Soil level 1/3");
+  await expect(page.locator("#farm-summary")).toContainText("Soil level 0/3");
   await expect(page.locator("#season")).toContainText("28 coins");
   await page.reload();
+  await page.locator("#mode-upgrade").click();
+  await expect(page.locator("#improve")).toHaveAttribute(
+    "aria-label",
+    /underway/,
+  );
+  await page.locator("#grow").click();
   await expect(page.locator("#farm-summary")).toContainText("10 plots");
   await expect(page.locator("#farm-summary")).toContainText("Soil level 1/3");
   await expect(page.locator("#season")).toContainText(
-    "Year 1 · spring · 28 coins",
+    "Year 2 · spring · 28 coins",
   );
   expect(errors).toEqual([]);
 });
@@ -94,9 +105,7 @@ test("presets cover every farming stage and preserve the calendar", async ({
   );
   await preset(page, "growing");
   await expect(page.getByRole("button", { name: /growing/ })).toHaveCount(9);
-  await page
-    .getByRole("button", { name: "Advance growth", exact: true })
-    .click();
+  await page.getByRole("button", { name: "End turn", exact: true }).click();
   await expect(
     page.getByRole("button", { name: /ready to harvest/ }),
   ).toHaveCount(3);
@@ -105,11 +114,11 @@ test("presets cover every farming stage and preserve the calendar", async ({
     page.getByRole("button", { name: /ready to harvest/ }),
   ).toHaveCount(9);
   await expect(
-    page.getByRole("button", { name: "Advance growth", exact: true }),
-  ).toBeDisabled();
+    page.getByRole("button", { name: "End turn", exact: true }),
+  ).toBeEnabled();
   await preset(page, "reinvesting");
   await expect(page.locator("#season")).toContainText(
-    "Year 1 · spring · 250 coins",
+    "Year 1 · summer · 250 coins",
   );
   await page.locator("#mode-upgrade").click();
   await expect(
@@ -188,9 +197,7 @@ test("rapid plot clicks and grow steps queue through slow saves", async ({
     3,
   );
   for (let i = 0; i < 3; i++)
-    await page
-      .getByRole("button", { name: "Advance growth", exact: true })
-      .click();
+    await page.getByRole("button", { name: "End turn", exact: true }).click();
   await expect(
     page.getByRole("button", { name: /ready to harvest/ }),
   ).toHaveCount(3);

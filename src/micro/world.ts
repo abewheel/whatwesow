@@ -47,9 +47,9 @@ export const buildings = {
     height: 1,
     frame: 2,
     levels: 3,
-    benefit: "6 coins per level each new season",
+    benefit: "Harvest fruit for 6 coins per level each season",
     bonus: 0,
-    income: 6,
+    income: 0,
   },
   well: {
     name: "Irrigation well",
@@ -129,6 +129,9 @@ export type Structure = Cell & {
   id: number;
   kind: BuildingKind;
   level: number;
+  pendingUpgrade?: true;
+  pendingConstruction?: true;
+  fruitReady?: boolean;
 };
 export type Layout = { plotCells: Cell[]; structures: Structure[] };
 export const upgradeTurn = (
@@ -213,10 +216,17 @@ export function canPlace(
 }
 export const buildingLevel = (layout: Layout, kind: BuildingKind) =>
   layout.structures
-    .filter((s) => s.kind === kind)
+    .filter((s) => s.kind === kind && !s.pendingConstruction)
     .reduce((sum, s) => sum + s.level, 0);
 export const seasonalIncome = (layout: Layout) =>
   layout.structures.reduce(
-    (sum, s) => sum + buildings[s.kind].income * s.level,
+    (sum, s) =>
+      sum + (s.pendingConstruction ? 0 : buildings[s.kind].income * s.level),
     0,
   );
+
+export const isTree = (kind: BuildingKind) =>
+  kind === "oak" || kind === "apple";
+
+export const hasRipeFruit = (s: Structure) =>
+  s.kind === "apple" && !s.pendingConstruction && s.fruitReady !== false;

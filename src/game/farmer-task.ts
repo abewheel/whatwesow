@@ -5,12 +5,12 @@ import type { FarmAction } from "../micro/rules";
 import { farmerSpawn } from "./farmer-route";
 export type FarmerTask = {
   target: Cell;
-  action: FarmAction["type"];
+  action: FarmAction["type"] | "grow";
   width?: number;
   height?: number;
 };
 export function farmerTaskForAction(
-  action: FarmAction,
+  action: FarmAction | { type: "grow" },
   previous: MicroState,
   current: MicroState,
   policy?: FarmPolicy,
@@ -18,6 +18,7 @@ export function farmerTaskForAction(
   let target: Cell | undefined;
   if ("plot" in action) target = current.plotCells[action.plot];
   else if (
+    action.type === "harvestFruit" ||
     action.type === "build" ||
     action.type === "move" ||
     action.type === "upgrade"
@@ -30,7 +31,7 @@ export function farmerTaskForAction(
     const { width, height } = buildings[structure.kind];
     return {
       target: { row: structure.row, col: structure.col },
-      action: action.type,
+      action: action.type === "harvestFruit" ? "harvest" : action.type,
       width,
       height,
     };

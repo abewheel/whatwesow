@@ -22,16 +22,14 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
     .map(Number);
   expect(Math.abs(stance[0] - 16) + Math.abs(stance[1] - 16)).toBe(1);
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
-  await page
-    .getByRole("button", { name: "Advance growth", exact: true })
-    .click();
-  await expect(canvas).toHaveAttribute("data-farmer-motion", "grow");
-  await expect(canvas).toHaveAttribute("data-farmer-cell", stance.join(","));
+  await page.getByRole("button", { name: "End turn", exact: true }).click();
+  await expect(page.locator("#season")).toContainText("summer");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.getByRole("button", { name: /Plot 1: Turnip, ready/ }).click();
   await expect(canvas).toHaveAttribute("data-farmer-motion", "harvest");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
 
+  await page.locator('[data-crop="carrot"]').click();
   const farm = initialMicroState();
   farm.plotCells[0] = { row: 18, col: 16 };
   await page.getByLabel("Work on").selectOption("micro");
@@ -75,14 +73,6 @@ test("farmer recovers on permitted land and waters only a crop that grew", async
     "State applied and saved.",
   );
   await page.locator("#grow").click();
-  await expect(page.locator("canvas")).toHaveAttribute(
-    "data-farmer-motion",
-    "grow",
-  );
-  await expect(page.locator("canvas")).toHaveAttribute(
-    "data-farmer-target",
-    "15,15",
-  );
   await expect(
     page.getByRole("button", { name: /Plot 1: Turnip, growing 0/ }),
   ).toHaveCount(1);

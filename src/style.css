@@ -1345,3 +1345,7 @@ button:not(.plot-hit):disabled {
     justify-content: space-between;
   }
 }
+
+#selected-building.pending-building {
+  color: #77756c;
+}

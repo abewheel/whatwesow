@@ -96,7 +96,7 @@ test("farming, multi-cell building previews and distant placements work at both 
   await page.getByLabel("View column").fill("127");
   await page.locator("#go-to-cell").click();
   await page.locator('[data-cell="127,127"]').click();
-  await expect(page.locator("#farm-message")).toContainText("Oak tree built");
+  await expect(page.locator("#farm-message")).toContainText("Oak tree planted");
   await expect(page.locator("#season")).toContainText("30 coins");
   const size = await page.locator("canvas").evaluate((el) => ({
     width: (el as HTMLCanvasElement).width,

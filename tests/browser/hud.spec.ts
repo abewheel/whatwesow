@@ -22,10 +22,12 @@ for (const width of [1440, 390]) {
     await carrot.focus();
     await expect(carrot.locator(".control-detail")).toBeVisible();
     await expect(carrot.locator(".control-detail")).toContainText(
-      "2 growth steps",
+      "2 seasons to grow",
     );
     await carrot.click();
-    await expect(page.locator("#farm-message")).toContainText("2 growth steps");
+    await expect(page.locator("#farm-message")).toContainText(
+      "2 seasons to grow",
+    );
     await expect(page.locator('[data-crop="carrot"]')).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -33,9 +35,7 @@ for (const width of [1440, 390]) {
     await page
       .getByRole("button", { name: "Plot 1: empty", exact: true })
       .click();
-    await page
-      .getByRole("button", { name: "Advance growth", exact: true })
-      .click();
+    await page.getByRole("button", { name: "End turn", exact: true }).click();
     await expect(
       page.getByRole("button", { name: /Plot 1: Carrot, growing 1\/2/ }),
     ).toBeVisible();

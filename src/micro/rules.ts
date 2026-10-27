@@ -2,6 +2,8 @@ import { WORLD_CELLS } from "../contracts/world";
 import { parseFarmPolicy, type FarmPolicy } from "../contracts/farm-policy";
 import {
   buildings,
+  isTree,
+  hasRipeFruit,
   buildingLevel,
   canPlace,
   WORLD_SIZE,
@@ -18,6 +20,7 @@ import {
 } from "./world";
 import {
   crops,
+  canPlant,
   expansionCost,
   harvestValue,
   parseMicroState,
@@ -29,7 +32,7 @@ import {
 export type FarmAction =
   | { type: "plant"; plot: number; crop: CropId }
   | { type: "harvest"; plot: number }
-  | { type: "grow" }
+  | { type: "harvestFruit"; id: number }
   | { type: "work" }
   | { type: "expand"; cell?: Cell }
   | { type: "build"; kind: BuildingKind; cell: Cell }
@@ -51,7 +54,19 @@ export function actOnFarm(
     throw new Error("Use turn 1–160.");
   const state = parseMicroState(current);
   let message: string;
-  if (action.type === "plant" || action.type === "harvest") {
+  if (action.type === "harvestFruit") {
+    const tree = state.structures.find((s) => s.id === action.id);
+    if (!tree || !hasRipeFruit(tree))
+      throw new Error(
+        "This tree has no ripe fruit yet. Fruit grows next season.",
+      );
+    if (!cellAllowed(tree, policy))
+      throw new Error("This tree is outside the current land grant.");
+    const value = policyProduction(6 * tree.level, policy);
+    tree.fruitReady = false;
+    state.coins += value;
+    message = `Apples harvested! +${value} coins. More fruit grows next season.`;
+  } else if (action.type === "plant" || action.type === "harvest") {
     if (
       !Number.isInteger(action.plot) ||
       action.plot < 0 ||
@@ -65,6 +80,10 @@ export function actOnFarm(
       if (!Object.hasOwn(crops, action.crop)) throw new Error("Unknown crop.");
       if (plot) throw new Error("This plot is already planted.");
       const crop = crops[action.crop];
+      if (!canPlant(action.crop, turn))
+        throw new Error(
+          `${crop.name} can be planted in ${crop.plantingSeasons.join(" or ")}.`,
+        );
       if (state.coins < policyCost(seedCost(state, action.crop), policy))
         throw new Error("Not enough coins for those seeds.");
       const price = policyCost(seedCost(state, action.crop), policy);
@@ -92,22 +111,6 @@ export function actOnFarm(
       throw new Error("You already have seeds or crops to keep farming.");
     state.coins += crops.turnip.seed;
     message = "You helped with a delivery. +4 coins for fresh seeds.";
-  } else if (action.type === "grow") {
-    let count = 0;
-    state.plots = state.plots.map((plot, index) => {
-      if (!cellAllowed(state.plotCells[index], policy)) return plot;
-      if (!plot || plot.growth === crops[plot.crop].steps) return plot;
-      count++;
-      return {
-        ...plot,
-        growth: Math.min(
-          crops[plot.crop].steps,
-          plot.growth + 1 + buildingLevel(state, "well"),
-        ),
-      };
-    });
-    if (!count) throw new Error("Plant a crop before advancing growth.");
-    message = `${count} crop${count === 1 ? "" : "s"} grew. Ready crops keep until you harvest.`;
   } else if (action.type === "expand") {
     if (state.plots.length >= (policy.maxPlots ?? WORLD_CELLS))
       throw new Error("All 16384 plots are open.");
@@ -139,6 +142,8 @@ export function actOnFarm(
     if (!Object.hasOwn(buildings, action.kind))
       throw new Error("Unknown building.");
     const item = buildings[action.kind];
+    if (turn === 160)
+      throw new Error("There is no next season to complete construction.");
     if (policy.blockedBuildings?.includes(action.kind))
       throw new Error("This building is restricted by the current policy.");
     const unlock = buildUnlock(action.kind, policy);
@@ -155,8 +160,14 @@ export function actOnFarm(
       throw new Error("Not enough coins to build this.");
     state.coins -= policyCost(item.cost, policy);
     const id = state.nextStructureId++;
-    state.structures.push({ ...action.cell, id, kind: action.kind, level: 1 });
-    message = `${item.name} built! −${policyCost(item.cost, policy)} coins.`;
+    state.structures.push({
+      ...action.cell,
+      id,
+      kind: action.kind,
+      level: 1,
+      pendingConstruction: true,
+    });
+    message = `${item.name} ${isTree(action.kind) ? "planted" : "construction started"}. Ready next season. −${policyCost(item.cost, policy)} coins.`;
   } else if (action.type === "movePlot") {
     const index = state.plotIds.indexOf(action.id);
     if (index < 0) throw new Error("Choose an existing plot.");
@@ -193,6 +204,12 @@ export function actOnFarm(
       Object.assign(building, action.cell);
       message = `${item.name} moved. No coins spent.`;
     } else {
+      if (building.pendingConstruction)
+        throw new Error("Construction must finish before upgrading.");
+      if (building.pendingUpgrade)
+        throw new Error("This upgrade is already underway.");
+      if (turn === 160)
+        throw new Error("There is no next season to complete this upgrade.");
       if (building.level === item.levels)
         throw new Error("This building is fully upgraded.");
       if (policy.blockedBuildings?.includes(building.kind))
@@ -204,10 +221,14 @@ export function actOnFarm(
       if (state.coins < cost)
         throw new Error("Not enough coins to upgrade this.");
       state.coins -= cost;
-      building.level++;
-      message = `${item.name} is now level ${building.level}! −${cost} coins.`;
+      building.pendingUpgrade = true;
+      message = `${item.name} upgrade started. Level ${building.level + 1} completes next season. −${cost} coins.`;
     }
   } else {
+    if (state.pendingSoilUpgrade)
+      throw new Error("Soil improvement is already underway.");
+    if (turn === 160)
+      throw new Error("There is no next season to complete this improvement.");
     if (state.soilLevel === 3) throw new Error("Soil is fully improved.");
     const unlock = [1, 33, 97][state.soilLevel];
     if (turn < unlock)
@@ -216,8 +237,47 @@ export function actOnFarm(
     if (state.coins < cost)
       throw new Error("Not enough coins to improve soil.");
     state.coins -= cost;
-    state.soilLevel++;
-    message = `Soil improved! Every harvest earns 3 more coins. −${cost} coins.`;
+    state.pendingSoilUpgrade = true;
+    message = `Soil improvement started. +3 coins per harvest from next season. −${cost} coins.`;
   }
   return { state: parseMicroState(state), message };
+}
+
+/** Advance crops once when integration ends a seasonal turn. */
+export function growCrops(
+  current: MicroState,
+  policy: FarmPolicy = {},
+): MicroState {
+  const state = parseMicroState(current);
+  state.plots = state.plots.map((plot, index) => {
+    if (!cellAllowed(state.plotCells[index], policy)) return plot;
+    if (!plot || plot.growth === crops[plot.crop].steps) return plot;
+    return {
+      ...plot,
+      growth: Math.min(
+        crops[plot.crop].steps,
+        plot.growth + 1 + buildingLevel(state, "well"),
+      ),
+    };
+  });
+
+  return state;
+}
+
+/** Complete paid upgrades at the start of the next seasonal turn. */
+export function completeUpgrades(current: MicroState): MicroState {
+  const state = parseMicroState(current);
+  for (const building of state.structures) {
+    delete building.pendingConstruction;
+    if (building.kind === "apple") building.fruitReady = true;
+    if (building.pendingUpgrade) {
+      building.level++;
+      delete building.pendingUpgrade;
+    }
+  }
+  if (state.pendingSoilUpgrade) {
+    state.soilLevel++;
+    delete state.pendingSoilUpgrade;
+  }
+  return state;
 }

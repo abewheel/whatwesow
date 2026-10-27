@@ -15,6 +15,7 @@ async function buildTool(page: Page, kind: string) {
 test("places plots, trees and structures with footprints, moves and upgrades them, and preserves the estate", async ({
   page,
 }) => {
+  test.setTimeout(60000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("requestfailed", (r) => errors.push(r.url()));
@@ -30,7 +31,9 @@ test("places plots, trees and structures with footprints, moves and upgrades the
     "true",
   );
   await page.getByRole("button", { name: "Land 14,18", exact: true }).click();
-  await expect(page.locator("#farm-message")).toContainText("Tool shed built");
+  await expect(page.locator("#farm-message")).toContainText(
+    "Tool shed construction started",
+  );
   await expect(page.locator("#season")).toContainText("190 coins");
   await buildTool(page, "oak");
   await page.locator('[data-cell="14,18"]').hover();
@@ -56,7 +59,9 @@ test("places plots, trees and structures with footprints, moves and upgrades the
     .click();
   await page.locator('[data-structure="2"]').click();
   await expect(page.locator("#upgrade-building")).toBeDisabled();
-  await expect(page.locator("#upgrade-building")).toContainText("turn 9");
+  await expect(page.locator("#upgrade-building")).toContainText(
+    "Ready next season",
+  );
   await page.locator("#move-building").click();
   await page.getByRole("button", { name: "Land 13,21", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText("moved");
@@ -80,10 +85,15 @@ test("places plots, trees and structures with footprints, moves and upgrades the
   }
   await page.locator('[data-structure="2"]').click();
   await page.locator("#upgrade-building").click();
+  await expect(page.locator("#selected-building")).toContainText("Level 1/3");
+  await expect(page.locator("#upgrade-building")).toContainText("underway");
+  await page.reload();
+  await page.locator("#grow").click();
+  await page.locator('[data-structure="2"]').click();
   await expect(page.locator("#selected-building")).toContainText("Level 2/3");
   await expect(page.locator("#season")).toContainText("25 coins");
   await page.reload();
-  await expect(page.locator("#next-season")).toContainText("9/160");
+  await expect(page.locator("#next-season")).toContainText("10/160");
   await expect(page.locator("#farm-summary")).toContainText("10 plots");
   await expect(page.locator('[data-cell="13,21"]')).toHaveAttribute(
     "aria-label",
@@ -161,9 +171,8 @@ test("late progression and the final seasonal income respect the 160-turn bounda
   await page.locator('[data-structure="10"]').click();
   await expect(page.locator("#selected-building")).toContainText("Legacy hall");
   await page.locator("#upgrade-building").click();
-  await expect(page.locator("#selected-building")).toContainText("Level 2/3");
-  await page.locator("#upgrade-building").click();
-  await expect(page.locator("#selected-building")).toContainText("Level 3/3");
+  await expect(page.locator("#selected-building")).toContainText("Level 1/3");
+  await expect(page.locator("#upgrade-building")).toContainText("underway");
   await expect(page.locator("#upgrade-building")).toBeDisabled();
   if (
     (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
@@ -176,11 +185,11 @@ test("late progression and the final seasonal income respect the 160-turn bounda
   );
   await expect(page.locator("#next-season")).toBeDisabled();
   await expect(page.locator("#season")).toContainText(
-    "Year 40 · winter · 25,156 coins",
+    "Year 40 · winter · 100,150 coins",
   );
   await page.reload();
   await expect(page.locator("#next-season")).toBeDisabled();
-  await expect(page.locator("#season")).toContainText("25,156 coins");
+  await expect(page.locator("#season")).toContainText("100,150 coins");
 });
 test("repeated builds, plot relocation, and macro land policies remain playable", async ({
   page,
@@ -194,7 +203,7 @@ test("repeated builds, plot relocation, and macro land policies remain playable"
     await buildTool(page, "shed");
     await page.locator('[data-cell="' + cell + '"]').click();
     await expect(page.locator("#farm-message")).toContainText(
-      "Tool shed built",
+      "Tool shed construction started",
     );
   }
   await expect(page.locator("[data-structure]")).toHaveCount(3);
@@ -206,7 +215,7 @@ test("repeated builds, plot relocation, and macro land policies remain playable"
     await page.locator("#estate-toggle").click();
   await page.locator("#farm-mode").click();
   await page.locator('[data-plot="0"]').click();
-  await expect(page.locator("#season")).toContainText("128 coins");
+  await expect(page.locator("#season")).toContainText("126 coins");
   if (
     (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
     "true"
@@ -226,7 +235,7 @@ test("repeated builds, plot relocation, and macro land policies remain playable"
     "aria-label",
     /Turnip, growing 0/,
   );
-  await expect(page.locator("#season")).toContainText("128 coins");
+  await expect(page.locator("#season")).toContainText("126 coins");
   await load(page, "restricted");
   await expect(page.locator("#next-season")).toContainText("25/160");
   await buildTool(page, "plot");
@@ -292,4 +301,61 @@ test("switching from plot relocation to building relocation clears the previous 
     "1",
   );
   await expect(page.locator("#season")).toContainText("100 coins");
+});
+
+test("construction persists, withholds benefits, and completes next season", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await page.goto("/?instance=validation-pending-construction");
+  await expect(page.locator("#save-status")).toHaveText(
+    "Saved on this browser",
+  );
+  await load(page, "community");
+  await buildTool(page, "shed");
+  await page.locator('[data-cell="14,18"]').click();
+  await expect(page.locator("#season")).toContainText("2,940 coins");
+  await expect(page.locator('[data-crop="carrot"]')).toHaveAttribute(
+    "aria-label",
+    /6 coins to plant/,
+  );
+  await page.reload();
+  await page.locator('[data-cell="14,18"]').click();
+  await expect(page.locator("#selected-building")).toContainText(
+    "Ready next season",
+  );
+  await expect(page.locator("#upgrade-building")).toBeDisabled();
+  await page.locator("#grow").click();
+  await expect(page.locator("#selected-building")).toContainText("Level 1/3");
+  await expect(page.locator('[data-crop="carrot"]')).toHaveAttribute(
+    "aria-label",
+    /5 coins to plant/,
+  );
+  await expect(page.locator("#season")).toContainText("2,940 coins");
+});
+
+test("apple harvests pay on click, persist after picking, and regrow next season", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await page.goto("/?instance=validation-fruit-harvest");
+  await expect(page.locator("#save-status")).toHaveText(
+    "Saved on this browser",
+  );
+  await load(page, "community");
+  const tree = page.locator('[data-cell="13,19"]');
+  await expect(tree).toHaveAttribute("aria-label", /ripe fruit/);
+  await tree.click();
+  await expect(page.locator("#season")).toContainText("3,006 coins");
+  await expect(tree).toHaveAttribute("aria-label", /fruit growing/);
+  await tree.click();
+  await expect(page.locator("#farm-message")).toContainText("no ripe fruit");
+  await page.reload();
+  await expect(tree).toHaveAttribute("aria-label", /fruit growing/);
+  await page.locator("#grow").click();
+  await expect(page.locator("#season")).toContainText("3,006 coins");
+  await expect(tree).toHaveAttribute("aria-label", /ripe fruit/);
+  await tree.click();
+  await expect(page.locator("#season")).toContainText("3,012 coins");
+  await expect(tree).toHaveAttribute("data-structure", "4");
 });

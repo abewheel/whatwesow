@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actOnFarm } from "./rules";
+import { actOnFarm, growCrops, completeUpgrades } from "./rules";
 import {
   crops,
   initialMicroState,
@@ -18,8 +18,7 @@ describe("farming loop", () => {
       expect(() =>
         actOnFarm(state, { type: "plant", plot: 0, crop }),
       ).toThrow();
-      for (let i = 0; i < crops[crop].steps; i++)
-        state = actOnFarm(state, { type: "grow" }).state;
+      for (let i = 0; i < crops[crop].steps; i++) state = growCrops(state);
       const ripe = state;
       state = actOnFarm(state, { type: "harvest", plot: 0 }).state;
       expect(state.coins).toBe(100 - crops[crop].seed + crops[crop].sale);
@@ -39,8 +38,7 @@ describe("farming loop", () => {
       crop: "turnip",
     }).state;
     state = actOnFarm(state, { type: "plant", plot: 1, crop: "corn" }).state;
-    for (let i = 0; i < 3; i++)
-      state = actOnFarm(state, { type: "grow" }).state;
+    for (let i = 0; i < 3; i++) state = growCrops(state);
     expect(state.plots.slice(0, 2)).toEqual([
       { crop: "turnip", growth: 1 },
       { crop: "corn", growth: 3 },
@@ -54,7 +52,7 @@ describe("farming loop", () => {
     state = actOnFarm(state, { type: "improve" }).state;
     expect(state.coins).toBe(390);
     state = actOnFarm(state, { type: "plant", plot: 9, crop: "turnip" }).state;
-    state = actOnFarm(state, { type: "grow" }).state;
+    state = completeUpgrades(growCrops(state));
     expect(actOnFarm(state, { type: "harvest", plot: 9 }).state.coins).toBe(
       398,
     );
@@ -65,7 +63,6 @@ describe("farming loop", () => {
       { type: "plant", plot: 0, crop: "corn" },
       { type: "expand" },
       { type: "improve" },
-      { type: "grow" },
     ] as const)
       expect(() => actOnFarm(poor, action)).toThrow();
     for (const plot of [-1, 9, 0.5])

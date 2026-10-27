@@ -2,6 +2,8 @@ import { WORLD_CELLS, WORLD_SIZE } from "./contracts/world";
 import { turnNumber } from "./macro/state";
 import {
   buildings,
+  isTree,
+  hasRipeFruit,
   canPlace,
   cellKey,
   footprint,
@@ -36,6 +38,7 @@ import {
   crops,
   expansionCost,
   harvestValue,
+  canPlant,
   soilCost,
   seedCost,
   type CropId,
@@ -52,9 +55,9 @@ app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <section id="panel-build" class="tool-panel" aria-label="Construction" hidden><div id="build-shop"><div class="build-heading"><span class="eyebrow">Construction</span><button id="expand"></button></div><p id="progression"></p><div id="build-options"></div></div></section>
 <section id="panel-upgrade" class="tool-panel" aria-label="Upgrades" hidden><div class="upgrade-soil"><button id="improve"></button></div><div class="building-inspector"><p id="selected-building">Select a building on the farm to inspect it.</p><div><button id="upgrade-building" hidden>Upgrade selected building</button><button id="move-building" hidden>Move selected building</button></div></div></section>
 </div>
-<div class="mode-bar"><div class="mode-switch" aria-label="Farm activities"><button id="mode-plant" aria-pressed="true" aria-controls="panel-plant">${icon("seeds")}<span>Plant</span></button><button id="mode-build" aria-pressed="false" aria-controls="panel-build">${icon("build")}<span>Build</span></button><button id="mode-upgrade" aria-pressed="false" aria-controls="panel-upgrade">${icon("improve")}<span>Upgrade</span></button></div><span id="active-tool" role="status">Turnip seeds</span><button id="grow" aria-label="Advance growth" title="Advance growth within this season">${icon("grow")}<span>Grow</span></button><button id="work" aria-label="Help with a delivery · +4 coins" title="Help with a delivery · +4 coins" hidden>${icon("harvest")}<span>+4</span>${icon("coin")}</button><button id="collapse-tools" aria-expanded="true" aria-controls="tool-panels" aria-label="Collapse tools" title="Collapse tools"><span aria-hidden="true">⌄</span></button></div>
+<div class="mode-bar"><div class="mode-switch" aria-label="Farm activities"><button id="mode-plant" aria-pressed="true" aria-controls="panel-plant">${icon("seeds")}<span>Plant</span></button><button id="mode-build" aria-pressed="false" aria-controls="panel-build">${icon("build")}<span>Build</span></button><button id="mode-upgrade" aria-pressed="false" aria-controls="panel-upgrade">${icon("improve")}<span>Upgrade</span></button></div><span id="active-tool" role="status">Turnip seeds</span><button id="grow" aria-label="End turn" title="End this turn and advance one season">${icon("grow")}<span>End turn</span></button><button id="work" aria-label="Help with a delivery · +4 coins" title="Help with a delivery · +4 coins" hidden>${icon("harvest")}<span>+4</span>${icon("coin")}</button><button id="collapse-tools" aria-expanded="true" aria-controls="tool-panels" aria-label="Collapse tools" title="Collapse tools"><span aria-hidden="true">⌄</span></button></div>
 </section></div>
-<dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><p class="menu-note">A little care, season after season.</p><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><p class="menu-help">Choose seeds. Plant an empty plot. Advance growth, then pick the ripe crops.</p><button id="resume">Back to the farm</button></dialog>
+<dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><p class="menu-note">A little care, season after season.</p><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><p class="menu-help">Choose seeds. Plant an empty plot. End your turn to grow crops into the next season, then harvest for coins.</p><button id="resume">Back to the farm</button></dialog>
 </section></main>`;
 const menu = document.querySelector<HTMLDialogElement>("#farm-menu")!;
 document
@@ -423,7 +426,7 @@ for (const [id, crop] of Object.entries(crops)) {
     preview.hidden = true;
     selected = id as CropId;
     render();
-    message.textContent = `${crop.name} · ${crop.steps} growth step${crop.steps === 1 ? "" : "s"} · Harvest ${policyProduction(harvestValue(state, id as CropId), state.farmPolicy ?? {})} coins.`;
+    message.textContent = `${crop.name} · ${crop.steps} season${crop.steps === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")} · Harvest ${policyProduction(harvestValue(state, id as CropId), state.farmPolicy ?? {})} coins.`;
   });
   cropOptions.append(button);
 }
@@ -520,6 +523,10 @@ scene.onLayout = (targets) => {
             (c) => cellKey(c) === key,
           ),
         );
+        if (building?.kind === "apple" && toolMode === "plant") {
+          void act({ type: "harvestFruit", id: building.id });
+          return;
+        }
         if (building) {
           inspectedId = building.id;
           showTools("upgrade", false);
@@ -556,11 +563,11 @@ scene.onLayout = (targets) => {
       index !== undefined
         ? `Plot ${index + 1}: ${!plot ? "empty" : `${crops[plot.crop].name}, ${plot.growth === crops[plot.crop].steps ? "ready to harvest" : `growing ${plot.growth}/${crops[plot.crop].steps}`}`}`
         : structure
-          ? `${buildings[structure.kind].name} ${structure.id}, level ${structure.level}`
+          ? `${buildings[structure.kind].name} ${structure.id}, ${structure.pendingConstruction ? (isTree(structure.kind) ? "growing, ready next season" : "under construction, ready next season") : structure.kind === "apple" ? (hasRipeFruit(structure) ? "ripe fruit, click to harvest" : "fruit growing, ready next season") : `level ${structure.level}`}`
           : `Land ${target.row},${target.col}`;
     if (button.getAttribute("aria-label") !== label) {
       button.setAttribute("aria-label", label);
-      button.title = label;
+      button.title = structure && isTree(structure.kind) ? "" : label;
     }
   }
   if (hoveredCell) showPreview(hoveredCell);
@@ -643,7 +650,7 @@ document
   .addEventListener("click", () => void act({ type: "work" }));
 document
   .querySelector("#grow")!
-  .addEventListener("click", () => void act({ type: "grow" }));
+  .addEventListener("click", () => void act({ type: "season" }));
 document
   .querySelector("#expand")!
   .addEventListener("click", () => selectBuild("plot"));
@@ -666,7 +673,7 @@ function render() {
   document.querySelector<HTMLButtonElement>("#next-season")!.disabled =
     turn === 160;
   document.querySelector("#next-season")!.textContent =
-    turn === 160 ? "Final season · 160/160" : `Next season · ${turn}/160`;
+    turn === 160 ? "Final season · 160/160" : `End turn · ${turn}/160`;
   document.querySelector("#progression")!.textContent =
     `Turn ${turn}/160 · ${state.structures.length} structures · +${policyProduction(seasonalIncome(state), policy)} coins / season`;
   for (const button of document.querySelectorAll<HTMLButtonElement>(
@@ -688,11 +695,12 @@ function render() {
     const unlock = buildUnlock(kind, policy),
       cost = policyCost(item.cost, policy),
       limit = policy.buildingLimits?.[kind];
-    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${turn < unlock ? `Unlock turn ${unlock}` : `${count} built`} · ${item.benefit}`;
+    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${turn < unlock ? `Unlock turn ${unlock}` : `${count} built`} · ${item.benefit} · ready next season`;
     button.setAttribute("aria-label", label);
     button.title = label;
     button.innerHTML = `${icon(kind === "oak" || kind === "apple" ? "spring" : "home")}<span>${item.name}<small>${turn < unlock ? `Turn ${unlock}` : `${item.width} × ${item.height} · ${count} built`}</small></span><span class="tool-price">${icon("coin")}${cost.toLocaleString()}</span>`;
     button.disabled =
+      turn === 160 ||
       turn < unlock ||
       state.coins < cost ||
       policy.blockedBuildings?.includes(kind) === true ||
@@ -707,16 +715,30 @@ function render() {
     document.querySelector("#selected-building")!.textContent =
       "Select a building on the farm to inspect it.";
   if (inspected) {
+    document
+      .querySelector("#selected-building")!
+      .classList.toggle(
+        "pending-building",
+        !!(inspected.pendingConstruction || inspected.pendingUpgrade),
+      );
     const item = buildings[inspected.kind],
       unlock = upgradeTurn(inspected.kind, inspected.level, policy),
       cost = policyCost(upgradeCost(inspected), policy);
     document.querySelector("#selected-building")!.textContent =
-      `${item.name} · Level ${inspected.level}/${item.levels}. ${item.benefit}.`;
-    upgrade.textContent =
-      inspected.level === item.levels
-        ? "Fully upgraded"
-        : `Upgrade · ${cost} coins · turn ${unlock}`;
+      `${item.name} · ${inspected.pendingConstruction ? (isTree(inspected.kind) ? "Growing, ready next season. Benefits start when mature." : "⚒ Ready next season. Benefits start when complete.") : `Level ${inspected.level}/${item.levels}.`} ${inspected.pendingUpgrade ? `Upgrading to level ${inspected.level + 1}, ready next season. ` : ""}${item.benefit}.`;
+    upgrade.textContent = inspected.pendingConstruction
+      ? isTree(inspected.kind)
+        ? "Growing · ready next season"
+        : "⚒ Ready next season"
+      : inspected.pendingUpgrade
+        ? "⚒ Upgrade underway · ready next season"
+        : inspected.level === item.levels
+          ? "Fully upgraded"
+          : `Upgrade · ${cost} coins · turn ${unlock} · ready next season`;
     upgrade.disabled =
+      !!inspected.pendingConstruction ||
+      !!inspected.pendingUpgrade ||
+      turn === 160 ||
       inspected.level === item.levels ||
       turn < unlock ||
       state.coins < cost ||
@@ -729,9 +751,10 @@ function render() {
     const id = button.dataset.crop as CropId;
     button.setAttribute("aria-pressed", String(id === selected));
     const crop = crops[id];
-    const detail = `${crop.name}: ${policyCost(seedCost(state, id), policy)} coins to plant, ${crop.steps} growth step${crop.steps === 1 ? "" : "s"}, harvest ${policyProduction(harvestValue(state, id), policy)} coins.`;
+    const detail = `${crop.name}: ${policyCost(seedCost(state, id), policy)} coins to plant, ${crop.steps} season${crop.steps === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")}, harvest ${policyProduction(harvestValue(state, id), policy)} coins.`;
     button.querySelector(".seed-price")!.innerHTML =
       `${icon("coin")}${policyCost(seedCost(state, id), policy)}`;
+    button.disabled = !canPlant(id, turn);
     button.setAttribute("aria-label", detail);
     button.querySelector(".control-detail")!.textContent = detail;
   }
@@ -744,7 +767,7 @@ function render() {
           Math.max(1, policyCost(seedCost(state, "turnip"), policy))) ||
     state.plots.some(Boolean);
   const grow = document.querySelector<HTMLButtonElement>("#grow")!;
-  grow.disabled = !state.plots.some((p) => p && p.growth < crops[p.crop].steps);
+  grow.disabled = turn === 160;
   const expand = document.querySelector<HTMLButtonElement>("#expand")!;
   const expandLabel =
     state.plots.length === WORLD_CELLS
@@ -757,11 +780,14 @@ function render() {
     state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
     state.coins < policyCost(expansionCost(state), policy);
   const improve = document.querySelector<HTMLButtonElement>("#improve")!;
-  const improveLabel =
-    state.soilLevel === 3
+  const improveLabel = state.pendingSoilUpgrade
+    ? "Soil improvement underway · ready next season"
+    : state.soilLevel === 3
       ? "Soil fully improved"
-      : `Improve soil · ${policyCost(soilCost(state), policy)} coins (+3 / harvest)`;
+      : `Improve soil · ${policyCost(soilCost(state), policy)} coins (+3 / harvest next season)`;
   improve.disabled =
+    !!state.pendingSoilUpgrade ||
+    turn === 160 ||
     state.soilLevel === 3 ||
     state.coins < policyCost(soilCost(state), policy) ||
     turn < [1, 33, 97][state.soilLevel];

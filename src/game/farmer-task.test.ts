@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { initialMicroState } from "../micro/state";
-import { actOnFarm } from "../micro/rules";
+import { actOnFarm, growCrops } from "../micro/rules";
 import { farmerTaskForAction } from "./farmer-task";
 it("waters the crop that grew rather than an excluded immature crop", () => {
   const previous = initialMicroState();
@@ -8,11 +8,7 @@ it("waters the crop that grew rather than an excluded immature crop", () => {
   previous.plots[1] = { crop: "turnip", growth: 0 };
   const cell = previous.plotCells[1];
   const policy = { land: [{ ...cell, width: 1, height: 1 }] };
-  const current = actOnFarm(
-    previous,
-    { type: "grow" },
-    { turn: 1, policy },
-  ).state;
+  const current = growCrops(previous, policy);
   expect(current.plots[0]?.growth).toBe(0);
   expect(
     farmerTaskForAction({ type: "grow" }, previous, current, policy)?.target,

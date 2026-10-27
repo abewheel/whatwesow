@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { initialMicroState, seedCost, harvestValue } from "./state";
-import { actOnFarm } from "./rules";
+import { actOnFarm, growCrops, completeUpgrades } from "./rules";
 import { applyFarmConsequences } from "./consequences";
 it("allows repeated builds and aggregates benefits without one-per-type caps", () => {
   let state = { ...initialMicroState(), coins: 10000 };
@@ -11,6 +11,8 @@ it("allows repeated builds and aggregates benefits without one-per-type caps", (
       25,
     ).state;
   expect(state.structures.filter((s) => s.kind === "barn")).toHaveLength(4);
+  expect(harvestValue(state, "turnip")).toBe(9);
+  state = completeUpgrades(state);
   expect(harvestValue(state, "turnip")).toBe(17);
 });
 it("accepts policy inputs for gates, quantities, land, prices and output", () => {
@@ -58,7 +60,7 @@ it("accepts policy inputs for gates, quantities, land, prices and output", () =>
     { turn: 1, policy: { costMultiplier: 2 } },
   ).state;
   expect(planted.coins).toBe(992);
-  planted = actOnFarm(planted, { type: "grow" }).state;
+  planted = growCrops(planted);
   expect(
     actOnFarm(
       planted,
@@ -74,6 +76,7 @@ it("removes by stable IDs, revokes land including whole footprints, and stops re
     kind: "shed",
     cell: { row: 0, col: 0 },
   }).state;
+  state = completeUpgrades(state);
   state = actOnFarm(state, { type: "plant", plot: 0, crop: "corn" }).state;
   const id = state.structures.at(-1)!.id,
     plotId = state.plotIds[0];
@@ -120,7 +123,7 @@ it("relocates planted plots by stable ID without losing crop growth", () => {
     plot: 0,
     crop: "corn",
   }).state;
-  state = actOnFarm(state, { type: "grow" }).state;
+  state = growCrops(state);
   const moved = actOnFarm(state, {
     type: "movePlot",
     id: state.plotIds[0],

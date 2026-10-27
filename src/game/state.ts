@@ -1,3 +1,4 @@
+import { growCrops, completeUpgrades } from "../micro/rules";
 import {
   applyFarmConsequences,
   type FarmConsequences,
@@ -74,7 +75,7 @@ export function replaceDomain(
   return parseState({
     ...state,
     ...(domain === "micro"
-      ? parseMicroState(value)
+      ? { pendingSoilUpgrade: undefined, ...parseMicroState(value) }
       : { farmPolicy: undefined, ...parseMacroState(value) }),
   });
 }
@@ -91,15 +92,18 @@ export function advanceSeason(state: GameState): {
 } {
   const current = parseState(state);
   const macro = nextSeason(current);
-  const income = policyProduction(seasonalIncome(current), current.farmPolicy);
+  const farm = completeUpgrades(growCrops(current, current.farmPolicy));
+  const income = policyProduction(seasonalIncome(farm), current.farmPolicy);
   const next = parseState({
     ...current,
+    ...farm,
+    pendingSoilUpgrade: farm.pendingSoilUpgrade,
     ...macro,
     coins: current.coins + income,
   });
   return {
     state: next,
-    message: `Turn ${turnNumber(next)}/160 · Year ${next.year}, ${seasons[(turnNumber(next) - 1) % 4]}. Seasonal income: +${income} coins.`,
+    message: `Turn ${turnNumber(next)}/160 · Year ${next.year}, ${seasons[(turnNumber(next) - 1) % 4]}. Crops grew. Ready crops keep until harvest. Seasonal income: +${income} coins.`,
   };
 }
 
