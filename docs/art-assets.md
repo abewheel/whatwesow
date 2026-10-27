@@ -42,7 +42,7 @@ The building asset used the built-in image generation tool. Building prompt: a w
 
 ## Ground materials and border details
 
-`public/art/ground-materials.png` contains grass, cultivated soil, woodland floor, and gravel. `src/game/terrain.ts` samples adjacent material regions, applies seasonal colors, and bakes them into a cached 2:1 tile atlas. Grass has restrained contrast and broad tonal variation; tilled beds have inset edges, earth clods, and shallow furrows.
+`public/art/ground-materials.png` contains grass, cultivated soil, woodland floor, and gravel. `src/game/terrain.ts` samples adjacent material regions, applies seasonal colors, and bakes them into a cached 2:1 tile atlas. Grass has restrained contrast and broad tonal variation; tilled beds have inset edges, earth clods, and shallow furrows. The visible ground is flattened into one viewport-sized render texture when the view or farm changes, so idle frames do not redraw hundreds of tile sprites.
 
 `public/art/border-details-seasons.png` adds seasonal wildflowers, fern and berry shrubs, mossy boulders with fallen branches, and cattails. Explicit rectangles in `border-artwork.ts` preserve uneven gutters. Woodland canopies overlap densely; meadow trees, flowers, and undergrowth vary along the hedge and gravel lane. The short footbridge spans only the river, and the lane continues across the far bank. All scattering uses stable world coordinates and stays outside the estate.
 

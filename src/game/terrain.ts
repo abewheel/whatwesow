@@ -137,26 +137,57 @@ export function prepareGround(scene: Phaser.Scene, season: Season) {
   return key;
 }
 
-export function groundTile(
-  scene: Phaser.Scene,
-  layer: Phaser.GameObjects.Container,
-  key: string,
-  cell: Cell,
-  point: { x: number; y: number },
-  material: GroundMaterial,
-) {
-  const tile = scene.add
-    .image(point.x, point.y, key, groundFrame(cell, material))
-    .setDisplaySize(64, 32);
-  const shade = Math.min(
-    255,
-    Math.round(
-      246 +
-        Math.sin(cell.col * 0.23 + cell.row * 0.19) * 6 +
-        Math.cos(cell.row * 0.43 - cell.col * 0.13) * 3,
-    ),
-  );
-  tile.setTint(Phaser.Display.Color.GetColor(shade, shade, shade));
-  layer.add(tile);
-  return tile;
+type GroundView = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zoom: number;
+};
+
+/** Cache the visible ground at screen resolution; idle frames draw one quad. */
+export class GroundLayer {
+  private art: Phaser.GameObjects.RenderTexture;
+  private view: GroundView = { x: 0, y: 0, width: 1, height: 1, zoom: 1 };
+  private key = "";
+  constructor(private scene: Phaser.Scene) {
+    this.art = scene.add.renderTexture(0, 0, 1, 1).setOrigin(0, 0);
+  }
+  begin(season: Season, view: GroundView) {
+    this.view = { ...view };
+    this.key = prepareGround(this.scene, season);
+    this.art
+      .resize(Math.ceil(view.width), Math.ceil(view.height), false)
+      .setPosition(view.x, view.y)
+      .setScale(1 / view.zoom)
+      .clear();
+  }
+  tile(
+    cell: Cell,
+    point: { x: number; y: number },
+    material: GroundMaterial,
+    tint?: number,
+  ) {
+    const shade = Math.min(
+      255,
+      Math.round(
+        246 +
+          Math.sin(cell.col * 0.23 + cell.row * 0.19) * 6 +
+          Math.cos(cell.row * 0.43 - cell.col * 0.13) * 3,
+      ),
+    );
+    this.art.stamp(
+      this.key,
+      groundFrame(cell, material),
+      (point.x - this.view.x) * this.view.zoom,
+      (point.y - this.view.y) * this.view.zoom,
+      {
+        scale: this.view.zoom / 2,
+        tint: tint ?? Phaser.Display.Color.GetColor(shade, shade, shade),
+      },
+    );
+  }
+  finish() {
+    this.art.render();
+  }
 }

@@ -18,7 +18,7 @@ import { project, footprint as renderFootprint, TILE_WIDTH } from "./layout";
 import Phaser from "phaser";
 import { drawBoundary } from "./boundary";
 import { borderDetailRect } from "./border-artwork";
-import { prepareGround, groundTile } from "./terrain";
+import { GroundLayer } from "./terrain";
 import { Farmer, farmerRowBounds } from "./farmer";
 import { farmerDepth, type BuildingOccluder } from "./farmer-depth";
 import { farmerTaskForAction } from "./farmer-task";
@@ -60,7 +60,7 @@ export class FarmScene extends Phaser.Scene {
   private farmer?: Farmer;
   private buildingOccluders: BuildingOccluder[] = [];
   private ground?: Phaser.GameObjects.Graphics;
-  private groundArt?: Phaser.GameObjects.Container;
+  private groundArt?: GroundLayer;
   private scenery?: Phaser.GameObjects.Container;
   private treeViews = new Map<number, Phaser.GameObjects.Container>();
   private harvestEffects?: Phaser.GameObjects.Container;
@@ -221,12 +221,21 @@ export class FarmScene extends Phaser.Scene {
       { x: 655, y: 771, width: 599, height: 393 },
     ].entries())
       hedges.add(i, 0, frame.x, frame.y, frame.width, frame.height);
-    this.groundArt = this.add.container();
+    this.groundArt = new GroundLayer(this);
     this.ground = this.add.graphics();
     this.scenery = this.add.container();
     this.farmer = new Farmer(this);
     this.farmer.setWorld(this.farm, this.policy);
     this.draw();
+    // Render textures lose their contents when a suspended GPU context returns.
+    const restoreGround = () => this.draw(false);
+    this.game.renderer.on(Phaser.Renderer.Events.RESTORE_WEBGL, restoreGround);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game.renderer.off(
+        Phaser.Renderer.Events.RESTORE_WEBGL,
+        restoreGround,
+      );
+    });
     this.onReady?.();
   }
   update(_time: number, delta: number) {
@@ -334,8 +343,7 @@ export class FarmScene extends Phaser.Scene {
       .setZoom(this.view.zoom)
       .setScroll(this.view.x, this.view.y);
     g.clear();
-    this.groundArt!.removeAll(true);
-    const groundKey = prepareGround(this, this.season);
+    this.groundArt!.begin(this.season, this.view);
     if (this.farmer) scenery.remove(this.farmer.view);
     for (const tree of this.treeViews.values()) this.tweens.killTweensOf(tree);
     this.treeViews.clear();
@@ -352,7 +360,6 @@ export class FarmScene extends Phaser.Scene {
       projectCell,
       this.view,
       this.groundArt!,
-      groundKey,
     );
     const plotMap = new Map(this.farm.plotCells.map((c, i) => [cellKey(c), i]));
     const targets: PlotTarget[] = [];
@@ -365,15 +372,12 @@ export class FarmScene extends Phaser.Scene {
         if (publishLayout)
           targets.push({ row, col, x, y, width: 64, height: 32 });
         if (!visible(x, y, 40)) continue;
-        const tile = groundTile(
-          this,
-          this.groundArt!,
-          groundKey,
+        this.groundArt!.tile(
           { row, col },
           { x, y },
           index === undefined ? "grass" : "soil",
+          cellAllowed({ row, col }, this.policy) ? undefined : 0x879777,
         );
-        if (!cellAllowed({ row, col }, this.policy)) tile.setTint(0x879777);
         if (index === undefined) continue;
         const plot = this.farm.plots[index];
         if (!plot) continue;
@@ -591,6 +595,7 @@ export class FarmScene extends Phaser.Scene {
           .setDepth(front.y),
       );
     }
+    this.groundArt!.finish();
     if (publishLayout) this.onLayout?.(targets);
   }
 }

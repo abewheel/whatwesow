@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 import { clickCamera, setCameraCell } from "./helpers";
 
-test("painted ground stays anchored through camera changes and seasonal cache reuse", async ({
+test("painted ground survives camera changes, GPU recovery, and seasonal cache reuse", async ({
   page,
 }) => {
   await page.goto("/?instance=validation-terrain-stability");
@@ -38,6 +38,27 @@ test("painted ground stays anchored through camera changes and seasonal cache re
   await clickCamera(page, "#zoom-in");
   await clickCamera(page, "#zoom-reset");
   await page.locator("#camera-controls summary").click();
+  expect((await sample()).equals(spring)).toBe(true);
+  await page.locator("canvas").evaluate(async (element) => {
+    const canvas = element as HTMLCanvasElement;
+    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    const recovery = gl?.getExtension("WEBGL_lose_context");
+    if (!recovery)
+      throw new Error("WebGL context recovery is required for this test");
+    await new Promise<void>((resolve) => {
+      canvas.addEventListener("webglcontextrestored", () => resolve(), {
+        once: true,
+      });
+      canvas.addEventListener(
+        "webglcontextlost",
+        () => {
+          setTimeout(() => recovery.restoreContext(), 50);
+        },
+        { once: true },
+      );
+      recovery.loseContext();
+    });
+  });
   expect((await sample()).equals(spring)).toBe(true);
   await page.getByLabel("Work on").selectOption("macro");
   for (const season of ["summer", "fall", "winter", "spring"]) {

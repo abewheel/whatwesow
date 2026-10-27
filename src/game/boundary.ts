@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import type { MacroState } from "../macro/state";
 import { WORLD_SIZE, type Cell } from "../micro/world";
-import { groundTile } from "./terrain";
+import type { GroundLayer } from "./terrain";
 import { seasonFrame } from "./border-artwork";
 
 type Point = { x: number; y: number };
@@ -48,8 +48,7 @@ export function drawBoundary(
   season: MacroState["season"],
   point: (cell: Cell) => Point,
   view: { x: number; y: number; width: number; height: number; zoom?: number },
-  groundArt: Phaser.GameObjects.Container,
-  groundKey: string,
+  groundArt: GroundLayer,
 ) {
   const p = colors[season],
     winter = season === "winter";
@@ -164,10 +163,7 @@ export function drawBoundary(
         continue;
       const pos = at(col, row);
       if (!visible([pos], 40)) continue;
-      groundTile(
-        scene,
-        groundArt,
-        groundKey,
+      groundArt.tile(
         { row, col },
         pos,
         col >= WORLD_SIZE && col < WORLD_SIZE + 2
