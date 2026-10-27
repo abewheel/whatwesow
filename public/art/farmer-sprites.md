@@ -1,6 +1,6 @@
 # Farmer sprite sheet
 
-`farmer-sprites.png` is a transparent 1086 × 1448 atlas with six columns and eight rows. Each frame is 181 × 181. Phaser uses per-frame boot contact points, displays frames at 58 × 58, and mirrors them for leftward movement. Feet and the layered ground shadow share the center of one world cell. Work routes stop on a reachable adjacent cell; a tile outline and particles identify the target. Placed structures and current land policy constrain routes, and layout changes clear old destinations. Linear texture filtering matches the painted scenery at game scale.
+`farmer-sprites.png` is a transparent 1086 × 1448 atlas with six columns and eight rows. Columns are 181 pixels wide; explicit row boundaries at 0, 174, 354, 532, 722, 902, 1084, 1250, and 1448 preserve complete hats. Phaser uses per-frame boot contact points, scales artwork by 58/181, and mirrors them for leftward movement. Feet and the layered ground shadow share the center of one world cell. Work routes stop on a reachable adjacent cell; a tile outline and particles identify the target. Placed structures and current land policy constrain routes, and layout changes clear old destinations. Linear texture filtering matches the painted scenery at game scale.
 
 | Row (zero based) | Frames | Motion |
 | --- | --- | --- |
@@ -13,7 +13,7 @@
 | 6 | 36–41 | Carry a produce basket |
 | 7 | 42–47 | Idle |
 
-Walking uses the separate `farmer-walk.png` atlas, with six frames per direction and a gait driven by distance traveled. The original walking rows are unused. Farming actions play once over 1.15 seconds. These animations are presentation only and do not delay or change saved farming results. Appearance customization is deferred; this sheet contains one complete character.
+Walking uses the first two rows of the same sheet, with six frames per direction and a gait driven by distance traveled. Farming actions play once over 1.15 seconds. These animations are presentation only and do not delay or change saved farming results. Appearance customization is deferred; this sheet contains one complete character.
 
 Created with the built-in image generation tool, using `farm-atlas.png` as a style reference.
 

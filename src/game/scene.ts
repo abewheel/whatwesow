@@ -17,7 +17,10 @@ import { cropFrames, cropStages } from "./crop-sprites";
 import { project, footprint as renderFootprint, TILE_WIDTH } from "./layout";
 import Phaser from "phaser";
 import { drawBoundary } from "./boundary";
-import { Farmer } from "./farmer";
+import { borderDetailRect } from "./border-artwork";
+import { prepareGround, groundTile } from "./terrain";
+import { Farmer, farmerRowBounds } from "./farmer";
+import { farmerDepth, type BuildingOccluder } from "./farmer-depth";
 import { farmerTaskForAction } from "./farmer-task";
 import type { FarmAction } from "../micro/rules";
 import type { MacroState } from "../macro/state";
@@ -55,7 +58,9 @@ const palette = {
 };
 export class FarmScene extends Phaser.Scene {
   private farmer?: Farmer;
+  private buildingOccluders: BuildingOccluder[] = [];
   private ground?: Phaser.GameObjects.Graphics;
+  private groundArt?: Phaser.GameObjects.Container;
   private scenery?: Phaser.GameObjects.Container;
   private treeViews = new Map<number, Phaser.GameObjects.Container>();
   private harvestEffects?: Phaser.GameObjects.Container;
@@ -115,6 +120,8 @@ export class FarmScene extends Phaser.Scene {
   preload() {
     this.load.on("loaderror", () => this.onLoadError?.());
     this.load.on("progress", (value: number) => this.onProgress?.(value));
+    this.load.image("ground-materials", "/art/ground-materials.png");
+    this.load.image("border-details", "/art/border-details-seasons.png");
     this.load.image("tree-apple", "/art/apple-stages.png");
     this.load.image("tree-oak", "/art/oak-stages.png");
     this.load.image("tree-products", "/art/tree-products.png");
@@ -125,11 +132,7 @@ export class FarmScene extends Phaser.Scene {
       "/art/woodland-variation-seasons.png",
     );
     this.load.image("hedgerow", "/art/hedgerow-seasons.png");
-    this.load.image("farmer-walk", "/art/farmer-walk.png");
-    this.load.spritesheet("farmer", "/art/farmer-sprites.png", {
-      frameWidth: 181,
-      frameHeight: 181,
-    });
+    this.load.image("farmer", "/art/farmer-sprites.png");
     this.load.image("distinct-buildings", "/art/distinct-buildings.png");
     this.load.image("farm-states", "/art/farm-states.png");
     this.load.image("farm-spring", "/art/farm-atlas.png");
@@ -137,6 +140,16 @@ export class FarmScene extends Phaser.Scene {
     this.load.image("farm-winter", "/art/farm-atlas-winter.png");
   }
   create() {
+    const details = this.textures.get("border-details");
+    const detailSource = details.getSourceImage();
+    for (let frame = 0; frame < 16; frame++) {
+      const rect = borderDetailRect(
+        frame,
+        detailSource.width,
+        detailSource.height,
+      );
+      details.add(frame, 0, rect.x, rect.y, rect.width, rect.height);
+    }
     for (const kind of ["apple", "oak"] as const) {
       const texture = this.textures.get(`tree-${kind}`);
       for (const [index, [x, y, width, height]] of treeFrames[kind].entries())
@@ -144,16 +157,16 @@ export class FarmScene extends Phaser.Scene {
       const [x, y, width, height] = productFrames[kind];
       this.textures.get("tree-products").add(kind, 0, x, y, width, height);
     }
-    const walk = this.textures.get("farmer-walk");
-    for (let row = 0; row < 2; row++)
+    const farmer = this.textures.get("farmer");
+    for (let row = 0; row < 8; row++)
       for (let col = 0; col < 6; col++)
-        walk.add(
+        farmer.add(
           row * 6 + col,
           0,
-          col * 362,
-          row ? 350 : 0,
-          362,
-          row ? 374 : 348,
+          col * 181,
+          farmerRowBounds[row],
+          181,
+          farmerRowBounds[row + 1] - farmerRowBounds[row],
         );
     const distinct = this.textures.get("distinct-buildings");
     const source = distinct.getSourceImage();
@@ -204,9 +217,11 @@ export class FarmScene extends Phaser.Scene {
       { x: 0, y: 279, width: 627, height: 376 },
       { x: 627, y: 271, width: 627, height: 396 },
       { x: 0, y: 753, width: 627, height: 407 },
-      { x: 627, y: 771, width: 627, height: 393 },
+      // Overlapping wall segments can omit the left gutter containing autumn pixels.
+      { x: 655, y: 771, width: 599, height: 393 },
     ].entries())
       hedges.add(i, 0, frame.x, frame.y, frame.width, frame.height);
+    this.groundArt = this.add.container();
     this.ground = this.add.graphics();
     this.scenery = this.add.container();
     this.farmer = new Farmer(this);
@@ -216,6 +231,13 @@ export class FarmScene extends Phaser.Scene {
   }
   update(_time: number, delta: number) {
     this.farmer?.update(delta, projectCell);
+    if (this.farmer) {
+      this.farmer.view.setDepth(
+        farmerDepth(this.farmer.view, this.buildingOccluders),
+      );
+      if (import.meta.env.DEV)
+        this.game.canvas.dataset.farmerDepth = String(this.farmer.view.depth);
+    }
     this.scenery?.sort("depth");
   }
   travelTo(
@@ -312,52 +334,26 @@ export class FarmScene extends Phaser.Scene {
       .setZoom(this.view.zoom)
       .setScroll(this.view.x, this.view.y);
     g.clear();
+    this.groundArt!.removeAll(true);
+    const groundKey = prepareGround(this, this.season);
     if (this.farmer) scenery.remove(this.farmer.view);
     for (const tree of this.treeViews.values()) this.tweens.killTweensOf(tree);
     this.treeViews.clear();
+    this.buildingOccluders = [];
     scenery.removeAll(true);
     if (this.farmer) scenery.add(this.farmer.view);
     this.cameras.main.setBackgroundColor(p.grass);
-    const diamond = (x: number, y: number, color: number) => {
-      g.fillStyle(color);
-      g.fillPoints(
-        [
-          { x, y: y - 16 },
-          { x: x + 32, y },
-          { x, y: y + 16 },
-          { x: x - 32, y },
-        ].map((p) => new Phaser.Math.Vector2(p.x, p.y)),
-        true,
-      );
-      g.lineStyle(1, p.shade, 0.35);
-      g.strokePoints(
-        [
-          { x, y: y - 16 },
-          { x: x + 32, y },
-          { x, y: y + 16 },
-          { x: x - 32, y },
-        ].map((p) => new Phaser.Math.Vector2(p.x, p.y)),
-        true,
-      );
-    };
-    const rect = (
-      x: number,
-      y: number,
-      w: number,
-      h: number,
-      color: number,
-    ) => {
-      g.fillStyle(color);
-      g.fillRect(x, y, w, h);
-    };
-    for (let i = 0; i < 9500; i++) {
-      const x = (i * 73.17) % WORLD_WIDTH,
-        y = (i * 47.73) % WORLD_HEIGHT;
-      if (visible(x, y, 0))
-        rect(Math.floor(x), Math.floor(y), 2, 1, i % 4 ? p.light : p.shade);
-    }
     const atlas = this.buildingAtlas;
-    drawBoundary(this, g, scenery, this.season, projectCell, this.view);
+    drawBoundary(
+      this,
+      g,
+      scenery,
+      this.season,
+      projectCell,
+      this.view,
+      this.groundArt!,
+      groundKey,
+    );
     const plotMap = new Map(this.farm.plotCells.map((c, i) => [cellKey(c), i]));
     const targets: PlotTarget[] = [];
     for (let sum = 0; sum < WORLD_SIZE * 2; sum++)
@@ -369,18 +365,16 @@ export class FarmScene extends Phaser.Scene {
         if (publishLayout)
           targets.push({ row, col, x, y, width: 64, height: 32 });
         if (!visible(x, y, 40)) continue;
-        diamond(
-          x,
-          y,
-          !cellAllowed({ row, col }, this.policy)
-            ? p.shade
-            : index === undefined
-              ? p.grass
-              : p.soil,
+        const tile = groundTile(
+          this,
+          this.groundArt!,
+          groundKey,
+          { row, col },
+          { x, y },
+          index === undefined ? "grass" : "soil",
         );
+        if (!cellAllowed({ row, col }, this.policy)) tile.setTint(0x879777);
         if (index === undefined) continue;
-        for (let line = 0; line < 4; line++)
-          rect(x - 14 + line * 7, y - 4 + line * 3, 10, 2, 0x794c2f);
         const plot = this.farm.plots[index];
         if (!plot) continue;
         for (const [offset, depth] of [
@@ -451,17 +445,6 @@ export class FarmScene extends Phaser.Scene {
         );
         continue;
       }
-      const base = renderFootprint({
-        row: s.row - 0.5,
-        col: s.col - 0.5,
-        width: item.width,
-        depth: item.height,
-      }).map(worldPoint);
-      const points = base.map((p) => new Phaser.Math.Vector2(p.x, p.y));
-      g.fillStyle(this.season === "winter" ? 0xdce4d9 : 0xd1c5a0);
-      g.fillPoints(points, true);
-      g.lineStyle(1, 0x8d8063, 0.8);
-      g.strokePoints(points, true);
       const distinctFrame = distinctStructures[s.kind];
       const art = buildingArtwork(
         { ...s, width: item.width, height: item.height },
@@ -473,6 +456,7 @@ export class FarmScene extends Phaser.Scene {
         row: s.row + item.height - 0.5,
         col: s.col + item.width - 0.5,
       });
+      this.buildingOccluders.push({ ...top, size: art.size, front });
       const working = !!(s.pendingConstruction || s.pendingUpgrade);
       const stateAtlas = working && distinctFrame === undefined;
       const frame = item.frame;
@@ -583,17 +567,6 @@ export class FarmScene extends Phaser.Scene {
         );
         continue;
       }
-      const base = renderFootprint({
-        row: service.row - 0.5,
-        col: service.col - 0.5,
-        width: service.width,
-        depth: service.height,
-      }).map(worldPoint);
-      const points = base.map((p) => new Phaser.Math.Vector2(p.x, p.y));
-      g.fillStyle(this.season === "winter" ? 0xdce4d9 : 0xd1c5a0);
-      g.fillPoints(points, true);
-      g.lineStyle(1, 0x8d8063, 0.8);
-      g.strokePoints(points, true);
       const art = buildingArtwork(
         service,
         distinctServices[service.id] ?? service.frame,
@@ -604,6 +577,7 @@ export class FarmScene extends Phaser.Scene {
         row: service.row + service.height - 0.5,
         col: service.col + service.width - 0.5,
       });
+      this.buildingOccluders.push({ ...top, size: art.size, front });
       scenery.add(
         this.add
           .image(

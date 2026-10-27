@@ -48,7 +48,7 @@ test("walking uses changing gait frames in both directions and returns to idle",
     const frames = new Set<string>();
     for (let i = 0; i < 18; i++) {
       const frame = (await canvas.getAttribute("data-farmer-frame"))!;
-      expect(frame).toMatch(/^farmer-walk:/);
+      expect(frame).toMatch(/^farmer:(?:[0-9]|1[01])$/);
       expect(Math.floor(Number(frame.split(":")[1]) / 6)).toBe(row);
       frames.add(frame);
       await page.waitForTimeout(35);
@@ -78,4 +78,22 @@ test("idle breathing keeps a stable pose and respects reduced motion", async ({
   await expect
     .poll(async () => Number(await canvas.getAttribute("data-farmer-scale-y")))
     .toBe(58 / 181);
+});
+
+test("farmer sorts ahead of both farmhouse front edges and behind its rear", async ({
+  page,
+}) => {
+  await page.goto("/?instance=validation-farmer-depth");
+  const canvas = page.locator("canvas");
+  await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
+  // The farmhouse's bottom corner projects to y=624. Both side paths have
+  // smaller screen y, so sorting by feet alone would hide the farmer.
+  for (const cell of ["13,15", "12,17", "10,15"]) {
+    await page.locator(`[data-cell="${cell}"]`).press("Enter");
+    await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
+    await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
+    const depth = Number(await canvas.getAttribute("data-farmer-depth"));
+    if (cell === "10,15") expect(depth).toBeLessThan(624);
+    else expect(depth).toBeGreaterThan(624);
+  }
 });

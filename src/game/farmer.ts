@@ -10,7 +10,10 @@ import { cellKey, type Cell, type Layout } from "../micro/world";
 import type { FarmPolicy } from "../contracts/farm-policy";
 import type { FarmerTask } from "./farmer-task";
 
-// Contact points in each 181px source frame, separate from tools and loose soil.
+// Uneven source rows need explicit gutters so complete hats stay in-frame.
+export const farmerRowBounds = [0, 174, 354, 532, 722, 902, 1084, 1250, 1448];
+
+// Contact points in the original 181px grid, separate from tools and loose soil.
 // Keeping feet anchored prevents the generated poses from sliding between cells.
 const contacts = [
   [
@@ -280,34 +283,13 @@ export class Farmer {
       ? Math.min(5, Math.floor((this.elapsed / 1.15) * 6))
       : 0;
     const walkFrame = Math.floor(this.stride) % 6;
-    const walkContacts = [
-      [
-        [219, 342],
-        [197, 342],
-        [182, 343],
-        [178, 342],
-        [183, 342],
-        [172, 342],
-      ],
-      [
-        [214, 355],
-        [197, 351],
-        [182, 350],
-        [180, 352],
-        [182, 352],
-        [174, 351],
-      ],
-    ];
-    const [cx, cy] = walking
-      ? walkContacts[row][walkFrame]
-      : contacts[row][frame];
-    const width = walking ? 362 : 181;
-    const height = walking ? (row ? 374 : 348) : 181;
+    const pose = walking ? walkFrame : frame;
+    const [cx, originalCy] = contacts[row][pose];
+    const width = 181;
+    const height = farmerRowBounds[row + 1] - farmerRowBounds[row];
+    const cy = originalCy + row * 181 - farmerRowBounds[row];
     this.art
-      .setTexture(
-        walking ? "farmer-walk" : "farmer",
-        row * 6 + (walking ? walkFrame : frame),
-      )
+      .setTexture("farmer", row * 6 + pose)
       // One stable idle drawing breathes continuously, with its boots fixed at the origin.
       .setScale(
         58 / width,
