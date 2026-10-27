@@ -57,6 +57,8 @@ The player's final farm and relationships should tell the story of the life they
 
 ## Art Direction
 
+Use [the concept art](docs/images/art-direction.png) as the primary visual reference for palette, crop and animal silhouettes, buildings, seasonal variation, and UI styling. It is an art reference, not a gameplay specification; preserve the fixed farm-management perspective described below.
+
 **Visual style:** Classic FarmVille's presentation and layout, rendered in a charming, polished pixel-art aesthetic inspired by Stardew Valley.
 
 - Fixed isometric or 2.5D farm overview.
