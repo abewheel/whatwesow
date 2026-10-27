@@ -52,7 +52,14 @@ test("isolated domain editors compose, reject invalid edits, and persist", async
     "Saved on this browser",
   );
   await page.getByLabel("Work on").selectOption("micro");
-  await page.getByLabel("Game state JSON").fill('{"coins":777,"year":40}');
+  await page.getByLabel("Game state JSON").fill(
+    JSON.stringify({
+      coins: 777,
+      year: 40,
+      plots: Array(9).fill(null),
+      soilLevel: 0,
+    }),
+  );
   await page.getByRole("button", { name: "Apply state" }).click();
   await expect(page.locator("#season")).toContainText(
     "Year 1 · spring · 777 coins",

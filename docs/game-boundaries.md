@@ -4,14 +4,14 @@ Start with [development](development.md) to run the game. For state recipes and 
 
 | Work | Owner | Entry point |
 | --- | --- | --- |
-| Money, future crops, plots, buildings, farming actions | Micro builder | `src/micro/state.ts` |
+| Money, crops, plots, soil improvements, farming actions | Micro builder | `src/micro/state.ts` |
 | Calendar, future dialogue, choices, community, legacy | Macro builder | `src/macro/state.ts` |
 | Save schema, coordination between domains | Shared, agree before changing | `src/game/state.ts` |
 | Farm drawing | Micro presentation | `src/game/scene.ts` |
 | Startup, persistence, shared HTML | Shared | `src/main.ts`, `src/storage/` |
 | Playtest editor | Shared infrastructure | `src/dev/` |
 
-The game currently has a rendering shell, a coin balance, and a calendar. These boundaries establish ownership for the next gameplay work; there are no farming actions or narrative transitions yet.
+The [micro game](micro-game.md) supports planting, growth, harvests, land expansion, and soil improvements. Macro currently owns a calendar; narrative transitions are still to come.
 
 ## Domain contract
 
@@ -21,9 +21,9 @@ ESLint blocks imports from the other domain, integration, storage, development t
 
 ## Integration contract
 
-`GameState` is the version 1 save envelope. It stays flat for existing save compatibility; do not persist separate domain saves. `readDomain` projects a domain, and `replaceDomain` validates an edit and merges only owned fields into the latest whole state. Neither mutates its input.
+`GameState` is the version 2 save envelope. Integration migrates version 1 saves while preserving coins and calendar. Do not persist separate domain saves. `readDomain` projects a domain, and `replaceDomain` validates an edit and merges only owned fields into the latest whole state. Neither mutates its input.
 
-The scene receives only the calendar shape it needs. UI and storage coordinate through integration. When a feature spans both domains, add an explicit typed input/output in the integration layer and test the resulting whole-state transition. For example, a future season transition can pass the calendar and authored farming modifiers into a pure farming rule, then validate both outputs before saving once. Do not let narrative code directly edit farming fields or let a scene advance the calendar.
+The scene receives micro state and calendar for drawing. UI and storage coordinate through integration. When a feature spans both domains, add an explicit typed input/output in the integration layer and test the resulting whole-state transition. For example, a future season transition can pass the calendar and authored farming modifiers into a pure farming rule, then validate both outputs before saving once. Do not let narrative code directly edit farming fields or let a scene advance the calendar.
 
 Agree on new shared inputs, effects, save migrations, and shared UI changes before implementing them. Keep effects concrete, such as a price multiplier or land availability, and define their defaults, timing, and bounds with tests. Avoid adding speculative event buses or generic effect systems before a playable feature needs them.
 

@@ -248,3 +248,83 @@ button:hover,
     padding: 7px;
   }
 }
+#farm {
+  position: relative;
+}
+.plot-hit {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.plot-hit:hover {
+  background: #ffedaf55;
+}
+.plot-hit:focus-visible {
+  background: #ffedaf99;
+  outline: none;
+}
+.farm-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 18px;
+  border: 2px solid var(--wood);
+  background: var(--paper);
+  margin-top: 12px;
+}
+#crop-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+#crop-options button {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+#crop-options span {
+  font: 12px/1.5 system-ui;
+}
+#crop-options [aria-pressed="true"] {
+  background: #e0e7ad;
+  border-color: #397244;
+}
+.work-tools {
+  flex: 1;
+  align-self: center;
+}
+.work-tools button {
+  margin: 4px;
+}
+.work-tools p,
+.work-tools small {
+  font: 12px/1.5 system-ui;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+@media (max-width: 600px) {
+  .farm-tools {
+    padding: 12px;
+    gap: 12px;
+  }
+  .field-note p {
+    font-size: 11px;
+  }
+}
+.farm-card {
+  height: calc(100svh - 340px);
+}
+.farm-tools {
+  margin: 0 0 12px;
+}
+button[hidden] {
+  display: none;
+}

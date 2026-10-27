@@ -10,19 +10,27 @@ import {
 } from "../macro/state";
 export { seasons } from "../macro/state";
 
-// Keep the existing save format stable. Only this integration layer joins domains.
-export type GameState = { version: 1 } & MicroState & MacroState;
+// Only integration joins domains and migrates older save envelopes.
+export type GameState = { version: 2 } & MicroState & MacroState;
 export const initialState = (): GameState => ({
-  version: 1,
+  version: 2,
   ...initialMicroState(),
   ...initialMacroState(),
 });
 export function parseState(value: unknown): GameState {
   if (!value || typeof value !== "object")
     throw new Error("State must be an object.");
-  if ((value as Record<string, unknown>).version !== 1)
-    throw new Error("Use version 1.");
-  return { version: 1, ...parseMicroState(value), ...parseMacroState(value) };
+  const saved = value as Record<string, unknown>;
+  if (saved.version === 1) {
+    return {
+      version: 2,
+      ...initialMicroState(),
+      coins: parseLegacyCoins(saved.coins),
+      ...parseMacroState(saved),
+    };
+  }
+  if (saved.version !== 2) throw new Error("Use version 1 or 2.");
+  return { version: 2, ...parseMicroState(value), ...parseMacroState(value) };
 }
 export type Domain = "micro" | "macro";
 export function readDomain(
@@ -40,4 +48,10 @@ export function replaceDomain(
     ...state,
     ...(domain === "micro" ? parseMicroState(value) : parseMacroState(value)),
   });
+}
+
+function parseLegacyCoins(coins: unknown): number {
+  if (!Number.isSafeInteger(coins) || Number(coins) < 0)
+    throw new Error("Use a nonnegative whole coin balance.");
+  return coins as number;
 }

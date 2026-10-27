@@ -1,6 +1,25 @@
 import Phaser from "phaser";
 import type { MacroState } from "../macro/state";
 
+import { crops, initialMicroState, type MicroState } from "../micro/state";
+export type PlotTarget = {
+  index: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+const cells = Array.from({ length: 49 }, (_, i) => ({
+  row: Math.floor(i / 7),
+  col: i % 7,
+})).sort(
+  (a, b) =>
+    Math.max(Math.abs(a.row - 3), Math.abs(a.col - 3)) -
+      Math.max(Math.abs(b.row - 3), Math.abs(b.col - 3)) ||
+    a.row - b.row ||
+    a.col - b.col,
+);
+
 const seasons = {
   spring: {
     grass: 0x7ea75a,
@@ -36,6 +55,8 @@ export class FarmScene extends Phaser.Scene {
   private ground?: Phaser.GameObjects.Graphics;
   private scenery?: Phaser.GameObjects.Container;
   private season: MacroState["season"] = "spring";
+  private farm = initialMicroState();
+  onLayout?: (targets: PlotTarget[]) => void;
   constructor() {
     super("farm");
   }
@@ -64,8 +85,9 @@ export class FarmScene extends Phaser.Scene {
     this.draw();
     this.scale.on("resize", this.draw, this);
   }
-  setState(state: MacroState) {
+  setState(state: MacroState & MicroState) {
     this.season = state.season;
+    this.farm = state;
     if (this.ground) this.draw();
   }
   private draw() {
@@ -180,30 +202,48 @@ export class FarmScene extends Phaser.Scene {
     sprite(1, cx + 100, cy - 120, 190);
     sprite(0, cx - 109, cy - 121, 216);
     sprite(4, cx - 258, cy - 55, 137);
-    // The playable acre stays unobstructed. Fine furrows follow the tile axes.
-    const tw = 34,
-      th = 17;
-    for (let row = 0; row < 7; row++)
-      for (let col = 0; col < 7; col++) {
-        const x = cx + ((col - row) * tw) / 2,
-          y = cy + ((col + row - 4) * th) / 2;
-        diamond(x, y + 3, tw - 1, th - 1, 0x64472e);
-        diamond(x, y, tw - 2, th - 2, p.soil);
-        for (let line = 0; line < 5; line++) {
-          const fx = x - 10 + line * 4,
-            fy = y - 3 + line * 2;
-          rect(fx, fy, 7, 1, 0x794c2f);
-          rect(fx, fy + 1, 5, 1, winter ? 0xa49780 : 0xba8751);
+    const tileW = Math.min(34, (w - 30) / 8),
+      tileH = tileW / 2;
+    const targets: PlotTarget[] = [];
+    // Draw back to front while retaining stable plot IDs as land expands.
+    const ordered = cells
+      .map((cell, index) => ({ ...cell, index }))
+      .sort((a, b) => a.row + a.col - b.row - b.col);
+    for (const { row, col, index } of ordered) {
+      const x = cx + ((col - row) * tileW) / 2;
+      const y = cy + ((col + row - 4) * tileH) / 2;
+      const unlocked = index < this.farm.plots.length;
+      diamond(x, y + 3, tileW - 1, tileH - 1, unlocked ? 0x6c492f : p.shade);
+      diamond(x, y, tileW - 2, tileH - 2, unlocked ? p.soil : p.grass);
+      if (!unlocked) continue;
+      targets.push({
+        index,
+        x: x * scale,
+        y: y * scale,
+        width: tileW * scale,
+        height: tileH * scale,
+      });
+      for (let line = 0; line < 3; line++)
+        rect(x - 5 + line * 4, y - 2 + line * 2, 5, 1, 0x805333);
+      const plot = this.farm.plots[index];
+      if (plot) {
+        const ready = plot.growth === crops[plot.crop].steps;
+        for (const offset of [-7, 0, 7]) {
+          const stem = 3 + plot.growth * 3;
+          rect(x + offset, y - stem, 2, stem, 0x397244);
+          rect(x + offset - 3, y - stem + 1, 4, 2, 0x73a448);
+          if (ready) {
+            rect(x + offset - 2, y - stem - 4, 6, 6, crops[plot.crop].color);
+            rect(x + offset - 1, y - stem - 4, 2, 2, 0xffedaf);
+          }
         }
-        for (let dot = 0; dot < 7; dot++)
-          rect(
-            x - 8 + noise(row * 49 + col * 7 + dot) * 16,
-            y - 2 + noise(dot, col + row) * 4,
-            1,
-            1,
-            0xceb07b,
-          );
+        if (ready) {
+          rect(x + 11, y - 14, 2, 5, 0xffedaf);
+          rect(x + 9, y - 12, 6, 1, 0xffedaf);
+        }
       }
+    }
+    this.onLayout?.(targets);
     // Picket fencing follows the near edge of the isometric field.
     for (let i = 0; i < 9; i++) {
       const x = cx - 137 + i * 18,
