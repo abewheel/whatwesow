@@ -10,33 +10,31 @@ import { actOnFarm, growCrops, completeUpgrades } from "./rules";
 import {
   buildings,
   canPlace,
-  upgradeTurn,
   seasonalIncome,
   type BuildingKind,
 } from "./world";
+function establishedFarm() {
+  return parseMicroState({
+    ...initialMicroState(),
+    harvests: { turnip: 300, carrot: 1, corn: 12 },
+    opportunities: ["well", "market", "hall", "greenhouse"],
+  });
+}
 describe("estate construction", () => {
   it.each(Object.keys(buildings) as BuildingKind[])(
     "builds and upgrades %s only at its milestones",
     (kind) => {
       let state: MicroState = {
-        ...initialMicroState(),
+        ...establishedFarm(),
         coins: 1000000,
         structures: [],
       };
       const item = buildings[kind];
-      if (item.turn > 1)
-        expect(() =>
-          actOnFarm(
-            state,
-            { type: "build", kind, cell: { row: 0, col: 0 } },
-            item.turn - 1,
-          ),
-        ).toThrow(/Unlock/);
       const original = state;
       state = actOnFarm(
         state,
         { type: "build", kind, cell: { row: 0, col: 0 } },
-        item.turn,
+        1,
       ).state;
       expect(original.structures).toHaveLength(0);
       expect(state.coins).toBe(1000000 - item.cost);
@@ -44,11 +42,12 @@ describe("estate construction", () => {
       state = completeUpgrades(state);
       const id = state.structures[0].id;
       for (let level = 1; level < item.levels; level++) {
-        const turn = upgradeTurn(kind, level);
-        expect(() =>
-          actOnFarm(state, { type: "upgrade", id }, turn - 1),
-        ).toThrow(/unlocks/);
-        state = actOnFarm(state, { type: "upgrade", id }, turn).state;
+        expect(() => actOnFarm(state, { type: "upgrade", id }, 159)).toThrow(
+          /Harvest/,
+        );
+        state.harvests.turnip += 12 * level;
+        state.harvests.corn += 12 * level;
+        state = actOnFarm(state, { type: "upgrade", id }, 1).state;
         expect(state.structures[0].level).toBe(level);
         expect(state.structures[0].pendingUpgrade).toBe(true);
         state = completeUpgrades(state);
@@ -60,7 +59,7 @@ describe("estate construction", () => {
     },
   );
   it("rejects overlaps, edges, duplicate buildings and unavailable funds without charging", () => {
-    const start = { ...initialMicroState(), coins: 1000 };
+    const start = { ...establishedFarm(), coins: 1000 };
     const built = actOnFarm(start, {
       type: "build",
       kind: "shed",
@@ -94,7 +93,7 @@ describe("estate construction", () => {
     expect(start.coins).toBe(1000);
   });
   it("moves structures for free and preserves their level and effect", () => {
-    let state = { ...initialMicroState(), coins: 1000 };
+    let state = { ...establishedFarm(), coins: 1000 };
     state = actOnFarm(state, {
       type: "build",
       kind: "shed",
@@ -102,6 +101,7 @@ describe("estate construction", () => {
     }).state;
     const id = state.structures.at(-1)!.id;
     state = completeUpgrades(state);
+    state.harvests.turnip += 12;
     state = actOnFarm(state, { type: "upgrade", id }, 9).state;
     state = completeUpgrades(state);
     const moved = actOnFarm(
@@ -116,8 +116,8 @@ describe("estate construction", () => {
       actOnFarm(moved, { type: "move", id, cell: moved.plotCells[0] }),
     ).toThrow(/occupied/);
   });
-  it("applies building bonuses and market income", () => {
-    let state = { ...initialMicroState(), coins: 100000 };
+  it("applies building bonuses and orchard income", () => {
+    let state = { ...establishedFarm(), coins: 100000 };
     for (const [i, kind] of (
       [
         "shed",
@@ -148,7 +148,7 @@ describe("estate construction", () => {
     expect(state.plots[0]?.growth).toBe(2);
   });
   it("validates imported footprints, IDs, and layout sizes", () => {
-    const start = initialMicroState();
+    const start = establishedFarm();
     for (const patch of [
       { plotCells: [] },
       { plotCells: Array(9).fill({ row: 16, col: 16 }) },
@@ -159,7 +159,7 @@ describe("estate construction", () => {
       expect(() => parseMicroState({ ...start, ...patch })).toThrow();
   });
   it("continues plot expansion beyond the old 49-plot limit", () => {
-    let state = { ...initialMicroState(), coins: 100000 };
+    let state = { ...establishedFarm(), coins: 100000 };
     for (let i = 9; i < 55; i++)
       state = actOnFarm(state, { type: "expand" }).state;
     expect(state.plots).toHaveLength(55);
@@ -169,7 +169,7 @@ describe("estate construction", () => {
   });
 });
 it("supports the full 128-square estate and rejects footprints beyond it", () => {
-  const start = { ...initialMicroState(), coins: 100000 };
+  const start = { ...establishedFarm(), coins: 100000 };
   const far = actOnFarm(
     start,
     { type: "build", kind: "barn", cell: { row: 125, col: 125 } },

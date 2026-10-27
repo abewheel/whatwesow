@@ -7,7 +7,6 @@ export type FarmPolicy = {
   maxPlots?: number;
   costMultiplier?: number;
   productionMultiplier?: number;
-  unlockTurns?: Record<string, number>;
   allowWork?: boolean;
 };
 export function parseFarmPolicy(value: unknown): FarmPolicy {
@@ -50,20 +49,13 @@ export function parseFarmPolicy(value: unknown): FarmPolicy {
       throw new Error("Invalid blocked building list.");
     p.blockedBuildings = [...s.blockedBuildings] as string[];
   }
-  for (const key of ["buildingLimits", "unlockTurns"] as const)
+  for (const key of ["buildingLimits"] as const)
     if (s[key] !== undefined) {
       const record = s[key];
       if (!record || typeof record !== "object" || Array.isArray(record))
         throw new Error("Invalid policy limits.");
       const entries = Object.entries(record);
-      if (
-        entries.some(
-          ([, v]) =>
-            !Number.isSafeInteger(v) ||
-            v < (key === "unlockTurns" ? 1 : 0) ||
-            (key === "unlockTurns" && v > 160),
-        )
-      )
+      if (entries.some(([, v]) => !Number.isSafeInteger(v) || v < 0))
         throw new Error("Invalid policy limit value.");
       p[key] = Object.fromEntries(entries);
     }

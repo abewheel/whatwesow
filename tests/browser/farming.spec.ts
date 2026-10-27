@@ -189,6 +189,14 @@ test("rapid plot clicks and grow steps queue through slow saves", async ({
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
+  await page.getByLabel("Work on").selectOption("micro");
+  await page
+    .getByLabel("Game state JSON")
+    .fill(JSON.stringify({ ...initialMicroState(), opportunities: ["corn"] }));
+  await page.getByRole("button", { name: "Apply state", exact: true }).click();
+  await expect(page.locator("#dev-status")).toHaveText(
+    "State applied and saved.",
+  );
   await page.locator('[data-crop="corn"]').click();
   for (const index of [0, 1, 2])
     await page.locator('[data-plot="' + index + '"]').click();

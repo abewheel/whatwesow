@@ -1,5 +1,15 @@
 import { HarvestFeedback } from "./game/harvest-feedback";
 import { treeStatus } from "./micro/world";
+import {
+  canBuild,
+  canPlant as cropUnlocked,
+  hasOpportunity,
+  opportunities,
+  totalHarvests,
+  upgradeRemaining,
+  upgradeHint,
+  type Opportunity,
+} from "./micro/progression";
 import { WORLD_CELLS, WORLD_SIZE } from "./contracts/world";
 import { turnNumber } from "./macro/state";
 import {
@@ -9,9 +19,7 @@ import {
   cellKey,
   footprint,
   upgradeCost,
-  upgradeTurn,
   seasonalIncome,
-  buildUnlock,
   policyCost,
   policyProduction,
   type Cell,
@@ -52,8 +60,8 @@ app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <div id="estate-controls" class="estate-tools"><button id="next-season">Next season</button><button id="farm-mode" aria-label="Farm tool / cancel build">${icon("seeds")}<span>Farm</span></button><button id="home-view" aria-label="Center farm">${icon("home")}<span>Home</span></button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level" aria-live="polite">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">100%</button></span><details id="land-tools"><summary>Explore land</summary><button id="move-plot">Move a plot</button><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="127" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="127" value="16"></label><button id="go-to-cell">Go to land</button></details><p id="placement-hint">Drag the field or use arrow keys to explore.</p></div><div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Choose seeds, then click an empty plot.</strong><span id="farm-summary" class="sr-only"></span><div id="farm-stats" aria-hidden="true"></div></div>
 <section class="farm-tools" aria-label="Farming tools">
 <div id="tool-panels">
-<section id="panel-plant" class="tool-panel" aria-label="Planting"><div id="crop-options"></div></section>
-<section id="panel-build" class="tool-panel" aria-label="Construction" hidden><div id="build-shop"><div class="build-heading"><span class="eyebrow">Construction</span><button id="expand"></button></div><p id="progression"></p><div id="build-options"></div></div></section>
+<section id="panel-plant" class="tool-panel" aria-label="Planting"><div id="crop-options"></div><p id="crop-opportunity"></p></section>
+<section id="panel-build" class="tool-panel" aria-label="Construction" hidden><div id="build-shop"><div class="build-heading"><span class="eyebrow">Construction</span><button id="expand"></button></div><p id="progression"></p><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></div></section>
 <section id="panel-upgrade" class="tool-panel" aria-label="Upgrades" hidden><div class="upgrade-soil"><button id="improve"></button></div><div class="building-inspector"><p id="selected-building">Select a building on the farm to inspect it.</p><div><button id="upgrade-building" hidden>Upgrade selected building</button><button id="move-building" hidden>Move selected building</button></div></div></section>
 </div>
 <div class="mode-bar"><div class="mode-switch" aria-label="Farm activities"><button id="mode-plant" aria-pressed="true" aria-controls="panel-plant">${icon("seeds")}<span>Plant</span></button><button id="mode-build" aria-pressed="false" aria-controls="panel-build">${icon("build")}<span>Build</span></button><button id="mode-upgrade" aria-pressed="false" aria-controls="panel-upgrade">${icon("improve")}<span>Upgrade</span></button></div><span id="active-tool" role="status">Turnip seeds</span><button id="grow" aria-label="End turn" title="End this turn and advance one season">${icon("grow")}<span>End turn</span></button><button id="work" aria-label="Help with a delivery · +4 coins" title="Help with a delivery · +4 coins" hidden>${icon("harvest")}<span>+4</span>${icon("coin")}</button><button id="collapse-tools" aria-expanded="true" aria-controls="tool-panels" aria-label="Collapse tools" title="Collapse tools"><span aria-hidden="true">⌄</span></button></div>
@@ -682,6 +690,7 @@ const instance = import.meta.env.DEV
 const namespace = import.meta.env.DEV ? `dev-${instance}` : "player";
 let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
 function render() {
+  if (!cropUnlocked(state, selected)) selected = "turnip";
   renderTools();
   document.querySelector("#season")!.innerHTML =
     `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span></span>`;
@@ -693,7 +702,14 @@ function render() {
   document.querySelector("#next-season")!.textContent =
     turn === 160 ? "Final season · 160/160" : `End turn · ${turn}/160`;
   document.querySelector("#progression")!.textContent =
-    `Turn ${turn}/160 · ${state.structures.length} structures · +${policyProduction(seasonalIncome(state), policy)} coins / season`;
+    `Turn ${turn}/160 · ${totalHarvests(state)} harvests · ${state.structures.length} structures · +${policyProduction(seasonalIncome(state), policy)} coins / season`;
+  document.querySelector("#opportunity-notes")!.replaceChildren(
+    ...state.opportunities.map((id) => {
+      const p = document.createElement("p");
+      p.textContent = opportunities[id].story;
+      return p;
+    }),
+  );
   for (const button of document.querySelectorAll<HTMLButtonElement>(
     "[data-build]",
   )) {
@@ -710,16 +726,16 @@ function render() {
     }
     const item = buildings[kind],
       count = state.structures.filter((s) => s.kind === kind).length;
-    const unlock = buildUnlock(kind, policy),
+    const available = canBuild(state, kind),
       cost = policyCost(item.cost, policy),
       limit = policy.buildingLimits?.[kind];
-    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${turn < unlock ? `Unlock turn ${unlock}` : `${count} built`} · ${item.benefit} · ready next season`;
+    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${!available ? opportunities[kind as Opportunity].need : `${count} built`} · ${item.benefit} · ready next season`;
     button.setAttribute("aria-label", label);
     button.title = label;
-    button.innerHTML = `${icon(kind === "oak" || kind === "apple" ? "spring" : "home")}<span>${item.name}<small>${turn < unlock ? `Turn ${unlock}` : `${item.width} × ${item.height} · ${count} built`}</small></span><span class="tool-price">${icon("coin")}${cost.toLocaleString()}</span>`;
+    button.innerHTML = `${icon(kind === "oak" || kind === "apple" ? "spring" : "home")}<span>${item.name}<small>${!available ? opportunities[kind as Opportunity].need : `${item.width} × ${item.height} · ${count} built`}</small></span><span class="tool-price">${icon("coin")}${cost.toLocaleString()}</span>`;
     button.disabled =
       turn === 160 ||
-      turn < unlock ||
+      !available ||
       state.coins < cost ||
       policy.blockedBuildings?.includes(kind) === true ||
       (limit !== undefined && count >= limit);
@@ -740,10 +756,10 @@ function render() {
         !!(inspected.pendingConstruction || inspected.pendingUpgrade),
       );
     const item = buildings[inspected.kind],
-      unlock = upgradeTurn(inspected.kind, inspected.level, policy),
+      remaining = upgradeRemaining(state, inspected),
       cost = policyCost(upgradeCost(inspected), policy);
     document.querySelector("#selected-building")!.textContent =
-      `${item.name} · ${inspected.pendingConstruction ? (isTree(inspected.kind) ? "Growing, ready next season. Benefits start when mature." : "⚒ Ready next season. Benefits start when complete.") : `Level ${inspected.level}/${item.levels}.`} ${inspected.pendingUpgrade ? `Upgrading to level ${inspected.level + 1}, ready next season. ` : ""}${item.benefit}.`;
+      `${item.name} · ${inspected.pendingConstruction ? (isTree(inspected.kind) ? "Growing, ready next season. Benefits start when mature." : "⚒ Ready next season. Benefits start when complete.") : `Level ${inspected.level}/${item.levels}.`} ${inspected.pendingUpgrade ? `Upgrading to level ${inspected.level + 1}, ready next season. ` : ""}${item.benefit}. ${!inspected.pendingConstruction && !inspected.pendingUpgrade && inspected.level < item.levels ? (remaining ? upgradeHint(state, inspected) : "Mara: This building has earned its keep. I can help expand it.") : ""}`;
     upgrade.textContent = inspected.pendingConstruction
       ? isTree(inspected.kind)
         ? "Growing · ready next season"
@@ -752,27 +768,35 @@ function render() {
         ? "⚒ Upgrade underway · ready next season"
         : inspected.level === item.levels
           ? "Fully upgraded"
-          : `Upgrade · ${cost} coins · turn ${unlock} · ready next season`;
+          : `Upgrade · ${cost} coins · ${remaining ? upgradeHint(state, inspected) : "ready next season"}`;
     upgrade.disabled =
       !!inspected.pendingConstruction ||
       !!inspected.pendingUpgrade ||
       turn === 160 ||
       inspected.level === item.levels ||
-      turn < unlock ||
+      remaining > 0 ||
       state.coins < cost ||
       policy.blockedBuildings?.includes(inspected.kind) === true;
   }
 
+  document.querySelector("#crop-opportunity")!.textContent = cropUnlocked(
+    state,
+    "corn",
+  )
+    ? ""
+    : "Eli is looking for a grower. Harvest a turnip and a carrot to hear his offer.";
   for (const button of cropOptions.querySelectorAll<HTMLButtonElement>(
     "button",
   )) {
     const id = button.dataset.crop as CropId;
     button.setAttribute("aria-pressed", String(id === selected));
     const crop = crops[id];
-    const detail = `${crop.name}: ${policyCost(seedCost(state, id), policy)} coins to plant, ${crop.steps} season${crop.steps === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")}, harvest ${policyProduction(harvestValue(state, id), policy)} coins.`;
+    const detail = !cropUnlocked(state, id)
+      ? `${crop.name}: ${opportunities.corn.need}. Eli can find you seeds.`
+      : `${crop.name}: ${policyCost(seedCost(state, id), policy)} coins to plant, ${crop.steps} season${crop.steps === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")}, harvest ${policyProduction(harvestValue(state, id), policy)} coins.`;
     button.querySelector(".seed-price")!.innerHTML =
       `${icon("coin")}${policyCost(seedCost(state, id), policy)}`;
-    button.disabled = !canPlant(id, turn);
+    button.disabled = !cropUnlocked(state, id) || !canPlant(id, turn);
     button.setAttribute("aria-label", detail);
     button.querySelector(".control-detail")!.textContent = detail;
   }
@@ -803,16 +827,17 @@ function render() {
     : state.soilLevel === 3
       ? "Soil fully improved"
       : `Improve soil · ${policyCost(soilCost(state), policy)} coins (+3 / harvest next season)`;
+  const soilOffer = `soil${state.soilLevel + 1}` as Opportunity;
+  const soilAvailable = state.soilLevel < 3 && hasOpportunity(state, soilOffer);
   improve.disabled =
     !!state.pendingSoilUpgrade ||
     turn === 160 ||
-    state.soilLevel === 3 ||
-    state.coins < policyCost(soilCost(state), policy) ||
-    turn < [1, 33, 97][state.soilLevel];
+    !soilAvailable ||
+    state.coins < policyCost(soilCost(state), policy);
   const soilLabel =
     improveLabel +
-    (state.soilLevel < 3 && turn < [1, 33, 97][state.soilLevel]
-      ? ` · unlock turn ${[1, 33, 97][state.soilLevel]}`
+    (state.soilLevel < 3 && !soilAvailable
+      ? ` · ${opportunities[soilOffer].need}`
       : "");
   improve.setAttribute("aria-label", soilLabel);
   improve.title = soilLabel;

@@ -1,3 +1,13 @@
+import {
+  canBuild,
+  canPlant as cropUnlocked,
+  hasOpportunity,
+  opportunities,
+  upgradeHarvests,
+  upgradeRemaining,
+  upgradeHint,
+  type Opportunity,
+} from "./progression";
 import { WORLD_CELLS } from "../contracts/world";
 import { parseFarmPolicy, type FarmPolicy } from "../contracts/farm-policy";
 import {
@@ -9,9 +19,7 @@ import {
   WORLD_SIZE,
   occupiedCells,
   cellKey,
-  upgradeTurn,
   upgradeCost,
-  buildUnlock,
   cellAllowed,
   policyCost,
   policyProduction,
@@ -69,6 +77,8 @@ export function actOnFarm(
     const plot = state.plots[action.plot];
     if (action.type === "plant") {
       if (!Object.hasOwn(crops, action.crop)) throw new Error("Unknown crop.");
+      if (!cropUnlocked(state, action.crop))
+        throw new Error(opportunities.corn.need);
       if (plot) throw new Error("This plot is already planted.");
       const crop = crops[action.crop];
       if (!canPlant(action.crop, turn))
@@ -86,6 +96,7 @@ export function actOnFarm(
         throw new Error("This crop is not ready yet.");
       const value = policyProduction(harvestValue(state, plot.crop), policy);
       state.coins += value;
+      state.harvests[plot.crop]++;
       state.plots[action.plot] = null;
       message = `${crops[plot.crop].name} harvested! +${value} coins.`;
     }
@@ -155,8 +166,8 @@ export function actOnFarm(
       throw new Error("There is no next season to complete construction.");
     if (policy.blockedBuildings?.includes(action.kind))
       throw new Error("This building is restricted by the current policy.");
-    const unlock = buildUnlock(action.kind, policy);
-    if (turn < unlock) throw new Error(`Unlocks on turn ${unlock}.`);
+    if (!canBuild(state, action.kind))
+      throw new Error(opportunities[action.kind as Opportunity].need);
     const limit = policy.buildingLimits?.[action.kind];
     if (
       limit !== undefined &&
@@ -176,6 +187,9 @@ export function actOnFarm(
       level: 1,
       pendingConstruction: true,
       ...(isTree(action.kind) ? { age: 0, product: false } : {}),
+      harvestsAtLevel: upgradeHarvests(state, {
+        kind: action.kind,
+      }),
     });
     message = `${item.name} ${isTree(action.kind) ? "planted" : "construction started"}. Ready next season. −${policyCost(item.cost, policy)} coins.`;
   } else if (action.type === "movePlot") {
@@ -224,9 +238,8 @@ export function actOnFarm(
         throw new Error("This building is fully upgraded.");
       if (policy.blockedBuildings?.includes(building.kind))
         throw new Error("Upgrades are restricted by the current policy.");
-      const unlock = upgradeTurn(building.kind, building.level, policy);
-      if (turn < unlock)
-        throw new Error(`Next upgrade unlocks on turn ${unlock}.`);
+      if (upgradeRemaining(state, building) > 0)
+        throw new Error(upgradeHint(state, building));
       const cost = policyCost(upgradeCost(building), policy);
       if (state.coins < cost)
         throw new Error("Not enough coins to upgrade this.");
@@ -240,9 +253,9 @@ export function actOnFarm(
     if (turn === 160)
       throw new Error("There is no next season to complete this improvement.");
     if (state.soilLevel === 3) throw new Error("Soil is fully improved.");
-    const unlock = [1, 33, 97][state.soilLevel];
-    if (turn < unlock)
-      throw new Error(`Next soil improvement unlocks on turn ${unlock}.`);
+    const offer = `soil${state.soilLevel + 1}` as Opportunity;
+    if (!hasOpportunity(state, offer))
+      throw new Error(opportunities[offer].need);
     const cost = policyCost(soilCost(state), policy);
     if (state.coins < cost)
       throw new Error("Not enough coins to improve soil.");
@@ -250,7 +263,18 @@ export function actOnFarm(
     state.pendingSoilUpgrade = true;
     message = `Soil improvement started. +3 coins per harvest from next season. −${cost} coins.`;
   }
-  return { state: parseMicroState(state), message };
+  const next = parseMicroState(state);
+  const news = next.opportunities.filter(
+    (id) => !current.opportunities?.includes(id),
+  );
+  return {
+    state: next,
+    message:
+      message +
+      (news.length
+        ? ` Farm news: ${[...new Set(news.map((id) => opportunities[id].story.split(":")[0]))].join("; ")} left offers. Read them in Build.`
+        : ""),
+  };
 }
 
 /** Advance crops once when integration ends a seasonal turn. */
@@ -278,6 +302,8 @@ export function growCrops(
 export function completeUpgrades(current: MicroState): MicroState {
   const state = parseMicroState(current);
   for (const building of state.structures) {
+    if (building.pendingConstruction || building.pendingUpgrade)
+      building.harvestsAtLevel = upgradeHarvests(state, building);
     delete building.pendingConstruction;
     if (building.pendingUpgrade) {
       building.level++;

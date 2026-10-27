@@ -1,3 +1,8 @@
+import {
+  earnOpportunities,
+  opportunities,
+  type Opportunity,
+} from "./progression";
 import { WORLD_CELLS } from "../contracts/world";
 import {
   buildings,
@@ -40,6 +45,8 @@ export const crops = {
 export type CropId = keyof typeof crops;
 export type Plot = { crop: CropId; growth: number } | null;
 export type MicroState = {
+  harvests: Record<CropId, number>;
+  opportunities: Opportunity[];
   coins: number;
   plots: Plot[];
   soilLevel: number;
@@ -51,6 +58,8 @@ export type MicroState = {
   nextPlotId: number;
 };
 export const initialMicroState = (): MicroState => ({
+  harvests: { turnip: 0, carrot: 0, corn: 0 },
+  opportunities: [],
   coins: 100,
   plots: Array.from({ length: 9 }, () => null),
   soilLevel: 0,
@@ -155,7 +164,16 @@ export function parseMicroState(value: unknown): MicroState {
         (b.product !== undefined && typeof b.product !== "boolean"))
     )
       throw new Error("Invalid tree age or product.");
+    if (
+      b.harvestsAtLevel !== undefined &&
+      (!Number.isSafeInteger(b.harvestsAtLevel) ||
+        Number(b.harvestsAtLevel) < 0)
+    )
+      throw new Error("Invalid upgrade harvest baseline.");
     return {
+      ...(b.harvestsAtLevel === undefined
+        ? {}
+        : { harvestsAtLevel: b.harvestsAtLevel as number }),
       ...(b.pendingConstruction === true
         ? { pendingConstruction: true as const }
         : {}),
@@ -213,7 +231,41 @@ export function parseMicroState(value: unknown): MicroState {
     s.plotIds.some((id) => id >= Number(s.nextPlotId))
   )
     throw new Error("Plots need unique stable IDs below nextPlotId.");
-  return {
+  const harvests = { turnip: 0, carrot: 0, corn: 0 };
+  if (s.harvests !== undefined) {
+    if (
+      !s.harvests ||
+      typeof s.harvests !== "object" ||
+      Array.isArray(s.harvests)
+    )
+      throw new Error("Invalid harvest history.");
+    for (const crop of Object.keys(harvests) as CropId[]) {
+      const n = (s.harvests as Record<string, unknown>)[crop];
+      if (!Number.isSafeInteger(n) || Number(n) < 0)
+        throw new Error("Invalid harvest count.");
+      harvests[crop] = n as number;
+    }
+    if (
+      !Number.isSafeInteger(Object.values(harvests).reduce((a, b) => a + b, 0))
+    )
+      throw new Error("Invalid harvest total.");
+  }
+  if (
+    s.opportunities !== undefined &&
+    (!Array.isArray(s.opportunities) ||
+      s.opportunities.some(
+        (id) => typeof id !== "string" || !Object.hasOwn(opportunities, id),
+      ))
+  )
+    throw new Error("Invalid farm opportunities.");
+  const result: MicroState = {
+    harvests,
+    opportunities: [
+      ...new Set(
+        (s.opportunities ??
+          (s.harvests === undefined ? ["corn"] : [])) as Opportunity[],
+      ),
+    ],
     ...(s.pendingSoilUpgrade === true
       ? { pendingSoilUpgrade: true as const }
       : {}),
@@ -226,6 +278,8 @@ export function parseMicroState(value: unknown): MicroState {
     plotCells,
     structures,
   };
+  result.opportunities = earnOpportunities(result);
+  return result;
 }
 export const expansionCost = (state: MicroState) =>
   30 + Math.max(0, state.plots.length - 9) * 5;

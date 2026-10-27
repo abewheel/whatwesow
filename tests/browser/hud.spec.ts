@@ -92,7 +92,7 @@ for (const width of [1440, 390]) {
     await page.locator('[data-structure="1"]').click();
     await expect(page.locator("#panel-upgrade")).toBeVisible();
     await expect(page.locator("#selected-building")).toContainText("Farmhouse");
-    await page.locator("#improve").focus();
+    await page.locator("#move-building").focus();
     await page.keyboard.press("Escape");
     await expect(page.locator("#tool-panels")).toBeHidden();
     await expect(page.locator("#mode-upgrade")).toBeFocused();

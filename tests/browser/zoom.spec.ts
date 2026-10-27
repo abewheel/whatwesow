@@ -69,6 +69,17 @@ test("farming, multi-cell building previews and distant placements work at both 
   await expect(page.locator("#season")).toContainText("105 coins");
   await page.locator("#zoom-reset").click();
   for (let i = 0; i < 3; i++) await page.locator("#zoom-in").click();
+  await page.getByLabel("Work on").selectOption("micro");
+  await page.getByRole("button", { name: "Read current state" }).click();
+  const farm = JSON.parse(
+    await page.getByLabel("Game state JSON").inputValue(),
+  );
+  farm.harvests.turnip = 3;
+  await page.getByLabel("Game state JSON").fill(JSON.stringify(farm));
+  await page.getByRole("button", { name: "Apply state", exact: true }).click();
+  await expect(page.locator("#dev-status")).toHaveText(
+    "State applied and saved.",
+  );
   await page.locator("#mode-build").click();
   await page.locator('[data-build="shed"]').click();
   await page.locator('[data-cell="14,18"]').hover();

@@ -18,7 +18,7 @@ The HUD uses Plant, Build, and Upgrade activities in a folding bottom dock. Open
 | Task | Start here | Supporting guide |
 | --- | --- | --- |
 | Crops, prices, soil, farming actions | `src/micro/state.ts`, `src/micro/rules.ts` | [Farming loop](micro-game.md) |
-| Buildings, footprints, placement, unlocks | `src/micro/world.ts` | [Construction](construction.md) |
+| Buildings, footprints, placement, unlocks | `src/micro/world.ts`, `src/micro/progression.ts` | [Construction](construction.md) |
 | Calendar and policy state | `src/macro/state.ts` | [Macro contract](macro-farm-contract.md) |
 | Save migration and cross-domain transitions | `src/game/state.ts` | [Ownership](game-boundaries.md) |
 | Shared grid and policy types | `src/contracts/world.ts`, `src/contracts/farm-policy.ts` | [Ownership](game-boundaries.md) |
@@ -33,7 +33,7 @@ Read [ownership and contracts](game-boundaries.md) before changing rules. Domain
 
 1. Inspect `git status --short` and recent commits so you preserve existing work and catch changes newer than these docs.
 2. Use the Node range and pinned pnpm version in `package.json`; follow [development](development.md) for installation. Launch your own `pnpm dev --instance validation-<task-id>` and keep its printed URL.
-3. Choose the smallest relevant [playtest preset](playtesting.md). Use micro scope to preserve the calendar and policy; use whole-game scope for construction unlock dates. Macro date edits do not pay seasonal income.
+3. Choose the smallest relevant [playtest preset](playtesting.md). Use micro scope to preserve the calendar and policy; use whole-game scope for construction and progression scenarios. Macro date edits do not pay seasonal income.
 4. Run focused tests during edits, then `pnpm validate`. For application changes, exercise every changed path in Playwright on your own ready instance, inspect logs, console and failed requests, and capture and inspect current screenshots for UI changes.
 5. Stop your local instance. Report what changed, checks run, and any remaining blocker. Update the relevant guide when controls, rules, save contracts, or validation commands change.
 

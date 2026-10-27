@@ -83,6 +83,17 @@ test("places plots, trees and structures with footprints, moves and upgrades the
     await page.locator("#next-season").click();
     await expect(page.locator("#next-season")).toContainText(turn + "/160");
   }
+  await page.getByLabel("Work on").selectOption("micro");
+  await page.getByRole("button", { name: "Read current state" }).click();
+  const farm = JSON.parse(
+    await page.getByLabel("Game state JSON").inputValue(),
+  );
+  farm.harvests.turnip += 12;
+  await page.getByLabel("Game state JSON").fill(JSON.stringify(farm));
+  await page.getByRole("button", { name: "Apply state", exact: true }).click();
+  await expect(page.locator("#dev-status")).toHaveText(
+    "State applied and saved.",
+  );
   await page.locator('[data-structure="2"]').click();
   await page.locator("#upgrade-building").click();
   await expect(page.locator("#selected-building")).toContainText("Level 1/3");
@@ -168,7 +179,7 @@ test("late progression and the final seasonal income respect the 160-turn bounda
   );
   await load(page, "legacy");
   await expect(page.locator("#next-season")).toContainText("159/160");
-  await page.locator('[data-structure="10"]').click();
+  await page.locator('[data-structure][aria-label^="Legacy hall"]').click();
   await expect(page.locator("#selected-building")).toContainText("Legacy hall");
   await page.locator("#upgrade-building").click();
   await expect(page.locator("#selected-building")).toContainText("Level 1/3");

@@ -1,9 +1,21 @@
 import { expect, it } from "vitest";
-import { initialMicroState, seedCost, harvestValue } from "./state";
+import {
+  initialMicroState,
+  parseMicroState,
+  seedCost,
+  harvestValue,
+} from "./state";
 import { actOnFarm, growCrops, completeUpgrades } from "./rules";
 import { applyFarmConsequences } from "./consequences";
+function establishedFarm() {
+  return parseMicroState({
+    ...initialMicroState(),
+    harvests: { turnip: 300, carrot: 1, corn: 12 },
+    opportunities: ["well", "market", "hall", "greenhouse"],
+  });
+}
 it("allows repeated builds and aggregates benefits without one-per-type caps", () => {
-  let state = { ...initialMicroState(), coins: 10000 };
+  let state = { ...establishedFarm(), coins: 10000 };
   for (const row of [1, 4, 7, 20])
     state = actOnFarm(
       state,
@@ -16,7 +28,7 @@ it("allows repeated builds and aggregates benefits without one-per-type caps", (
   expect(harvestValue(state, "turnip")).toBe(17);
 });
 it("accepts policy inputs for gates, quantities, land, prices and output", () => {
-  const state = { ...initialMicroState(), coins: 1000 };
+  const state = { ...establishedFarm(), coins: 1000 };
   expect(() =>
     actOnFarm(
       state,
@@ -51,7 +63,7 @@ it("accepts policy inputs for gates, quantities, land, prices and output", () =>
   const early = actOnFarm(
     state,
     { type: "build", kind: "barn", cell: { row: 0, col: 0 } },
-    { turn: 1, policy: { unlockTurns: { barn: 1 }, costMultiplier: 0.5 } },
+    { turn: 1, policy: { costMultiplier: 0.5 } },
   ).state;
   expect(early.coins).toBe(700);
   let planted = actOnFarm(
@@ -70,7 +82,7 @@ it("accepts policy inputs for gates, quantities, land, prices and output", () =>
   ).toBe(996);
 });
 it("removes by stable IDs, revokes land including whole footprints, and stops removed benefits", () => {
-  let state = { ...initialMicroState(), coins: 1000 };
+  let state = { ...establishedFarm(), coins: 1000 };
   state = actOnFarm(state, {
     type: "build",
     kind: "shed",
@@ -118,7 +130,7 @@ it("removes by stable IDs, revokes land including whole footprints, and stops re
   ).toThrow();
 });
 it("relocates planted plots by stable ID without losing crop growth", () => {
-  let state = actOnFarm(initialMicroState(), {
+  let state = actOnFarm(establishedFarm(), {
     type: "plant",
     plot: 0,
     crop: "corn",

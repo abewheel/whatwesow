@@ -17,6 +17,7 @@ it("waters the crop that grew rather than an excluded immature crop", () => {
 it("keeps building dimensions for perimeter routing", () => {
   const previous = initialMicroState();
   previous.coins = 500;
+  previous.harvests.turnip = 3;
   const action = {
     type: "build" as const,
     kind: "shed" as const,

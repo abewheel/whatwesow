@@ -14,7 +14,6 @@ Start with [ownership](game-boundaries.md) and [construction](construction.md). 
 | `maxPlots` | Optional new-plot limit, 0–16,384. Removing existing plots requires an explicit loss or land revocation. |
 | `costMultiplier` | Applied to seeds, new plots, buildings, soil improvements, and upgrades. Costs round up. Default 1; zero supports free construction. |
 | `productionMultiplier` | Applied to harvest and seasonal income totals, rounded down. Default 1; zero supports seizure of output. |
-| `unlockTurns` | Per-kind override for first build turn. Upgrade turns follow that override. Defaults remain in the authored catalog. |
 | `allowWork` | Whether emergency delivery work is allowed. Defaults to true. |
 
 A ban blocks construction and upgrades, while a quota blocks new builds after its count. Neither silently removes existing objects or their benefits. Use losses for confiscation. Land grants apply to every cell of a building footprint.

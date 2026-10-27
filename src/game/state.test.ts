@@ -66,7 +66,12 @@ it("requires complete farm data in version 2", () => {
 });
 it("farm actions compose without changing the macro calendar", async () => {
   const { actOnFarm } = await import("../micro/rules");
-  const start = { ...initialState(), year: 20, season: "fall" as const };
+  const start = {
+    ...initialState(),
+    year: 20,
+    season: "fall" as const,
+    opportunities: ["corn" as const],
+  };
   const next = replaceDomain(
     start,
     "micro",
@@ -111,7 +116,11 @@ it("advances exactly 160 seasons and never pays fruit-tree income automatically"
 it("commits a macro policy and its losses atomically, then enforces it on farming", async () => {
   const { applyMacroChange, farmContext } = await import("./state");
   const { actOnFarm } = await import("../micro/rules");
-  let state = { ...initialState(), coins: 1000 };
+  let state: ReturnType<typeof initialState> = {
+    ...initialState(),
+    coins: 1000,
+    opportunities: ["shed"],
+  };
   state = replaceDomain(
     state,
     "micro",
@@ -155,7 +164,7 @@ it("clears omitted optional macro policy when replacing that domain", () => {
 it("grows crops only across seasonal turns and pays crop coins at harvest", async () => {
   const { advanceSeason, farmContext } = await import("./state");
   const { actOnFarm } = await import("../micro/rules");
-  const start = initialState();
+  const start = { ...initialState(), opportunities: ["corn" as const] };
   const planted = replaceDomain(
     start,
     "micro",
@@ -191,7 +200,12 @@ it("charges upgrades once, persists pending work, then completes before new-turn
   const { advanceSeason, farmContext } = await import("./state");
   const { actOnFarm } = await import("../micro/rules");
   const { seedCost, harvestValue } = await import("../micro/state");
-  let state = { ...initialState(), year: 4, coins: 1000 };
+  let state = {
+    ...initialState(),
+    year: 4,
+    coins: 1000,
+    harvests: { turnip: 30, carrot: 1, corn: 12 },
+  };
   state.structures.push(
     { id: 2, kind: "shed", row: 0, col: 0, level: 1 },
     { id: 3, kind: "apple", row: 0, col: 3, level: 1 },
@@ -238,7 +252,12 @@ it("reserves and saves paid construction, activating benefits only next season",
   const { seasonalIncome } = await import("../micro/world");
   const { advanceSeason, farmContext, applyMacroChange } =
     await import("./state");
-  let state = { ...initialState(), year: 32, coins: 20000 };
+  let state = {
+    ...initialState(),
+    year: 32,
+    coins: 20000,
+    harvests: { turnip: 160, carrot: 1, corn: 12 },
+  };
   for (const [index, kind] of (
     ["shed", "barn", "market", "apple"] as const
   ).entries()) {
@@ -300,7 +319,12 @@ it("harvests mature fruit each fall, keeps the tree, and never pays automaticall
   const { advanceSeason, farmContext } = await import("./state");
   const { actOnFarm } = await import("../micro/rules");
   const { hasRipeFruit } = await import("../micro/world");
-  let state = { ...initialState(), year: 2, coins: 1000 };
+  let state = {
+    ...initialState(),
+    year: 2,
+    coins: 1000,
+    harvests: { turnip: 6, carrot: 0, corn: 0 },
+  };
   state = replaceDomain(
     state,
     "micro",

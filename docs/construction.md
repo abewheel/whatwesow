@@ -2,36 +2,38 @@
 
 The estate is a 128 × 128 grid with 16,384 cells. Plots, buildings, and trees all occupy cells; multi-cell footprints cannot overlap or cross its edge. Every building type can be repeated. There are no one-per-type caps. Money, footprint space, authored unlocks, and any macro policy determine what the player can build.
 
-Choose **Build** in the bottom dock, choose an item, then choose land. The catalog folds away while the placement tool stays active. The footprint preview marks permitted placements. Open **Estate controls** for navigation and **End turn**. **Farm tool / cancel build** returns to planting and harvesting. Click a structure to open **Upgrade**, where you can inspect, upgrade, or move it for free. **Move a plot** moves its growing crop too. Drag the field, scroll, use arrow keys, or use the pan buttons to explore; **Center farm** returns to the starting fields. Open **Explore land**, enter row and column 0–127, then use **Go to land** to jump across the estate. The canvas stays viewport-sized and renders nearby terrain.
+Choose **Build** in the bottom dock, choose an item, then choose land. The catalog folds away while the placement tool stays active. The footprint preview marks permitted placements. Open **Estate controls** for navigation and **Next season**. **Farm tool / cancel build** returns to planting and harvesting. Click a structure to open **Upgrade**, where you can inspect, upgrade, or move it for free. **Move a plot** moves its growing crop too. Drag the field, scroll, use arrow keys, or use the pan buttons to explore; **Center farm** returns to the starting fields. Open **Explore land**, enter row and column 0–127, then use **Go to land** to jump across the estate. The canvas stays viewport-sized and renders nearby terrain.
 
 The dock switches between **Plant**, **Build**, and **Upgrade**. Its chevron folds or opens the tray; Escape folds it and returns keyboard focus to the current activity. Selected seeds still work while folded. Switching activities cancels pending placement or movement. End turn stays available in the mode bar.
 
 Use **Zoom out** and **Zoom in** for 25%–200% views, or **100%** to reset. With the farm focused, `+`, `−`, and `0` do the same. Zoom preserves the view center where map edges allow it, scales click targets and placement previews together, and resets on reload without changing the save.
 
-## Authored track
+## Farming opportunities
 
 Definitions live in `src/micro/world.ts`. Costs are prototype tuning values, with repeated builds charging the same base cost. Benefits add across buildings and their levels, then macro production policy applies.
 
-| Build | First turn | Base cost | Footprint | Effect per level |
+| Build | Milestone | Base cost | Footprint | Effect per level |
 | --- | --- | --- | --- | --- |
-| Farmhouse | 1 | 120, first home provided | 3 × 2 | Home and decoration |
-| Tool shed | 1 | 60 | 2 × 2 | Seeds cost 1 less, minimum 1 before policy |
-| Oak tree | 1 | 15 | 1 × 1 | Acorns each fall after ten years |
-| Apple tree | 5 | 60 | 1 × 1 | 24 coins per level per fall harvest after three years |
-| Irrigation well | 9 | 180 | 2 × 2 | 1 extra grow step and 1 extra harvest coin |
-| Harvest barn | 25 | 600 | 3 × 2 | 2 extra harvest coins |
-| Grain mill | 49 | 1,800 | 3 × 3 | 15 extra coins per corn harvest |
-| Greenhouse | 81 | 4,500 | 3 × 2 | 8 extra harvest coins |
-| Farm market | 121 | 12,000 | 3 × 3 | 150 coins on each season transition |
-| Legacy hall | 145 | 25,000 | 3 × 3 | 30 extra harvest coins |
+| Farmhouse | Available at start | 120, first home provided | 3 × 2 | Home and decoration |
+| Tool shed | 3 harvests | 60 | 2 × 2 | Seeds cost 1 less, minimum 1 before policy |
+| Oak tree | Available at start | 15 | 1 × 1 | Acorns each fall after ten years |
+| Apple tree | 6 harvests | 60 | 1 × 1 | 24 coins per level per fall harvest after three years |
+| Irrigation well | 12 harvests and 10 plots | 180 | 2 × 2 | 1 extra grow step and 1 extra harvest coin |
+| Harvest barn | 24 harvests | 600 | 3 × 2 | 2 extra harvest coins |
+| Grain mill | 12 corn harvests | 1,800 | 3 × 3 | 15 extra coins per corn harvest |
+| Greenhouse | 80 harvests and soil level 1 | 4,500 | 3 × 2 | 8 extra harvest coins |
+| Farm market | 160 harvests, including all three crops | 12,000 | 3 × 3 | 150 coins on each season transition |
+| Legacy hall | 300 harvests and a farm market | 25,000 | 3 × 3 | 30 extra harvest coins |
 
-Production buildings and apple trees have three levels. Level 2 normally unlocks eight turns after their build unlock, and level 3 sixteen turns after it. Legacy hall's final upgrade unlocks on turn 159. An upgrade costs base cost × the new level. Homes and oaks have one level. Soil improvements unlock on turns 1, 33, and 97.
+Turnips and carrots are available at the start. Harvest one of each to receive Eli's corn seed offer. Opportunities arrive as short character notes in the farming status and **Build → Farm news**. Locked items explain their milestones in the existing controls. Offers remain available once earned, even after land or building losses. There is no research currency or separate progression screen.
+
+Production buildings and apple trees have three levels. Each individual building earns level 2 after 12 harvests made since construction completes, and level 3 after 24 more harvests since its last upgrade completes. Mills count only corn harvests. An upgrade costs base cost × the new level. Homes and oaks have one level. Soil improvements need 3, 30, and 90 total harvests, in order, and cost 80, 160, and 240 coins.
 
 Upgrades and soil improvements cost coins when started and finish at the start of the next turn. Their benefits stay at the current level until then. Each building and the soil can have one upgrade underway; different buildings can upgrade together. Pending work survives saving, reloading, and moving a building. Losing a building also loses its pending upgrade, without a refund. New construction also charges immediately and finishes next season. Its footprint stays reserved while work is underway, but its benefits remain inactive. Buildings use unfinished timber-and-stone artwork, with a work symbol and grey name while construction or an upgrade is pending. Trees start as saplings and grow over multiple years, with visible sapling, growing, and mature stages. The starting farmhouse and structures in older saves are already complete.
 
 **End turn** advances one season, grows crops using the previous turn's irrigation, completes construction and upgrades, then pays seasonal market income at the completed levels. Mature trees produce in fall; click a ripe tree in Plant mode to harvest it. The tree stays planted and produces again the following fall. Unpicked fruit keeps without stacking, and fruit earns no automatic income. Choose Upgrade before clicking a tree to inspect or move it. Seed discounts and harvest bonuses apply to actions in the new turn. Turn 160 is year 40, winter; the calendar stops there, so new construction and upgrades cannot start in that final season. There is no end-of-life narrative in this slice.
 
-This is an authored default progression, not a claim that the full 40-year economy is balanced. Tune unlocks, costs, and effects here as the macro experience develops; farming rules consume its turn and policy instead of storing a second clock.
+Tune milestones in `src/micro/progression.ts`. Calendar advancement never earns farming opportunities. Prices and effects are prototype tuning values.
 
 ## System boundaries
 
@@ -44,11 +46,13 @@ This is an authored default progression, not a claim that the full 40-year econo
 
 Micro state owns placed objects, crops, soil, and money. Macro owns time and optional `farmPolicy`. Both domains import shared contracts, never each other's implementation. Use [the macro integration contract](macro-farm-contract.md) when adding narrative restrictions or losses.
 
+Harvest counts, earned opportunities, and each building’s harvest baseline persist in version 3 saves. Older saves default to zero recorded harvests, retain corn seed access and offers for owned structures, and preserve their existing upgrades and soil. Obsolete `unlockTurns` policy fields are ignored on import.
+
 Version 3 saves carry `plotCells`, `plotIds`, `nextPlotId`, `structures`, and `nextStructureId` alongside crops and money. IDs survive moves and removals; counters never go backward or reuse removed IDs. Plots retain their array indices only until a removal. Narrative events must target stable IDs. Version 1 and 2 saves migrate, retaining coins, date, crop growth, and soil level.
 
 ## Iterate
 
-Whole-game presets cover **Building · turn 1**, **Community · turn 25**, **Industry · turn 81**, **Legacy · turn 159**, **Policy · land and building loss**, and **Large estate · far corner**. They include affordable money and existing structures. Use the whole-game scope when checking unlock dates. The micro scope intentionally preserves the live date and policy.
+Whole-game presets cover **Building · turn 1**, **Community · turn 25**, **Industry · turn 81**, **Legacy · turn 159**, **Policy · land and building loss**, and **Large estate · far corner**. They include affordable money and existing structures. Presets include farming history appropriate to their farms. Use the whole-game scope to check calendar behavior. The micro scope intentionally preserves the live date and policy.
 
 Run `pnpm test:micro` for construction, repeated effects, losses, relocation, and policies; `pnpm test:integration` for migration and macro consequences; `pnpm test:browser` for placement, panning, repeated builds, upgrades, and persistence. Finish with `pnpm validate`.
 

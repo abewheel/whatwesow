@@ -6,7 +6,6 @@ export const buildings = {
   home: {
     name: "Farmhouse",
     cost: 120,
-    turn: 1,
     width: 3,
     height: 2,
     frame: 0,
@@ -18,7 +17,6 @@ export const buildings = {
   shed: {
     name: "Tool shed",
     cost: 60,
-    turn: 1,
     width: 2,
     height: 2,
     frame: 4,
@@ -30,7 +28,6 @@ export const buildings = {
   oak: {
     name: "Oak tree",
     cost: 15,
-    turn: 1,
     width: 1,
     height: 1,
     frame: 5,
@@ -42,7 +39,6 @@ export const buildings = {
   apple: {
     name: "Apple tree",
     cost: 60,
-    turn: 5,
     width: 1,
     height: 1,
     frame: 2,
@@ -54,7 +50,6 @@ export const buildings = {
   well: {
     name: "Irrigation well",
     cost: 180,
-    turn: 9,
     width: 2,
     height: 2,
     frame: 3,
@@ -66,7 +61,6 @@ export const buildings = {
   barn: {
     name: "Harvest barn",
     cost: 600,
-    turn: 25,
     width: 3,
     height: 2,
     frame: 1,
@@ -78,7 +72,6 @@ export const buildings = {
   mill: {
     name: "Grain mill",
     cost: 1800,
-    turn: 49,
     width: 3,
     height: 3,
     frame: 1,
@@ -90,7 +83,6 @@ export const buildings = {
   greenhouse: {
     name: "Greenhouse",
     cost: 4500,
-    turn: 81,
     width: 3,
     height: 2,
     frame: 0,
@@ -102,7 +94,6 @@ export const buildings = {
   market: {
     name: "Farm market",
     cost: 12000,
-    turn: 121,
     width: 3,
     height: 3,
     frame: 4,
@@ -114,7 +105,6 @@ export const buildings = {
   hall: {
     name: "Legacy hall",
     cost: 25000,
-    turn: 145,
     width: 3,
     height: 3,
     frame: 0,
@@ -129,6 +119,7 @@ export type Structure = Cell & {
   id: number;
   kind: BuildingKind;
   level: number;
+  harvestsAtLevel?: number;
   pendingUpgrade?: true;
   pendingConstruction?: true;
   fruitReady?: boolean;
@@ -136,18 +127,6 @@ export type Structure = Cell & {
   product?: boolean;
 };
 export type Layout = { plotCells: Cell[]; structures: Structure[] };
-export const upgradeTurn = (
-  kind: BuildingKind,
-  level: number,
-  policy: FarmPolicy = {},
-) =>
-  Math.min(
-    160,
-    (policy.unlockTurns?.[kind] ?? buildings[kind].turn) + level * 8,
-    buildings[kind].turn === 145 && policy.unlockTurns?.[kind] === undefined
-      ? 159
-      : 160,
-  );
 export const upgradeCost = (structure: Structure) =>
   buildings[structure.kind].cost * (structure.level + 1);
 export function initialPlotCells(count = 9): Cell[] {
@@ -198,8 +177,6 @@ export const cellAllowed = (cell: Cell, policy: FarmPolicy = {}) =>
         cell.row < r.row + r.height &&
         cell.col < r.col + r.width,
     ));
-export const buildUnlock = (kind: BuildingKind, policy: FarmPolicy = {}) =>
-  policy.unlockTurns?.[kind] ?? buildings[kind].turn;
 export const policyCost = (cost: number, policy: FarmPolicy = {}) =>
   Math.ceil(cost * (policy.costMultiplier ?? 1));
 export const policyProduction = (amount: number, policy: FarmPolicy = {}) =>

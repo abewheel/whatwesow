@@ -1,10 +1,7 @@
-import { buildings, type BuildingKind } from "../micro/world";
-import {
-  parseState,
-  initialState,
-  applyMacroChange,
-  type GameState,
-} from "../game/state";
+import { canBuild } from "../micro/progression";
+import { parseState } from "../game/state";
+import { type BuildingKind } from "../micro/world";
+import { initialState, applyMacroChange, type GameState } from "../game/state";
 import { crops, type CropId } from "../micro/state";
 export const farmPresets = [
   "planting",
@@ -69,9 +66,35 @@ export function presetState(id: string): GameState {
           : id === "industry"
             ? 15000
             : 150000;
-    const kinds = (Object.keys(buildings) as BuildingKind[]).filter(
-      (k) => k !== "home" && buildings[k].turn <= turn,
-    );
+    state.harvests = {
+      turnip:
+        id === "homestead"
+          ? 3
+          : id === "community"
+            ? 24
+            : id === "industry"
+              ? 80
+              : 300,
+      carrot: 1,
+      corn: id === "homestead" ? 0 : 12,
+    };
+    state.soilLevel = id === "industry" || id === "legacy" ? 1 : 0;
+    // Presets describe farms with an established history, independent of their date.
+    state.opportunities = parseState(state).opportunities;
+    if (id === "legacy") state.opportunities.push("market", "hall");
+    const kinds = (
+      [
+        "shed",
+        "oak",
+        "apple",
+        "well",
+        "barn",
+        "mill",
+        "greenhouse",
+        "market",
+        "hall",
+      ] as BuildingKind[]
+    ).filter((k) => canBuild(state, k));
     for (const [i, kind] of kinds.entries())
       state.structures.push({
         id: i + 2,
@@ -106,6 +129,9 @@ export function presetState(id: string): GameState {
     });
     state.coins = 31;
   }
-  if (id === "reinvesting") state.coins = 250;
+  if (id === "reinvesting") {
+    state.coins = 250;
+    state.harvests = { turnip: 2, carrot: 1, corn: 0 };
+  }
   return parseState(state);
 }

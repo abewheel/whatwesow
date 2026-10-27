@@ -1387,3 +1387,31 @@ button:not(.plot-hit):disabled {
   min-width: 3ch;
   font-variant-numeric: tabular-nums;
 }
+
+#farm-news {
+  margin: 8px 0;
+  font-size: 13px;
+}
+#opportunity-notes {
+  max-height: 160px;
+  overflow-y: auto;
+}
+#opportunity-notes p {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+#crop-opportunity {
+  margin: 6px 8px 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+#crop-opportunity:empty {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  #panel-build:has(#farm-news[open]) {
+    max-height: max(100px, calc(100svh - 520px));
+  }
+}
