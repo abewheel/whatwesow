@@ -299,6 +299,7 @@ let farmQueue: Promise<void> = Promise.resolve();
 function act(action: FarmAction | { type: "season" }) {
   farmQueue = farmQueue.then(async () => {
     try {
+      const previous = state;
       const result =
         action.type === "season"
           ? advanceSeason(state)
@@ -307,7 +308,9 @@ function act(action: FarmAction | { type: "season" }) {
         action.type === "season"
           ? (result.state as typeof state)
           : replaceDomain(state, "micro", result.state),
+        action.type === "season",
       );
+      if (action.type !== "season") scene.performAction(action, previous);
       message.textContent = result.message;
       if (action.type === "move" || action.type === "movePlot") {
         movingId = null;
@@ -616,7 +619,7 @@ function render() {
   document.querySelector("#farm-summary")!.textContent =
     `${state.plots.length} plots · ${ready} ready to harvest · Soil level ${state.soilLevel}/3`;
 }
-async function apply(next: typeof state) {
+async function apply(next: typeof state, resetFarmer = true) {
   const valid = parseState(next);
   if (!store) throw new Error("Local saves are unavailable.");
   if (saving) throw new Error("A save is in progress. Try again.");
@@ -624,6 +627,7 @@ async function apply(next: typeof state) {
   try {
     await store.save(valid);
     state = valid;
+    if (resetFarmer) scene.resetFarmer();
     render();
     status.textContent = "Saved on this browser";
   } finally {
@@ -666,5 +670,8 @@ document
   });
 if (import.meta.env.DEV) {
   const { mountDevPanel } = await import("./dev/panel");
-  mountDevPanel(() => state, apply);
+  mountDevPanel(
+    () => state,
+    (next) => apply(next),
+  );
 }

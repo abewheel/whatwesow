@@ -1,6 +1,9 @@
 import { project, footprint as renderFootprint, TILE_WIDTH } from "./layout";
 import Phaser from "phaser";
 import { drawBoundary } from "./boundary";
+import { Farmer } from "./farmer";
+import { farmerTaskForAction } from "./farmer-task";
+import type { FarmAction } from "../micro/rules";
 import type { MacroState } from "../macro/state";
 import { crops, initialMicroState, type MicroState } from "../micro/state";
 import {
@@ -33,6 +36,7 @@ const palette = {
   winter: { grass: 0xc6d9cd, light: 0xe7eee0, shade: 0xa4bfb5, soil: 0x8d8070 },
 };
 export class FarmScene extends Phaser.Scene {
+  private farmer?: Farmer;
   private ground?: Phaser.GameObjects.Graphics;
   private scenery?: Phaser.GameObjects.Container;
   private farm = initialMicroState();
@@ -53,6 +57,10 @@ export class FarmScene extends Phaser.Scene {
   preload() {
     this.load.image("woodland", "/art/woodland-seasons.png");
     this.load.image("hedgerow", "/art/hedgerow-seasons.png");
+    this.load.spritesheet("farmer", "/art/farmer-sprites.png", {
+      frameWidth: 181,
+      frameHeight: 181,
+    });
     this.load.image("farm-spring", "/art/farm-atlas.png");
     this.load.image("farm-fall", "/art/farm-atlas-fall.png");
     this.load.image("farm-winter", "/art/farm-atlas-winter.png");
@@ -93,10 +101,24 @@ export class FarmScene extends Phaser.Scene {
       hedges.add(i, 0, frame.x, frame.y, frame.width, frame.height);
     this.ground = this.add.graphics();
     this.scenery = this.add.container();
+    this.farmer = new Farmer(this);
+    this.farmer.setWorld(this.farm, this.policy);
     this.draw();
+  }
+  update(_time: number, delta: number) {
+    this.farmer?.update(delta, projectCell);
+    this.scenery?.sort("depth");
+  }
+  resetFarmer() {
+    this.farmer?.reset();
+  }
+  performAction(action: FarmAction, previous: MicroState) {
+    const task = farmerTaskForAction(action, previous, this.farm, this.policy);
+    if (task) this.farmer?.enqueue(task);
   }
   setState(state: MacroState & MicroState) {
     this.farm = state;
+    this.farmer?.setWorld(state, state.farmPolicy);
     this.policy = state.farmPolicy;
     this.season = state.season;
     if (this.ground) this.draw();
@@ -115,7 +137,9 @@ export class FarmScene extends Phaser.Scene {
       .setZoom(this.view.zoom)
       .setScroll(this.view.x, this.view.y);
     g.clear();
+    if (this.farmer) scenery.remove(this.farmer.view);
     scenery.removeAll(true);
+    if (this.farmer) scenery.add(this.farmer.view);
     this.cameras.main.setBackgroundColor(p.grass);
     const diamond = (x: number, y: number, color: number) => {
       g.fillStyle(color);
@@ -235,7 +259,8 @@ export class FarmScene extends Phaser.Scene {
         this.add
           .image(back.x, front.y - 2, atlas, item.frame)
           .setOrigin(0.5, 0.96)
-          .setDisplaySize(size, size),
+          .setDisplaySize(size, size)
+          .setDepth(front.y),
       );
       const label = this.add
         .text(back.x, front.y + 5, `${item.name} · ${s.level}`, {
@@ -246,6 +271,7 @@ export class FarmScene extends Phaser.Scene {
           padding: { x: 5, y: 3 },
         })
         .setOrigin(0.5, 0);
+      label.setDepth(front.y + 1);
       scenery.add(label);
     }
     if (publishLayout) this.onLayout?.(targets);
