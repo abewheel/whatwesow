@@ -38,7 +38,7 @@ Reserve motion for useful feedback: crop growth, harvest rewards, selected plots
 
 ## Grid and placeable objects
 
-All farm surfaces use a shared 2:1 projection: 36 × 18 logical pixels per tile. Store positions as column and row, never screen offsets. The example property is 18 × 18 tiles. Buildings, trees, garden beds, paths, and soil use the same projection. Stone foundations mark building footprints; artwork sits above the footprint, anchored at its front corner. Draw objects from back to front using their grid depth.
+All farm surfaces use a shared 2:1 projection: 36 × 18 logical pixels per tile. Store positions as column and row, never screen offsets. The playable estate is 128 × 128 tiles, displayed at 64 × 32 pixels per tile in a scrollable world. Buildings, trees, garden beds, paths, and soil use the same projection. Stone foundations mark building footprints; artwork sits above the footprint, anchored at its front corner. Draw objects from back to front using their grid depth.
 
 | Object | Footprint | Intended role |
 | --- | --- | --- |
@@ -49,4 +49,10 @@ All farm surfaces use a shared 2:1 projection: 36 × 18 logical pixels per tile.
 | Orchard or flowering tree | 2 × 2 | Future harvests or decoration |
 | Flower garden | 2 × 3 | Decoration |
 
-These roles describe the design direction, not implemented unlocks. The current placement data in `src/game/layout.ts` is a visual example. Future construction rules, prices, occupancy checks, unlocks, and persisted placements belong in the micro domain. Reuse the projection when that system arrives; replace the example objects with player-owned placements rather than adding screen-positioned scenery. Keep the render footprint explicit and leave open land for expansion. Decorative canopies may overhang their cells, but building bases must remain inside their footprints.
+These roles describe the design direction, not implemented unlocks. The projection is in `src/game/layout.ts`; current construction definitions, footprints, prices, and unlocks are in `src/micro/world.ts`. The renderer consumes player-owned placements. The older example objects in the layout module are fixtures, not the live estate. Keep the render footprint explicit and leave open land for expansion. Decorative canopies may overhang their cells, but building bases must remain inside their footprints.
+
+The [asset inventory](asset-inventory.md) defines the required state families for every building and plant, including maintained, decaying, and dilapidated conditions across all seasons and relevant upgrade or growth stages.
+
+## Estate boundary
+
+Frame the northwest edge with woodland, the northeast edge with a river, the southeast edge with a gravel road, and the southwest edge with a dry-stone wall and cottage hedges. Use the same isometric axes as the land. Keep boundary geometry and tree bases outside the buildable grid, and keep low foreground borders from hiding player structures. Seasonal river colors, reeds, road tracks, hedge flowers, snow caps, and woodland artwork change together. The footbridge joins the road and river at the east corner; a gap in the road fence leaves a visual entrance. These boundaries are scenery, not new movement or construction rules.

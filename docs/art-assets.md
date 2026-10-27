@@ -6,4 +6,16 @@ Created with the built-in image generation tool. Generation brief: a transparent
 
 `farm-atlas-fall.png` and `farm-atlas-winter.png` use the same six-cell layout. Variant prompts preserve the exact objects, cell boundaries, and positions while changing vegetation and ground details. Autumn uses amber and russet leaves with no pink blossoms. Winter uses bare snow-covered branches, snow on roofs and ground footprints, dormant flower boxes, and warm windows.
 
-These are decorative scenery assets. They do not represent purchased buildings, harvestable trees, or game-state changes. Autumn and winter use distinct atlases so foliage and roofs change with the terrain. Summer adds a warm tint to the spring artwork.
+The construction renderer uses these sprites for player-owned structures. Some later building types currently reuse another type’s frame and need distinct artwork. Upgrade levels affect gameplay but still share the base artwork. Autumn and winter use distinct atlases so foliage and roofs change with the terrain. Summer adds a warm tint to the spring artwork.
+
+See the [complete building and plant inventory](asset-inventory.md) for required seasonal, upgrade, growth, and disrepair states, current coverage, and proposed additions.
+
+## Woodland boundary
+
+`public/art/woodland-seasons.png` is a four-cell, two-column atlas: spring and summer on the top row, autumn and winter below. Created with the built-in image generation tool. Prompt: a transparent isometric pixel-art cluster of three non-fruiting woodland trees, including a pine, repeated at the same camera and scale in all four seasons. Use fresh spring growth, deep summer foliage, amber and russet autumn leaves, and bare snowy winter broadleaf branches beside a snowy evergreen. Preserve clustered leaves, textured bark, warm outlines, transparent gutters, and root footprints; omit labels and UI.
+
+The river, road, bridge, wall, and hedges are deterministic seasonal geometry in `src/game/boundary.ts`. Every border remains outside buildable cells and uses the farm’s shared projection. The woodland uses its own four-season artwork rather than reusing orchard fruit trees.
+
+`public/art/hedgerow-seasons.png` uses the same four-season, two-column layout. Built-in image generation prompt: a transparent isometric pixel-art atlas of one short dry-stone wall with three low rounded cottage hedges. Keep the wall on the 2:1 grid axis, with a low silhouette in the bottom half of each cell. Show pink and cream spring flowers, dense green summer foliage with gold and lavender blooms, russet autumn leaves and berries, and sparse snowy winter twigs with no flowers. Preserve irregular shaded stones, leaf clusters, transparent margins, and a consistent pivot.
+
+The hedgerow source has an uneven row gutter. Its four frames use explicit rectangles in the scene loader, cropped to each complete sprite’s vertical bounds and anchored at the bottom. Keep this metadata with the source asset when replacing the sheet; equal-height slicing clips the spring and summer wall ends.

@@ -1,5 +1,6 @@
 import { project, footprint as renderFootprint, TILE_WIDTH } from "./layout";
 import Phaser from "phaser";
+import { drawBoundary } from "./boundary";
 import type { MacroState } from "../macro/state";
 import { crops, initialMicroState, type MicroState } from "../micro/state";
 import {
@@ -9,8 +10,8 @@ import {
   WORLD_SIZE,
   type Cell,
 } from "../micro/world";
-export const WORLD_WIDTH = WORLD_SIZE * 64 + 256,
-  WORLD_HEIGHT = WORLD_SIZE * 32 + 384;
+export const WORLD_WIDTH = WORLD_SIZE * 64 + 512,
+  WORLD_HEIGHT = WORLD_SIZE * 32 + 512;
 // Preserve the shared logical projection; the scrollable view scales tiles to 64px.
 const renderScale = 64 / TILE_WIDTH;
 const worldPoint = (p: { x: number; y: number }) => ({
@@ -50,6 +51,8 @@ export class FarmScene extends Phaser.Scene {
     super("farm");
   }
   preload() {
+    this.load.image("woodland", "/art/woodland-seasons.png");
+    this.load.image("hedgerow", "/art/hedgerow-seasons.png");
     this.load.image("farm-spring", "/art/farm-atlas.png");
     this.load.image("farm-fall", "/art/farm-atlas-fall.png");
     this.load.image("farm-winter", "/art/farm-atlas-winter.png");
@@ -68,6 +71,26 @@ export class FarmScene extends Phaser.Scene {
           source.height / 2,
         );
     }
+    const forest = this.textures.get("woodland"),
+      source = forest.getSourceImage();
+    for (let i = 0; i < 4; i++)
+      forest.add(
+        i,
+        0,
+        ((i % 2) * source.width) / 2,
+        (Math.floor(i / 2) * source.height) / 2,
+        source.width / 2,
+        source.height / 2,
+      );
+    // Explicit atlas rectangles keep complete wall ends and exclude row bleed.
+    const hedges = this.textures.get("hedgerow");
+    for (const [i, frame] of [
+      { x: 0, y: 279, width: 627, height: 376 },
+      { x: 627, y: 271, width: 627, height: 396 },
+      { x: 0, y: 753, width: 627, height: 407 },
+      { x: 627, y: 771, width: 627, height: 393 },
+    ].entries())
+      hedges.add(i, 0, frame.x, frame.y, frame.width, frame.height);
     this.ground = this.add.graphics();
     this.scenery = this.add.container();
     this.draw();
@@ -136,28 +159,7 @@ export class FarmScene extends Phaser.Scene {
       this.season === "fall" || this.season === "winter"
         ? `farm-${this.season}`
         : "farm-spring";
-    const image = (frame: number, x: number, y: number, size: number) =>
-      visible(x, y)
-        ? scenery.add(
-            this.add
-              .image(x, y, atlas, frame)
-              .setOrigin(0.5, 1)
-              .setDisplaySize(size, size),
-          )
-        : undefined;
-    // Seasonal artwork frames the estate outside the buildable grid.
-    for (let i = 0; i < WORLD_SIZE / 2; i++) {
-      const a = projectCell({ row: -3, col: i * 2 }),
-        b = projectCell({ row: i * 2, col: WORLD_SIZE + 3 });
-      image(i % 3 === 0 ? 5 : 2, a.x, a.y, 135);
-      image(i % 3 === 0 ? 5 : 2, b.x, b.y, 135);
-      const c = projectCell({ row: WORLD_SIZE + 3, col: i * 2 }),
-        d = projectCell({ row: i * 2, col: -3 });
-      image(i % 3 === 0 ? 5 : 2, c.x, c.y, 135);
-      image(i % 3 === 0 ? 5 : 2, d.x, d.y, 135);
-    }
-    const home = projectCell({ row: -2, col: 10 });
-    image(0, home.x, home.y, 190);
+    drawBoundary(this, g, scenery, this.season, projectCell, this.view);
     const plotMap = new Map(this.farm.plotCells.map((c, i) => [cellKey(c), i]));
     const targets: PlotTarget[] = [];
     for (let sum = 0; sum < WORLD_SIZE * 2; sum++)
