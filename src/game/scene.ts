@@ -1,4 +1,12 @@
 import {
+  buildingArtwork,
+  hitsBuildingArtwork,
+  distinctStructures,
+  distinctServices,
+  distinctBuildingRects,
+  distinctBuildingRect,
+} from "./building-artwork";
+import {
   treeFrames,
   productFrames,
   productPositions,
@@ -62,6 +70,41 @@ export class FarmScene extends Phaser.Scene {
       this.draw(false);
     }
   }
+  hitsBuilding(
+    point: { x: number; y: number },
+    lot: Cell & { width: number; height: number },
+    frame: number,
+    working = false,
+    distinctFrame?: number,
+  ) {
+    const selectedFrame = distinctFrame ?? frame;
+    const distinct = distinctFrame !== undefined;
+    if (!hitsBuildingArtwork(point, lot, selectedFrame, projectCell, distinct))
+      return false;
+    const atlas = distinct
+      ? "distinct-buildings"
+      : working
+        ? "farm-states"
+        : this.buildingAtlas;
+    const source = this.textures.getFrame(atlas, selectedFrame);
+    if (!source) return false;
+    const art = buildingArtwork(lot, selectedFrame, distinct);
+    const top = projectCell(art);
+    // Transparent roof corners must not steal clicks from neighboring plots.
+    return (
+      this.textures.getPixelAlpha(
+        Math.floor(((point.x - top.x) / art.size) * source.cutWidth),
+        Math.floor(((point.y - top.y) / art.size) * source.cutHeight),
+        atlas,
+        selectedFrame,
+      ) > 32
+    );
+  }
+  private get buildingAtlas() {
+    return this.season === "fall" || this.season === "winter"
+      ? `farm-${this.season}`
+      : "farm-spring";
+  }
   onLayout?: (targets: PlotTarget[]) => void;
   constructor() {
     super("farm");
@@ -109,26 +152,10 @@ export class FarmScene extends Phaser.Scene {
         );
     const distinct = this.textures.get("distinct-buildings");
     const source = distinct.getSourceImage();
-    const buildingFrames = [
-      [40, 20, 365, 410],
-      [405, 55, 435, 380],
-      [840, 70, 440, 370],
-      [0, 435, 405, 400],
-      [425, 500, 415, 330],
-      [840, 480, 440, 360],
-      [20, 880, 380, 310],
-      [395, 860, 445, 330],
-      [840, 840, 440, 360],
-    ];
-    for (const [i, [x, y, width, height]] of buildingFrames.entries())
-      distinct.add(
-        i,
-        0,
-        (x * source.width) / 1280,
-        (y * source.height) / 1280,
-        (width * source.width) / 1280,
-        (height * source.height) / 1280,
-      );
+    for (let i = 0; i < distinctBuildingRects.length; i++) {
+      const frame = distinctBuildingRect(i, source.width, source.height);
+      distinct.add(i, 0, frame.x, frame.y, frame.width, frame.height);
+    }
     this.harvestEffects = this.add.container().setDepth(100000);
 
     const cropTexture = this.textures.get("crop-stages");
@@ -323,10 +350,7 @@ export class FarmScene extends Phaser.Scene {
       if (visible(x, y, 0))
         rect(Math.floor(x), Math.floor(y), 2, 1, i % 4 ? p.light : p.shade);
     }
-    const atlas =
-      this.season === "fall" || this.season === "winter"
-        ? `farm-${this.season}`
-        : "farm-spring";
+    const atlas = this.buildingAtlas;
     drawBoundary(this, g, scenery, this.season, projectCell, this.view);
     const plotMap = new Map(this.farm.plotCells.map((c, i) => [cellKey(c), i]));
     const targets: PlotTarget[] = [];
@@ -427,37 +451,30 @@ export class FarmScene extends Phaser.Scene {
         width: item.width,
         depth: item.height,
       }).map(worldPoint);
-      if (item.width > 1) {
-        const points = base.map((p) => new Phaser.Math.Vector2(p.x, p.y));
-        g.fillStyle(this.season === "winter" ? 0xdce4d9 : 0xd1c5a0);
-        g.fillPoints(points, true);
-        g.lineStyle(1, 0x8d8063, 0.8);
-        g.strokePoints(points, true);
-      }
-      const back = projectCell({
-        row: s.row + (item.height - 1) / 2,
-        col: s.col + (item.width - 1) / 2,
-      });
+      const points = base.map((p) => new Phaser.Math.Vector2(p.x, p.y));
+      g.fillStyle(this.season === "winter" ? 0xdce4d9 : 0xd1c5a0);
+      g.fillPoints(points, true);
+      g.lineStyle(1, 0x8d8063, 0.8);
+      g.strokePoints(points, true);
+      const distinctFrame = distinctStructures[s.kind];
+      const art = buildingArtwork(
+        { ...s, width: item.width, height: item.height },
+        distinctFrame ?? item.frame,
+        distinctFrame !== undefined,
+      );
+      const top = projectCell(art);
       const front = projectCell({
         row: s.row + item.height - 0.5,
         col: s.col + item.width - 0.5,
       });
-      const size =
-        (((item.width + item.height) * 64) / 2) *
-        (item.width === 1 ? 1.08 : 0.94);
       const working = !!(s.pendingConstruction || s.pendingUpgrade);
-      const distinctFrame = (
-        { mill: 0, greenhouse: 1, market: 2, hall: 3 } as Partial<
-          Record<string, number>
-        >
-      )[s.kind];
       const stateAtlas = working && distinctFrame === undefined;
       const frame = item.frame;
       scenery.add(
         this.add
           .image(
-            back.x,
-            front.y - 2,
+            top.x,
+            top.y,
             distinctFrame !== undefined
               ? "distinct-buildings"
               : stateAtlas
@@ -465,18 +482,21 @@ export class FarmScene extends Phaser.Scene {
                 : atlas,
             distinctFrame ?? frame,
           )
-          .setOrigin(0.5, 0.96)
-          .setDisplaySize(
-            s.pendingConstruction && isTree(s.kind) ? size * 0.8 : size,
-            s.pendingConstruction && isTree(s.kind) ? size * 0.8 : size,
-          )
+          .setOrigin(0, 0)
+          .setDisplaySize(art.size, art.size)
           .setAlpha(working && distinctFrame !== undefined ? 0.72 : 1)
           .setDepth(front.y),
       );
       if (working && distinctFrame !== undefined) {
         const scaffold = this.add.graphics().setDepth(front.y + 1);
         // Timber rails across the two front faces keep pending work visible without labels.
-        const face = [base[1], base[2], base[3]];
+        const insetBase = renderFootprint({
+          row: s.row - 0.42,
+          col: s.col - 0.42,
+          width: item.width - 0.16,
+          depth: item.height - 0.16,
+        }).map(worldPoint);
+        const face = [insetBase[1], insetBase[2], insetBase[3]];
         for (const [width, color] of [
           [4, 0x68472c],
           [1, 0xd6ad70],
@@ -506,17 +526,38 @@ export class FarmScene extends Phaser.Scene {
           height: 32,
         });
       if (!visible(point.x, point.y)) continue;
+      const base = renderFootprint({
+        row: service.row - 0.5,
+        col: service.col - 0.5,
+        width: service.width,
+        depth: service.height,
+      }).map(worldPoint);
+      const points = base.map((p) => new Phaser.Math.Vector2(p.x, p.y));
+      g.fillStyle(this.season === "winter" ? 0xdce4d9 : 0xd1c5a0);
+      g.fillPoints(points, true);
+      g.lineStyle(1, 0x8d8063, 0.8);
+      g.strokePoints(points, true);
+      const art = buildingArtwork(
+        service,
+        distinctServices[service.id] ?? service.frame,
+        service.id !== "home",
+      );
+      const top = projectCell(art);
+      const front = projectCell({
+        row: service.row + service.height - 0.5,
+        col: service.col + service.width - 0.5,
+      });
       scenery.add(
         this.add
           .image(
-            point.x,
-            point.y + 24,
+            top.x,
+            top.y,
             service.id === "home" ? atlas : "distinct-buildings",
-            { seeds: 4, builder: 5, fields: 6, home: 0 }[service.id],
+            distinctServices[service.id] ?? service.frame,
           )
-          .setOrigin(0.5, 0.96)
-          .setDisplaySize(120, 120)
-          .setDepth(point.y + 24),
+          .setOrigin(0, 0)
+          .setDisplaySize(art.size, art.size)
+          .setDepth(front.y),
       );
     }
     if (publishLayout) this.onLayout?.(targets);

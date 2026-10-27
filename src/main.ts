@@ -1,3 +1,4 @@
+import { distinctStructures, distinctServices } from "./game/building-artwork";
 import { HarvestFeedback } from "./game/harvest-feedback";
 import { treeStatus } from "./micro/world";
 import {
@@ -429,26 +430,25 @@ viewport.addEventListener(
     const x = (e.clientX - bounds.left + viewport.scrollLeft) / zoom;
     const y = (e.clientY - bounds.top + viewport.scrollTop) / zoom;
     // Match the visible artwork as well as its keyboard-accessible ground tiles.
-    const service = serviceLocations(state).find((s) => {
-      const p = projectCell(s);
-      return Math.abs(x - p.x) < 45 && y > p.y - 75 && y < p.y + 24;
-    });
+    const service = serviceLocations(state).find((s) =>
+      scene.hitsBuilding({ x, y }, s, s.frame, false, distinctServices[s.id]),
+    );
     const building = [...state.structures].reverse().find((s) => {
       const item = buildings[s.kind];
-      const back = projectCell({
-        row: s.row + (item.height - 1) / 2,
-        col: s.col + (item.width - 1) / 2,
-      });
-      const front = projectCell({
-        row: s.row + item.height - 0.5,
-        col: s.col + item.width - 0.5,
-      });
-      const size =
-        (item.width + item.height) * 32 * (item.width === 1 ? 1.08 : 0.94);
+      if (!isTree(s.kind))
+        return scene.hitsBuilding(
+          { x, y },
+          { ...s, width: item.width, height: item.height },
+          item.frame,
+          !!(s.pendingConstruction || s.pendingUpgrade),
+          distinctStructures[s.kind],
+        );
+      const point = projectCell(s);
+      const size = 64 * 1.08;
       return (
-        Math.abs(x - back.x) < size * 0.32 &&
-        y > front.y - size * 0.8 &&
-        y < front.y - 2
+        Math.abs(x - point.x) < size * 0.32 &&
+        y > point.y + 14 - size * 0.8 &&
+        y < point.y + 14
       );
     });
     if (service || building) {
