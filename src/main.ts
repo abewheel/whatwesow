@@ -1,3 +1,4 @@
+import { WORLD_CELLS, WORLD_SIZE } from "./contracts/world";
 import { turnNumber } from "./macro/state";
 import {
   buildings,
@@ -40,18 +41,18 @@ import {
 } from "./micro/state";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `<header><div><span class="eyebrow">A farm. A lifetime.</span><h1>What We Sow</h1></div><p>Grow a little. Leave something good.</p><span class="build-tag">Early preview</span></header><main><section class="farm-card" aria-label="Farm overview"><div class="farm-heading"><div><span class="eyebrow">Home, for now</span><h2>Your growing farm</h2></div><output id="season"></output></div><div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"></div></div><div class="field-note"><span class="note-icon" aria-hidden="true">✦</span><div><strong id="farm-message" role="status">Choose seeds, then click an empty plot.</strong><p>Plant → advance growth → harvest → reinvest. No real-time waiting.</p></div></div></section><section class="farm-tools" aria-label="Farming tools"><div class="seed-shop"><span class="eyebrow">Seed basket</span><div id="crop-options"></div></div><div class="work-tools"><button id="grow">Advance growth</button><button id="work" hidden>Help with a delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><p id="farm-summary"></p><button id="next-season">Next season</button><button id="farm-mode">Farm tool / cancel build</button><button id="move-plot">Move a plot</button><button id="home-view">Center farm</button><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><p id="placement-hint">Drag the field or use arrow keys to explore 1,024 cells.</p></div></section><details id="build-shop"><summary>Build & progression</summary><p id="progression"></p><div id="build-options"></div><p id="selected-building">Click a placed structure to inspect, upgrade, or move it.</p><button id="upgrade-building" hidden>Upgrade selected building</button><button id="move-building" hidden>Move selected building</button></details><aside class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><label class="button" for="import">Import save</label><input id="import" type="file" accept="application/json,.json" hidden /></div></aside></main>`;
+app.innerHTML = `<header><div><span class="eyebrow">A farm. A lifetime.</span><h1>What We Sow</h1></div><p>Grow a little. Leave something good.</p><span class="build-tag">Early preview</span></header><main><section class="farm-card" aria-label="Farm overview"><div class="farm-heading"><div><span class="eyebrow">Home, for now</span><h2>Your growing farm</h2></div><output id="season"></output></div><div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div><div class="field-note"><span class="note-icon" aria-hidden="true">✦</span><div><strong id="farm-message" role="status">Choose seeds, then click an empty plot.</strong><p>Plant → advance growth → harvest → reinvest. No real-time waiting.</p></div></div></section><section class="farm-tools" aria-label="Farming tools"><div class="seed-shop"><span class="eyebrow">Seed basket</span><div id="crop-options"></div></div><div class="work-tools"><button id="grow">Advance growth</button><button id="work" hidden>Help with a delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><p id="farm-summary"></p><button id="next-season">Next season</button><button id="farm-mode">Farm tool / cancel build</button><button id="move-plot">Move a plot</button><button id="home-view">Center farm</button><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="127" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="127" value="16"></label><button id="go-to-cell">Go to land</button><p id="placement-hint">Drag the field or use arrow keys to explore 16,384 cells.</p></div></section><details id="build-shop"><summary>Build & progression</summary><p id="progression"></p><div id="build-options"></div><p id="selected-building">Click a placed structure to inspect, upgrade, or move it.</p><button id="upgrade-building" hidden>Upgrade selected building</button><button id="move-building" hidden>Move selected building</button></details><aside class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><label class="button" for="import">Import save</label><input id="import" type="file" accept="application/json,.json" hidden /></div></aside></main>`;
 const tools = document.querySelector(".farm-tools")!;
 document.querySelector("main")!.prepend(document.querySelector("#build-shop")!);
 document.querySelector("main")!.prepend(tools);
 const status = document.querySelector<HTMLElement>("#save-status")!;
 const scene = new FarmScene();
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
-  parent: "farm-world",
+  parent: "farm-renderer",
   backgroundColor: "#83ad65",
   scene,
-  scale: { mode: Phaser.Scale.NONE, width: WORLD_WIDTH, height: WORLD_HEIGHT },
+  scale: { mode: Phaser.Scale.NONE, width: 800, height: 600 },
   render: { antialias: false, pixelArt: true },
   audio: { noAudio: true },
 });
@@ -66,12 +67,51 @@ let inspectedId: number | null = null;
 let centered = false;
 const viewport = document.querySelector<HTMLElement>("#farm")!;
 const world = document.querySelector<HTMLElement>("#farm-world")!;
+world.style.width = `${WORLD_WIDTH}px`;
+world.style.height = `${WORLD_HEIGHT}px`;
+const renderer = document.querySelector<HTMLElement>("#farm-renderer")!;
+let viewportFrame = 0;
+function updateViewport() {
+  viewportFrame = 0;
+  const width = viewport.clientWidth,
+    height = viewport.clientHeight;
+  renderer.style.width = `${width}px`;
+  renderer.style.height = `${height}px`;
+  if (game.scale.width !== width || game.scale.height !== height)
+    game.scale.resize(width, height);
+  scene.setViewport(viewport.scrollLeft, viewport.scrollTop, width, height);
+}
+viewport.addEventListener("scroll", () => {
+  if (!viewportFrame) viewportFrame = requestAnimationFrame(updateViewport);
+});
+new ResizeObserver(updateViewport).observe(viewport);
 const cellButtons = new Map<string, HTMLButtonElement>();
 let hoveredCell: Cell | null = null;
 const preview = document.createElement("div");
 preview.id = "placement-preview";
 preview.hidden = true;
 world.append(preview);
+document.querySelector("#go-to-cell")!.addEventListener("click", () => {
+  const row = Number(
+      document.querySelector<HTMLInputElement>("#view-row")!.value,
+    ),
+    col = Number(document.querySelector<HTMLInputElement>("#view-col")!.value);
+  if (
+    !Number.isInteger(row) ||
+    !Number.isInteger(col) ||
+    row < 0 ||
+    col < 0 ||
+    row >= WORLD_SIZE ||
+    col >= WORLD_SIZE
+  ) {
+    document.querySelector("#placement-hint")!.textContent =
+      "Choose row and column 0–127.";
+    return;
+  }
+  const p = projectCell({ row, col });
+  viewport.scrollLeft = p.x - viewport.clientWidth / 2;
+  viewport.scrollTop = p.y - viewport.clientHeight / 2;
+});
 function centerFarm() {
   const p = projectCell({ row: 16, col: 16 });
   viewport.scrollLeft = p.x - viewport.clientWidth / 2;
@@ -317,8 +357,10 @@ scene.onLayout = (targets) => {
         : structure
           ? `${buildings[structure.kind].name} ${structure.id}, level ${structure.level}`
           : `Land ${target.row},${target.col}`;
-    button.setAttribute("aria-label", label);
-    button.title = label;
+    if (button.getAttribute("aria-label") !== label) {
+      button.setAttribute("aria-label", label);
+      button.title = label;
+    }
   }
   if (hoveredCell) showPreview(hoveredCell);
   if (!centered) {
@@ -430,7 +472,7 @@ function render() {
     if (kind === "plot") {
       button.textContent = `Crop plot · 1×1 · ${policyCost(expansionCost(state), state.farmPolicy)} coins`;
       button.disabled =
-        state.plots.length >= (policy.maxPlots ?? 1024) ||
+        state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
         state.coins < policyCost(expansionCost(state), policy);
       continue;
     }
@@ -488,11 +530,11 @@ function render() {
   grow.disabled = !state.plots.some((p) => p && p.growth < crops[p.crop].steps);
   const expand = document.querySelector<HTMLButtonElement>("#expand")!;
   expand.textContent =
-    state.plots.length === 1024
-      ? "All 1024 plots open"
+    state.plots.length === WORLD_CELLS
+      ? "All 16384 plots open"
       : `Open a plot · ${policyCost(expansionCost(state), state.farmPolicy)} coins`;
   expand.disabled =
-    state.plots.length >= (policy.maxPlots ?? 1024) ||
+    state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
     state.coins < policyCost(expansionCost(state), policy);
   const improve = document.querySelector<HTMLButtonElement>("#improve")!;
   improve.textContent =

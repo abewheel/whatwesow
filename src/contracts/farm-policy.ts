@@ -1,3 +1,4 @@
+import { WORLD_SIZE, WORLD_CELLS } from "./world";
 /** Macro-owned restrictions passed into pure farming rules. Missing fields mean no restriction. */
 export type FarmPolicy = {
   land?: { row: number; col: number; width: number; height: number }[];
@@ -15,7 +16,7 @@ export function parseFarmPolicy(value: unknown): FarmPolicy {
   const s = value as Record<string, unknown>,
     p: FarmPolicy = {};
   if (s.land !== undefined) {
-    if (!Array.isArray(s.land) || s.land.length > 1024)
+    if (!Array.isArray(s.land) || s.land.length > WORLD_CELLS)
       throw new Error("Invalid land grants.");
     p.land = s.land.map((value: unknown) => {
       if (!value || typeof value !== "object")
@@ -29,8 +30,8 @@ export function parseFarmPolicy(value: unknown): FarmPolicy {
         Number(r.col) < 0 ||
         Number(r.width) < 1 ||
         Number(r.height) < 1 ||
-        Number(r.row) + Number(r.height) > 32 ||
-        Number(r.col) + Number(r.width) > 32
+        Number(r.row) + Number(r.height) > WORLD_SIZE ||
+        Number(r.col) + Number(r.width) > WORLD_SIZE
       )
         throw new Error("Land grants must fit the farm.");
       return {
@@ -70,7 +71,7 @@ export function parseFarmPolicy(value: unknown): FarmPolicy {
     if (
       !Number.isInteger(s.maxPlots) ||
       Number(s.maxPlots) < 0 ||
-      Number(s.maxPlots) > 1024
+      Number(s.maxPlots) > WORLD_CELLS
     )
       throw new Error("Invalid plot limit.");
     p.maxPlots = s.maxPlots as number;

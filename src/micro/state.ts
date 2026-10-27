@@ -1,3 +1,4 @@
+import { WORLD_CELLS } from "../contracts/world";
 import {
   buildings,
   buildingLevel,
@@ -41,8 +42,12 @@ export function parseMicroState(value: unknown): MicroState {
   const s = value as Record<string, unknown>;
   if (!Number.isSafeInteger(s.coins) || Number(s.coins) < 0)
     throw new Error("Use a nonnegative whole coin balance.");
-  if (!Array.isArray(s.plots) || s.plots.length < 0 || s.plots.length > 1024)
-    throw new Error("Use 0–1024 plots.");
+  if (
+    !Array.isArray(s.plots) ||
+    s.plots.length < 0 ||
+    s.plots.length > WORLD_CELLS
+  )
+    throw new Error("Use 0–16384 plots.");
   if (
     !Number.isInteger(s.soilLevel) ||
     Number(s.soilLevel) < 0 ||
@@ -68,12 +73,12 @@ export function parseMicroState(value: unknown): MicroState {
     !Array.isArray(s.plotCells) ||
     s.plotCells.length !== plots.length ||
     !Array.isArray(s.structures) ||
-    s.structures.length > 1024
+    s.structures.length > WORLD_CELLS
   )
-    throw new Error("Provide a cell per plot and at most 1,024 structures.");
+    throw new Error("Provide a cell per plot and at most 16,384 structures.");
   const parseCell = (value: unknown): Cell => {
     if (!value || typeof value !== "object" || !inBounds(value as Cell))
-      throw new Error("Cells must be inside the 32 × 32 farm.");
+      throw new Error("Cells must be inside the 128 × 128 farm.");
     const { row, col } = value as Cell;
     return { row, col };
   };

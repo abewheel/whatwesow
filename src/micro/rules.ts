@@ -1,9 +1,12 @@
+import { WORLD_CELLS } from "../contracts/world";
 import { parseFarmPolicy, type FarmPolicy } from "../contracts/farm-policy";
 import {
   buildings,
   buildingLevel,
   canPlace,
   WORLD_SIZE,
+  occupiedCells,
+  cellKey,
   upgradeTurn,
   upgradeCost,
   buildUnlock,
@@ -106,10 +109,11 @@ export function actOnFarm(
     if (!count) throw new Error("Plant a crop before advancing growth.");
     message = `${count} crop${count === 1 ? "" : "s"} grew. Ready crops keep until you harvest.`;
   } else if (action.type === "expand") {
-    if (state.plots.length >= (policy.maxPlots ?? 1024))
-      throw new Error("All 1024 plots are open.");
+    if (state.plots.length >= (policy.maxPlots ?? WORLD_CELLS))
+      throw new Error("All 16384 plots are open.");
     const cost = policyCost(expansionCost(state), policy);
     if (state.coins < cost) throw new Error("Not enough coins to open a plot.");
+    const occupied = occupiedCells(state);
     const cell =
       action.cell ??
       Array.from({ length: WORLD_SIZE * WORLD_SIZE }, (_, i) => ({
@@ -123,7 +127,7 @@ export function actOnFarm(
             Math.abs(b.row - 16) -
             Math.abs(b.col - 16),
         )
-        .find((c) => canPlace(state, c, 1, 1, policy));
+        .find((c) => cellAllowed(c, policy) && !occupied.has(cellKey(c)));
     if (!cell || !canPlace(state, cell, 1, 1, policy))
       throw new Error("Choose unoccupied land inside the farm.");
     state.coins -= cost;

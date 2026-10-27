@@ -1,5 +1,6 @@
 import type { FarmPolicy } from "../contracts/farm-policy";
-export const WORLD_SIZE = 32;
+import { WORLD_SIZE } from "../contracts/world";
+export { WORLD_SIZE } from "../contracts/world";
 export type Cell = { row: number; col: number };
 export const buildings = {
   home: {

@@ -32,7 +32,7 @@ pnpm exec playwright install chromium # once
 pnpm validate
 ```
 
-Validation runs lint, types, state-boundary tests, a production build, and browser tests. Browser tests launch their own server on port 5181 and refuse to reuse an existing one. For visual changes, also launch a named local instance, exercise the changed behavior, inspect browser errors and network failures, capture and inspect Playwright screenshots, and stop the instance afterward.
+Validation runs lint, types, state-boundary tests, a production build, and browser tests. Browser tests launch their own server on port 5181 and refuse to reuse an existing one. If another builder is testing there, use `PLAYWRIGHT_PORT=5193 pnpm validate` for an isolated browser-test port. For visual changes, also launch a named local instance, exercise the changed behavior, inspect browser errors and network failures, capture and inspect Playwright screenshots, and stop the instance afterward.
 
 ## Structure
 

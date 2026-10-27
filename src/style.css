@@ -335,8 +335,6 @@ button[hidden] {
 }
 #farm-world {
   position: relative;
-  width: 2304px;
-  height: 1408px;
 }
 #placement-preview {
   position: absolute;
@@ -390,4 +388,21 @@ button[hidden] {
 .farm-card {
   height: 64svh;
   min-height: 460px;
+}
+
+#farm-renderer {
+  position: sticky;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.work-tools input[type="number"] {
+  width: 64px;
+  font: inherit;
+  padding: 5px;
+}
+.work-tools label {
+  display: inline-block;
+  margin: 4px;
+  font: 12px system-ui;
 }

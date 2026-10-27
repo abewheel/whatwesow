@@ -8,6 +8,22 @@ export const farmPresets = [
   "reinvesting",
 ] as const;
 export function presetState(id: string): GameState {
+  if (id === "expanse") {
+    const state = initialState();
+    state.year = 40;
+    state.coins = 100000;
+    state.structures.push({
+      id: state.nextStructureId++,
+      kind: "barn",
+      row: 124,
+      col: 124,
+      level: 1,
+    });
+    state.plots.push({ crop: "corn", growth: 3 });
+    state.plotCells.push({ row: 127, col: 127 });
+    state.plotIds.push(state.nextPlotId++);
+    return state;
+  }
   if (id === "restricted") {
     const base = presetState("community");
     return applyMacroChange(

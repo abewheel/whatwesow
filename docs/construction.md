@@ -1,8 +1,8 @@
 # Construction and progression
 
-The estate is a 32 × 32 grid. Plots, buildings, and trees all occupy cells; multi-cell footprints cannot overlap or cross its edge. Every building type can be repeated. There are no one-per-type caps. Money, footprint space, authored unlocks, and any macro policy determine what the player can build.
+The estate is a 128 × 128 grid with 16,384 cells. Plots, buildings, and trees all occupy cells; multi-cell footprints cannot overlap or cross its edge. Every building type can be repeated. There are no one-per-type caps. Money, footprint space, authored unlocks, and any macro policy determine what the player can build.
 
-Open **Build & progression**, choose an item, then choose land. The footprint preview marks permitted placements. **Farm tool / cancel build** returns to planting and harvesting. Click a structure to inspect, upgrade, or move it for free. **Move a plot** moves its growing crop too. Drag the field, scroll, use arrow keys, or use the pan buttons to explore; **Center farm** returns to the starting fields.
+Open **Build & progression**, choose an item, then choose land. The footprint preview marks permitted placements. **Farm tool / cancel build** returns to planting and harvesting. Click a structure to inspect, upgrade, or move it for free. **Move a plot** moves its growing crop too. Drag the field, scroll, use arrow keys, or use the pan buttons to explore; **Center farm** returns to the starting fields. Enter row and column 0–127 in **Go to land** to jump across the estate. The canvas stays viewport-sized and renders nearby terrain.
 
 ## Authored track
 
@@ -42,6 +42,6 @@ Version 3 saves carry `plotCells`, `plotIds`, `nextPlotId`, `structures`, and `n
 
 ## Iterate
 
-Whole-game presets cover **Building · turn 1**, **Community · turn 25**, **Industry · turn 81**, **Legacy · turn 159**, and **Policy · land and building loss**. They include affordable money and existing structures. Use the whole-game scope when checking unlock dates. The micro scope intentionally preserves the live date and policy.
+Whole-game presets cover **Building · turn 1**, **Community · turn 25**, **Industry · turn 81**, **Legacy · turn 159**, **Policy · land and building loss**, and **Large estate · far corner**. They include affordable money and existing structures. Use the whole-game scope when checking unlock dates. The micro scope intentionally preserves the live date and policy.
 
 Run `pnpm test:micro` for construction, repeated effects, losses, relocation, and policies; `pnpm test:integration` for migration and macro consequences; `pnpm test:browser` for placement, panning, repeated builds, upgrades, and persistence. Finish with `pnpm validate`.

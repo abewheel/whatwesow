@@ -77,7 +77,7 @@ describe("estate construction", () => {
       actOnFarm(start, {
         type: "build",
         kind: "shed",
-        cell: { row: 31, col: 31 },
+        cell: { row: 127, col: 127 },
       }),
     ).toThrow(/outside/);
     expect(() =>
@@ -144,7 +144,7 @@ describe("estate construction", () => {
     for (const patch of [
       { plotCells: [] },
       { plotCells: Array(9).fill({ row: 16, col: 16 }) },
-      { structures: [{ id: 1, kind: "shed", row: 31, col: 31, level: 1 }] },
+      { structures: [{ id: 1, kind: "shed", row: 127, col: 127, level: 1 }] },
       { structures: [{ id: 1, kind: "shed", row: 5, col: 5, level: 4 }] },
       { structures: [...start.structures, ...start.structures] },
     ])
@@ -159,4 +159,40 @@ describe("estate construction", () => {
       55,
     );
   });
+});
+it("supports the full 128-square estate and rejects footprints beyond it", () => {
+  const start = { ...initialMicroState(), coins: 100000 };
+  const far = actOnFarm(
+    start,
+    { type: "build", kind: "barn", cell: { row: 125, col: 125 } },
+    160,
+  ).state;
+  expect(far.structures.at(-1)).toMatchObject({ row: 125, col: 125 });
+  expect(() =>
+    actOnFarm(
+      start,
+      { type: "build", kind: "shed", cell: { row: 127, col: 127 } },
+      160,
+    ),
+  ).toThrow(/outside/);
+  const plotted = actOnFarm(start, {
+    type: "expand",
+    cell: { row: 127, col: 127 },
+  }).state;
+  expect(plotted.plotCells.at(-1)).toEqual({ row: 127, col: 127 });
+  expect(() =>
+    actOnFarm(start, { type: "expand", cell: { row: 128, col: 127 } }),
+  ).toThrow();
+  const many = {
+    ...start,
+    structures: [],
+    plots: Array(1025).fill(null),
+    plotCells: Array.from({ length: 1025 }, (_, i) => ({
+      row: Math.floor(i / 128),
+      col: i % 128,
+    })),
+    plotIds: Array.from({ length: 1025 }, (_, i) => i + 1),
+    nextPlotId: 1026,
+  };
+  expect(parseMicroState(many).plots).toHaveLength(1025);
 });

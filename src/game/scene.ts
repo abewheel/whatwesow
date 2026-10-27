@@ -9,8 +9,8 @@ import {
   WORLD_SIZE,
   type Cell,
 } from "../micro/world";
-export const WORLD_WIDTH = 2304,
-  WORLD_HEIGHT = 1408;
+export const WORLD_WIDTH = WORLD_SIZE * 64 + 256,
+  WORLD_HEIGHT = WORLD_SIZE * 32 + 384;
 // Preserve the shared logical projection; the scrollable view scales tiles to 64px.
 const renderScale = 64 / TILE_WIDTH;
 const worldPoint = (p: { x: number; y: number }) => ({
@@ -37,6 +37,14 @@ export class FarmScene extends Phaser.Scene {
   private farm = initialMicroState();
   private season: MacroState["season"] = "spring";
   private policy: MacroState["farmPolicy"];
+  private view = { x: 0, y: 0, width: 800, height: 600 };
+  setViewport(x: number, y: number, width: number, height: number) {
+    this.view = { x, y, width, height };
+    if (this.ground) {
+      this.cameras.main.setScroll(x, y);
+      this.draw(false);
+    }
+  }
   onLayout?: (targets: PlotTarget[]) => void;
   constructor() {
     super("farm");
@@ -70,10 +78,16 @@ export class FarmScene extends Phaser.Scene {
     this.season = state.season;
     if (this.ground) this.draw();
   }
-  private draw() {
+  private draw(publishLayout = true) {
     const g = this.ground!,
       scenery = this.scenery!,
       p = palette[this.season];
+    const visible = (x: number, y: number, padding = 200) =>
+      x >= this.view.x - padding &&
+      x <= this.view.x + this.view.width + padding &&
+      y >= this.view.y - padding &&
+      y <= this.view.y + this.view.height + padding;
+    this.cameras.main.setScroll(this.view.x, this.view.y);
     g.clear();
     scenery.removeAll(true);
     this.cameras.main.setBackgroundColor(p.grass);
@@ -112,26 +126,29 @@ export class FarmScene extends Phaser.Scene {
     for (let i = 0; i < 9500; i++) {
       const x = (i * 73.17) % WORLD_WIDTH,
         y = (i * 47.73) % WORLD_HEIGHT;
-      rect(Math.floor(x), Math.floor(y), 2, 1, i % 4 ? p.light : p.shade);
+      if (visible(x, y, 0))
+        rect(Math.floor(x), Math.floor(y), 2, 1, i % 4 ? p.light : p.shade);
     }
     const atlas =
       this.season === "fall" || this.season === "winter"
         ? `farm-${this.season}`
         : "farm-spring";
     const image = (frame: number, x: number, y: number, size: number) =>
-      scenery.add(
-        this.add
-          .image(x, y, atlas, frame)
-          .setOrigin(0.5, 1)
-          .setDisplaySize(size, size),
-      );
+      visible(x, y)
+        ? scenery.add(
+            this.add
+              .image(x, y, atlas, frame)
+              .setOrigin(0.5, 1)
+              .setDisplaySize(size, size),
+          )
+        : undefined;
     // Seasonal artwork frames the estate outside the buildable grid.
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < WORLD_SIZE / 2; i++) {
       const a = projectCell({ row: -3, col: i * 2 }),
-        b = projectCell({ row: i * 2, col: 35 });
+        b = projectCell({ row: i * 2, col: WORLD_SIZE + 3 });
       image(i % 3 === 0 ? 5 : 2, a.x, a.y, 135);
       image(i % 3 === 0 ? 5 : 2, b.x, b.y, 135);
-      const c = projectCell({ row: 35, col: i * 2 }),
+      const c = projectCell({ row: WORLD_SIZE + 3, col: i * 2 }),
         d = projectCell({ row: i * 2, col: -3 });
       image(i % 3 === 0 ? 5 : 2, c.x, c.y, 135);
       image(i % 3 === 0 ? 5 : 2, d.x, d.y, 135);
@@ -146,6 +163,9 @@ export class FarmScene extends Phaser.Scene {
         if (col < 0 || col >= WORLD_SIZE) continue;
         const { x, y } = projectCell({ row, col }),
           index = plotMap.get(cellKey({ row, col }));
+        if (publishLayout)
+          targets.push({ row, col, x, y, width: 64, height: 32 });
+        if (!visible(x, y, 40)) continue;
         diamond(
           x,
           y,
@@ -155,7 +175,6 @@ export class FarmScene extends Phaser.Scene {
               ? p.grass
               : p.soil,
         );
-        targets.push({ row, col, x, y, width: 64, height: 32 });
         if (index === undefined) continue;
         for (let line = 0; line < 4; line++)
           rect(x - 14 + line * 7, y - 4 + line * 3, 10, 2, 0x794c2f);
@@ -181,6 +200,8 @@ export class FarmScene extends Phaser.Scene {
         (b.row + b.col + buildings[b.kind].width + buildings[b.kind].height),
     )) {
       const item = buildings[s.kind];
+      const location = projectCell(s);
+      if (!visible(location.x, location.y)) continue;
       const base = renderFootprint({
         row: s.row - 0.5,
         col: s.col - 0.5,
@@ -222,6 +243,6 @@ export class FarmScene extends Phaser.Scene {
         .setOrigin(0.5, 0);
       scenery.add(label);
     }
-    this.onLayout?.(targets);
+    if (publishLayout) this.onLayout?.(targets);
   }
 }
