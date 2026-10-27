@@ -1,3 +1,4 @@
+import { initialMicroState } from "../../src/micro/state";
 import { test, expect } from "@playwright/test";
 test("playtest state persists, invalid state is rejected, and instances are isolated", async ({
   page,
@@ -54,6 +55,7 @@ test("isolated domain editors compose, reject invalid edits, and persist", async
   await page.getByLabel("Work on").selectOption("micro");
   await page.getByLabel("Game state JSON").fill(
     JSON.stringify({
+      ...initialMicroState(),
       coins: 777,
       year: 40,
       plots: Array(9).fill(null),

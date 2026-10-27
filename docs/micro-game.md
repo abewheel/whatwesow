@@ -8,15 +8,15 @@ Choose a crop in the seed basket, then click an empty plot to plant. Seeds are p
 | Carrot | 7 coins | 2 | 18 coins |
 | Corn | 12 coins | 3 | 34 coins |
 
-Ripe crops keep indefinitely. Growth is manual and deterministic; there are no timers, withering, or offscreen progress. Growth steps currently stay within the macro season. Calendar progression and seasonal crop restrictions belong to a later integration.
+Ripe crops keep indefinitely. Growth is manual and deterministic; there are no timers, withering, or offscreen progress. Growth steps currently stay within the macro season. Use **Next season** for calendar progression and seasonal building income. See [construction](construction.md) for placeable plots, repeated buildings, upgrades, and the full progression track.
 
-Start with 100 coins and nine plots. Opening another plot costs 30 coins, then 5 more for each plot already opened. The farm can hold 49 plots. Soil improvements cost 80, 160, then 240 coins; each level adds 3 coins to every harvest, including crops already planted. Both investments persist. If you have fewer than 4 coins and no planted crops, helping with a delivery earns one packet of turnip seeds' worth of coins so you can resume.
+Start with 100 coins and nine plots. Opening another plot costs 30 coins, then 5 more for each plot already opened. The farm has 1,024 cells shared by plots and building footprints. Soil improvements cost 80, 160, then 240 coins; each level adds 3 coins to every harvest, including crops already planted. Both investments persist. If you have fewer than 4 coins and no planted crops, helping with a delivery earns one packet of turnip seeds' worth of coins so you can resume.
 
 ## Rules and saves
 
-Crop definitions and economic values live in `src/micro/state.ts`. `actOnFarm` in `src/micro/rules.ts` accepts a farm state and typed action and returns fresh state plus feedback. It rejects unavailable actions without mutating the input. UI sends results through `replaceDomain`; macro state stays unchanged. Saving completes before the UI publishes a successful action, and concurrent actions cannot overwrite each other.
+Crop definitions and economic values live in `src/micro/state.ts`. `actOnFarm` in `src/micro/rules.ts` accepts a farm state and typed action and returns fresh state plus feedback. It rejects unavailable actions without mutating the input. UI sends micro action results through `replaceDomain`; macro state stays unchanged unless **Next season** is selected. Policy and loss integration are described in [the macro contract](macro-farm-contract.md). Saving completes before the UI publishes a successful action, and concurrent actions cannot overwrite each other.
 
-Version 2 saves include `coins`, `plots`, and `soilLevel`. Each plot is `null` or `{"crop":"carrot","growth":1}`. Growth ranges from zero through the crop's grow-step count. The array has 9–49 entries; soilLevel is 0–3. Version 1 saves migrate automatically to nine empty plots and level-zero soil while preserving coins, year, and season. Version 2 saves require all farming fields.
+Version 3 saves include layout positions and stable IDs alongside crops, money, and soil. Version 1 and 2 saves migrate automatically. See [construction saves](construction.md#system-boundaries) for the schema and [playtesting](playtesting.md) for editing whole states.
 
 ## Iterate
 

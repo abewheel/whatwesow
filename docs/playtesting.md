@@ -10,11 +10,11 @@ Keep its printed query string. Open **Playtest tools**, choose **Work on**, and 
 
 | Scope | Example JSON | Preserves |
 | --- | --- | --- |
-| Micro · farming | `{"coins":777,"plots":[null,null,null,null,null,null,null,null,null],"soilLevel":0}` | Current year and season |
+| Micro · farming | Read current state, then edit coins, crops, layout, or structures | Current year and season |
 | Macro · lifetime | `{"year":20,"season":"fall"}` | Current farm state |
-| Whole game | Version 2 export, or a legacy version 1 save | Nothing; replaces the save |
+| Whole game | Version 3 export, or a legacy version 1 save | Nothing; replaces the save |
 
-**Load preset** fills the editor for the selected scope without applying it. Presets cover a new farm, year 20 fall, year 40 winter, and [each farming stage](micro-game.md#iterate). For arbitrary supported states, edit those values. Extra fields are stripped, including fields owned by the other domain. Export save downloads the complete state for sharing; Import save accepts a complete version 2 save or migrates version 1 saves.
+**Load preset** fills the editor for the selected scope without applying it. Presets cover a new farm, year 20 fall, year 40 winter, [each farming stage](micro-game.md#iterate), and [construction and policy scenarios](construction.md#iterate). For arbitrary supported states, edit those values. Extra fields are stripped, including fields owned by the other domain. Applying the macro scope also reconciles land revocation through `applyMacroChange`; micro edits preserve the current date and policy. Export save downloads the complete state for sharing; Import save accepts a complete version 3 save or migrates version 1 and 2 saves.
 
 ## Fast rule iteration
 

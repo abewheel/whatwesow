@@ -1,4 +1,5 @@
-import { initialState, type GameState } from "../game/state";
+import { buildings, type BuildingKind } from "../micro/world";
+import { initialState, applyMacroChange, type GameState } from "../game/state";
 import { crops, type CropId } from "../micro/state";
 export const farmPresets = [
   "planting",
@@ -7,7 +8,69 @@ export const farmPresets = [
   "reinvesting",
 ] as const;
 export function presetState(id: string): GameState {
+  if (id === "restricted") {
+    const base = presetState("community");
+    return applyMacroChange(
+      base,
+      {
+        year: base.year,
+        season: base.season,
+        farmPolicy: {
+          land: [{ row: 14, col: 14, width: 6, height: 6 }],
+          blockedBuildings: ["barn"],
+          buildingLimits: { shed: 1 },
+          maxPlots: 12,
+          costMultiplier: 1.5,
+          productionMultiplier: 0.75,
+        },
+      },
+      { removeStructureIds: [2] },
+    ).state;
+  }
   const state = initialState();
+  const turns: Record<string, number> = {
+    homestead: 1,
+    community: 25,
+    industry: 81,
+    legacy: 159,
+  };
+  if (Object.hasOwn(turns, id)) {
+    const turn = turns[id];
+    state.year = Math.floor((turn - 1) / 4) + 1;
+    state.season = (["spring", "summer", "fall", "winter"] as const)[
+      (turn - 1) % 4
+    ];
+    state.coins =
+      id === "homestead"
+        ? 500
+        : id === "community"
+          ? 3000
+          : id === "industry"
+            ? 15000
+            : 150000;
+    const kinds = (Object.keys(buildings) as BuildingKind[]).filter(
+      (k) => k !== "home" && buildings[k].turn <= turn,
+    );
+    for (const [i, kind] of kinds.entries())
+      state.structures.push({
+        id: i + 2,
+        kind,
+        ...[
+          { row: 11, col: 9 },
+          { row: 14, col: 10 },
+          { row: 13, col: 19 },
+          { row: 18, col: 18 },
+          { row: 8, col: 16 },
+          { row: 18, col: 10 },
+          { row: 20, col: 15 },
+          { row: 13, col: 23 },
+          { row: 23, col: 19 },
+        ][i],
+        level: 1,
+      });
+    state.nextStructureId = Math.max(...state.structures.map((s) => s.id)) + 1;
+    return state;
+  }
   if (id === "mid" || id === "late")
     return {
       ...state,

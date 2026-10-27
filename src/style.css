@@ -319,12 +319,75 @@ button:disabled {
     font-size: 11px;
   }
 }
-.farm-card {
-  height: calc(100svh - 340px);
-}
 .farm-tools {
   margin: 0 0 12px;
 }
 button[hidden] {
   display: none;
+}
+#farm {
+  overflow: auto;
+  cursor: grab;
+  touch-action: pan-x pan-y;
+}
+#farm:active {
+  cursor: grabbing;
+}
+#farm-world {
+  position: relative;
+  width: 2304px;
+  height: 1408px;
+}
+#placement-preview {
+  position: absolute;
+  pointer-events: none;
+  background: #5bc97588;
+  z-index: 3;
+}
+#placement-preview[data-valid="false"] {
+  background: #dd554daa;
+}
+#placement-preview[hidden] {
+  display: none;
+}
+.plot-hit {
+  cursor: pointer;
+}
+.farm-heading,
+.field-note {
+  pointer-events: none;
+}
+.farm-heading {
+  z-index: 4;
+}
+.field-note {
+  z-index: 4;
+  padding: 8px 14px;
+}
+.field-note p {
+  display: none;
+}
+#build-shop {
+  border: 2px solid var(--wood);
+  background: var(--paper);
+  padding: 12px 18px;
+  margin-bottom: 12px;
+  font: 13px/1.5 system-ui;
+}
+#build-shop summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+#build-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+#build-options button {
+  text-align: left;
+}
+.farm-card {
+  height: 64svh;
+  min-height: 460px;
 }

@@ -1,3 +1,4 @@
+import { initialMicroState } from "../../src/micro/state";
 import { test, expect, type Page } from "@playwright/test";
 async function preset(page: Page, id: string) {
   await page.getByLabel("Work on").selectOption("micro");
@@ -61,6 +62,10 @@ test("plant, grow, harvest, replant, reinvest and persist through actual farm pl
     await expect(page.locator("#season")).toContainText(`${balance} coins`);
   }
   await page.getByRole("button", { name: /Open a plot/ }).click();
+  await page.getByRole("button", { name: "Land 16,18", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Farm tool / cancel build", exact: true })
+    .click();
   await expect(page.locator("#farm-summary")).toContainText("10 plots");
   await page.getByRole("button", { name: /Improve soil/ }).click();
   await expect(page.locator("#farm-summary")).toContainText("Soil level 1/3");
@@ -118,9 +123,7 @@ test("an empty broke farm can recover, and unaffordable seeds do not spend money
   await page.getByLabel("Work on").selectOption("micro");
   await page
     .getByLabel("Game state JSON")
-    .fill(
-      JSON.stringify({ coins: 0, plots: Array(9).fill(null), soilLevel: 0 }),
-    );
+    .fill(JSON.stringify({ ...initialMicroState(), coins: 0 }));
   await page.getByRole("button", { name: "Apply state", exact: true }).click();
   await expect(page.locator("#season")).toContainText("0 coins");
   await page

@@ -7,7 +7,7 @@ pnpm install
 pnpm dev
 ```
 
-Open the printed URL. Vite reloads changes immediately. The page contains a playable Phaser farm and HTML controls. See [the farming loop](micro-game.md) for crops, reinvestment, rules, and stage presets. Narrative systems are still to come.
+Open the printed URL. Vite reloads changes immediately. The page contains a playable Phaser farm and HTML controls. See [the farming loop](micro-game.md) for crops, reinvestment, rules, and stage presets. See [construction](construction.md) for building types and the 160-turn track, and [macro integration](macro-farm-contract.md) for policies and loss effects. Narrative events are still to come.
 
 ## Choose your work
 
