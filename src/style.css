@@ -1,9 +1,19 @@
+/* Override ambiguous glyphs, including in mixed text. */
+@font-face {
+  font-family: "Farm Pixel";
+  src: url("/fonts/farm-readable.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030, U+0032, U+0035-0037, U+006C;
+}
 @font-face {
   font-family: "Farm Pixel";
   src: url("/fonts/pixelify-sans.ttf") format("truetype");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0000-002F, U+0031, U+0033-0034, U+0038-006B, U+006D-10FFFF;
 }
 :root {
   font-family: "Farm Pixel", monospace;
