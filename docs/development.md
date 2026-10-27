@@ -42,7 +42,7 @@ Add narrative data and simulation rules when gameplay needs them. Do not add pla
 
 ## Deployment
 
-Use Cloudflare Pages' native GitHub integration for `abewheel/whatwesow`:
+The `whatwesow` Cloudflare Pages project uses native GitHub integration for `abewheel/whatwesow`. Its production domain is [whatwesow.com](https://whatwesow.com), with [whatwesow.pages.dev](https://whatwesow.pages.dev) as the Pages hostname. Manage it in the personal Cloudflare account that owns the domain.
 
 | Setting           | Value                        |
 | ----------------- | ---------------------------- |
@@ -55,6 +55,6 @@ Use Cloudflare Pages' native GitHub integration for `abewheel/whatwesow`:
 
 Cloudflare installs dependencies, builds, and deploys on pushes. Enable branch previews for pull requests. No runtime secrets, backend, or deployment Action is needed. The separate GitHub Validate workflow checks every push and pull request; the Pages build also checks TypeScript. Pages deployments do not automatically wait for the Validate workflow. Require its check on pull requests through GitHub branch protection if needed.
 
-Connect the repository in Cloudflare → Workers & Pages → Create → Pages → Connect to Git. The GitHub app must have access to this repository. A Git integration project must be created as such; do not create a Direct Upload project as a substitute.
+Manage builds and custom domains in Cloudflare → Workers & Pages → whatwesow. Keep the GitHub app authorized for this repository. The apex domain uses a Cloudflare-managed CNAME to `whatwesow.pages.dev`. No deployment credentials belong in this repository or in GitHub secrets.
 
 Sources: [Pages Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/), [build configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/).
