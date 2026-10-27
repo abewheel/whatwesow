@@ -1,6 +1,6 @@
 # Farm asset inventory and state checklist
 
-This is the art production checklist as of `2abe43c` on `main`. It inventories the current code and the [concept art](images/art-direction.png), then proposes the missing assets needed to carry that direction into a buildable farm. Proposed entries and upgrade appearances are design decisions for art planning, not implemented buildings, unlocks, or economic rules.
+This is the building and plant art production checklist. It inventories the current code and the [concept art](images/art-direction.png), then proposes the missing assets needed to carry that direction into a buildable farm. Proposed entries and upgrade appearances are design decisions for art planning, not implemented buildings, unlocks, or economic rules.
 
 Sources: [construction catalog](../src/micro/world.ts), [crop definitions](../src/micro/state.ts), [current artwork](art-assets.md), [farming rules](micro-game.md), and [design system](design-system.md). Repeated tree instances count as one asset type. Neighbors can reuse building types; they do not require a new sprite for every resident.
 
@@ -97,7 +97,7 @@ The inventory contains **28 asset types: 10 buildings, 5 trees, 10 crops, and 3 
 
 These are coverage requirements, not a demand for 1,116 separate PNG files. Modular seasonal, damage, and fruit overlays may cover multiple combinations when the final composite is visually correct. Every valid combination still needs a reviewable preview. For orchard fruit, the unladen mature sprite is in the tree-maturity count; a fruit-ready overlay is additional. Its snow/frost treatment must match the season without implying that winter fruit production is already a rule.
 
-The proposed upgrade count and new plant stages are production assumptions. If a design changes, revise the table and counts before generating art. Existing soil levels 0–3 affect harvest value but do not upgrade the crop silhouette. Soil, fences, paths, gates, and irrigation need their own supporting terrain/prop checklist; animals, characters, and product icons also remain separate from this building-and-plant inventory.
+The proposed upgrade count and new plant stages are production assumptions. If a design changes, revise the table and counts before generating art. Existing soil levels 0–3 affect harvest value but do not upgrade the crop silhouette. Soil, fences, paths, gates, and irrigation need their own supporting terrain/prop checklist; animals, characters, and product icons also remain separate from this building-and-plant inventory. The animated farmer and current HUD artwork are documented in [art assets](art-assets.md#farmer-and-hud).
 
 ## Existing coverage and gaps
 

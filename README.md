@@ -18,4 +18,14 @@ A single-player farming game for your browser.
 
 **What will you leave behind?**
 
-[Local development & deployment](docs/development.md)
+## Work on the game
+
+Start with [the session guide](docs/session-start.md) for the current playable scope, code map, and checks. [Development](docs/development.md) covers setup, isolated instances, saves, and deployment.
+
+```sh
+corepack enable
+pnpm install
+pnpm dev --instance validation-my-task
+```
+
+Use the printed URL, including its query string. Run `pnpm validate` before handing over substantive changes.

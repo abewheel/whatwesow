@@ -1,6 +1,8 @@
 # Development
 
-Use Node 22 and pnpm 10 (`corepack enable`).
+Start with [the session guide](session-start.md) for implemented scope and code entry points.
+
+Use Node 22.13+ on the 22.x line (`.node-version` selects 22) and pnpm 10.20.0 (`corepack enable`). `package.json` also accepts Node 24.x and 26+.
 
 ```sh
 pnpm install
@@ -32,13 +34,16 @@ pnpm exec playwright install chromium # once
 pnpm validate
 ```
 
-Validation runs lint, types, state-boundary tests, a production build, and browser tests. Browser tests launch their own server on port 5181 and refuse to reuse an existing one. If another builder is testing there, use `PLAYWRIGHT_PORT=5193 pnpm validate` for an isolated browser-test port. For visual changes, also launch a named local instance, exercise the changed behavior, inspect browser errors and network failures, capture and inspect Playwright screenshots, and stop the instance afterward.
+Validation runs formatting, lint, types, unit/integration tests, a production build, development browser tests, and production browser tests. Browser tests launch their own server on port 5181 and refuse to reuse an existing one. If another builder is testing there, use `PLAYWRIGHT_PORT=5193 pnpm validate` for an isolated development browser-test port. Production tests separately require port 5182, configured in `playwright.production.config.ts`; `PLAYWRIGHT_PORT` does not change that port. For application changes, also launch a named local instance, exercise the changed behavior, inspect browser errors and network failures, capture and inspect Playwright screenshots, and stop the instance afterward.
 
 ## Structure
 
-- `src/micro/` and `src/macro/`: independent state, validation, and future pure rules.
+- `src/micro/`: farming state, validation, pure actions, construction, and loss reconciliation.
+- `src/macro/`: calendar and farm-policy state and validation; authored narrative is still future work.
+- `src/contracts/`: shared world dimensions and farm-policy types and validation.
 - `src/game/state.ts`: save composition and domain integration.
-- `src/game/scene.ts`: Phaser rendering. No game rules here.
+- `src/game/scene.ts`, `layout.ts`, `boundary.ts`: Phaser rendering, projection, and seasonal scenery. No economic rules here.
+- `src/game/farmer*.ts`: presentation tasks, adjacent-cell routing, and farmer animation.
 - `src/storage/save.ts`: IndexedDB boundary.
 - `src/main.ts`: application startup and HTML UI.
 - `src/dev/`: development-only playtest tools.

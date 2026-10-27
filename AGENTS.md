@@ -142,7 +142,7 @@ Build incrementally, prioritizing a playable game over architectural complexity.
 
 ## Local Development and Validation
 
-Read [docs/development.md](docs/development.md) for setup, playtest state, architecture boundaries, and Cloudflare Pages configuration. Use `pnpm dev --instance validation-<task-id>` for your own local instance, then run `pnpm validate` after substantive changes. Inspect changed UI paths with Playwright, capture and inspect current screenshots, and stop your instance after validation. Keep playtest tools gated by `import.meta.env.DEV` so production builds exclude them.
+Start with [docs/session-start.md](docs/session-start.md) for implemented scope and a task-to-code map. Read [docs/development.md](docs/development.md) for setup, playtest state, architecture boundaries, and Cloudflare Pages configuration. Use `pnpm dev --instance validation-<task-id>` for your own local instance, then run `pnpm validate` after substantive changes. Inspect changed UI paths with Playwright, capture and inspect current screenshots, and stop your instance after validation. Keep playtest tools gated by `import.meta.env.DEV` so production builds exclude them.
 
 ## Micro and Macro Work
 

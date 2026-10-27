@@ -25,3 +25,9 @@ The hedgerow source has an uneven row gutter. Its four frames use explicit recta
 `public/art/woodland-variation-seasons.png` adds a second four-season, two-column woodland atlas. Created with the built-in image generation tool. Prompt: a transparent pixel-art grouping of a tall silver birch, short blue-green spruce, and mossy fallen log, repeated at the same isometric camera and pivot in spring, summer, autumn, and winter. Show airy fresh spring leaves, full summer foliage, golden autumn birch leaves, and bare snowy winter birch beside a snowy evergreen. Keep generous transparent cell margins, root footprints, crisp leaf clusters, pale peeling bark, upper-left lighting, and no fruit or labels.
 
 The southwest river now continues to the visible window edge instead of ending in a narrow strip. The northeast hedge borders a wildflower meadow. Woodland fills the northwest exterior with deterministic, irregular groves selected from both seasonal sets. Deeper stands and edge trees vary in spacing, size, and shade; all tree feet remain outside the buildable grid. Seasonal water ripples, reeds, bank stones, and meadow details remain procedural. The road crosses the river at the south corner and continues beyond the view.
+
+## Farmer and HUD
+
+`public/art/farmer-sprites.png` supplies farmer animation frames; [the sprite specification](../public/art/farmer-sprites.md) records its layout. `src/game/farmer.ts` handles animation, contact points, grounded shadows, and presentation tasks. `farmer-route.ts` finds permitted adjacent work positions around actual plot and structure footprints, and `farmer-task.ts` maps successful actions to visual targets. Layout changes invalidate old destinations. Farmer position and tasks are not saved and do not delay economic results.
+
+The detailed HUD frame and 4 × 4 icon atlas are documented in [HUD artwork](art/hud-generation.md). They are static shipped assets, with no runtime generation.
