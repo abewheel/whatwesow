@@ -1,5 +1,15 @@
 import Phaser from "phaser";
 import type { MacroState } from "../macro/state";
+import {
+  FARM_SIZE,
+  TILE_WIDTH,
+  TILE_HEIGHT,
+  cropArea,
+  gardenArea,
+  farmObjects,
+  footprint,
+  project,
+} from "./layout";
 
 import { crops, initialMicroState, type MicroState } from "../micro/state";
 export type PlotTarget = {
@@ -98,13 +108,12 @@ export class FarmScene extends Phaser.Scene {
     const p = seasons[this.season],
       winter = this.season === "winter";
     this.cameras.main.setBackgroundColor(p.grass);
-    const scale = Math.min(this.scale.width / 680, this.scale.height / 440);
+    const scale = Math.min(this.scale.width / 740, this.scale.height / 470);
     g.setScale(scale);
     scenery.setScale(scale);
     const w = this.scale.width / scale,
       h = this.scale.height / scale;
-    const cx = Math.round(w / 2),
-      cy = Math.round(h / 2 + 10);
+    const cx = Math.round(w / 2);
     const rect = (
       x: number,
       y: number,
@@ -147,84 +156,115 @@ export class FarmScene extends Phaser.Scene {
         rect(x + 2, y - 1, 1, 2, p.light);
       }
     }
-    // Stream: dark banks, shallow edges, and broken reflected light.
-    const riverX = (y: number) => cx + 267 + Math.sin(y / 58) * 13;
-    for (let y = 0; y < h; y += 2) {
-      const x = riverX(y);
-      rect(x - 5, y, 49, 2, p.shade);
-      rect(x - 2, y, 43, 2, 0xb2b68a);
-      rect(x + 1, y, 37, 2, winter ? 0xa3cbd0 : 0x4d9299);
-      rect(x + 5, y, 29, 2, winter ? 0xc1dee0 : 0x6bb3b0);
-      if (y % 8 === 0)
-        rect(x + 7 + noise(y) * 10, y, 8 + noise(y, 2) * 8, 1, 0xb9d9c4);
-      if (y % 17 === 0) {
-        rect(x - 4, y, 4, 3, 0x8b967e);
-        rect(x - 3, y, 3, 1, 0xd1d1ac);
-      }
-    }
-    // Stone walkway, with individually shaded uneven pavers.
-    for (let i = -Math.ceil(w / 10); i < Math.ceil(w / 10); i++) {
-      const x = cx + i * 10,
-        y = cy - 83 + i * 5;
-      diamond(x, y, 34, 18, 0x9a9874);
-      for (let j = 0; j < 3; j++) {
-        const sx = x + j * 7 - 8,
-          sy = y + j * 3 - 5;
-        rect(sx, sy, 8, 4, 0xaaa88b);
-        rect(sx, sy, 7, 2, 0xd4d0ac);
-        rect(sx + 1, sy + 4, 5, 1, 0x898d71);
-      }
-    }
-    const atlasKey =
-      this.season === "fall" || winter ? `farm-${this.season}` : "farm-spring";
-    const sprite = (
-      frame: number,
-      x: number,
-      y: number,
-      size: number,
-      tint = p.tint,
-    ) => {
-      const image = this.add
-        .image(x, y, atlasKey, frame)
-        .setDisplaySize(size, size)
-        .setTint(tint);
-      scenery.add(image);
-      return image;
+    const origin = { x: cx, y: h / 2 - 163 };
+    const at = (col: number, row: number) => {
+      const point = project(col, row);
+      return { x: origin.x + point.x, y: origin.y + point.y };
     };
-    // Back row: varied canopies and two buildings with the same projection.
-    for (let i = 0; i < Math.ceil(w / 61) + 1; i++)
-      sprite(
-        i % 4 === 1 ? 5 : 2,
-        i * 64 - 12,
-        48 + (i % 3) * 8,
-        115 + (i % 2) * 20,
+    const polygon = (
+      points: { x: number; y: number }[],
+      color: number,
+      alpha = 1,
+      line = false,
+    ) => {
+      const vertices = points.map(
+        ({ x, y }) => new Phaser.Math.Vector2(origin.x + x, origin.y + y),
       );
-    sprite(1, cx + 100, cy - 120, 190);
-    sprite(0, cx - 109, cy - 121, 216);
-    sprite(4, cx - 258, cy - 55, 137);
-    const tileW = Math.min(34, (w - 30) / 8),
-      tileH = tileW / 2;
+      if (line) {
+        g.lineStyle(1, color, alpha);
+        g.strokePoints(vertices, true);
+      } else {
+        g.fillStyle(color, alpha);
+        g.fillPoints(vertices, true);
+      }
+    };
+    const farm = { col: 0, row: 0, width: FARM_SIZE, depth: FARM_SIZE };
+    const corners = footprint(farm);
+    polygon(
+      corners.map(({ x, y }) => ({ x, y: y + 6 })),
+      0x64804a,
+    );
+    polygon(corners, p.grass);
+    // Every visible surface uses the same 2:1 tile axes.
+    for (let row = 0; row < FARM_SIZE; row++)
+      for (let col = 0; col < FARM_SIZE; col++) {
+        const center = at(col + 0.5, row + 0.5);
+        diamond(
+          center.x,
+          center.y,
+          TILE_WIDTH,
+          TILE_HEIGHT,
+          (col + row) % 2 ? p.grass : p.light,
+        );
+        g.fillStyle(p.grass, 0.74);
+        g.fillPoints(
+          footprint({ col, row, width: 1, depth: 1 }).map(
+            ({ x, y }) => new Phaser.Math.Vector2(x + origin.x, y + origin.y),
+          ),
+          true,
+        );
+        for (let dot = 0; dot < 7; dot++) {
+          const point = at(
+            col + 0.1 + noise(row * 126 + col * 7 + dot) * 0.8,
+            row + 0.1 + noise(dot, col + row) * 0.8,
+          );
+          rect(point.x, point.y, 1, 1, dot % 3 ? p.light : p.shade);
+        }
+        polygon(
+          footprint({ col, row, width: 1, depth: 1 }),
+          p.shade,
+          0.25,
+          true,
+        );
+        if (col === 5 || row === 5) {
+          diamond(
+            center.x,
+            center.y,
+            TILE_WIDTH - 1,
+            TILE_HEIGHT - 1,
+            winter ? 0xd8ded0 : 0xc6bd95,
+          );
+          for (let stone = 0; stone < 4; stone++) {
+            const pos = at(
+              col + 0.15 + (stone % 2) * 0.4,
+              row + 0.15 + Math.floor(stone / 2) * 0.4,
+            );
+            diamond(pos.x, pos.y, 13, 6, 0x939882);
+            diamond(pos.x, pos.y - 1, 12, 5, winter ? 0xe2e5d7 : 0xe2d7b4);
+          }
+        }
+      }
     const targets: PlotTarget[] = [];
-    // Draw back to front while retaining stable plot IDs as land expands.
     const ordered = cells
       .map((cell, index) => ({ ...cell, index }))
       .sort((a, b) => a.row + a.col - b.row - b.col);
-    for (const { row, col, index } of ordered) {
-      const x = cx + ((col - row) * tileW) / 2;
-      const y = cy + ((col + row - 4) * tileH) / 2;
-      const unlocked = index < this.farm.plots.length;
-      diamond(x, y + 3, tileW - 1, tileH - 1, unlocked ? 0x6c492f : p.shade);
-      diamond(x, y, tileW - 2, tileH - 2, unlocked ? p.soil : p.grass);
-      if (!unlocked) continue;
+    // Preserve plot IDs and expansion order while projecting into the property grid.
+    for (const { col, row, index } of ordered) {
+      if (index >= this.farm.plots.length) continue;
+      const center = at(cropArea.col + col + 0.5, cropArea.row + row + 0.5);
+      const x = center.x,
+        y = center.y;
+      diamond(x, y + 2, TILE_WIDTH - 2, TILE_HEIGHT - 2, 0x67482e);
+      diamond(x, y, TILE_WIDTH - 2, TILE_HEIGHT - 2, p.soil);
+      for (let line = 0; line < 4; line++) {
+        const start = at(
+          cropArea.col + col + 0.15 + line * 0.2,
+          cropArea.row + row + 0.15,
+        );
+        const end = at(
+          cropArea.col + col + 0.15 + line * 0.2,
+          cropArea.row + row + 0.85,
+        );
+        g.lineStyle(1, winter ? 0xa49780 : 0xbd8752);
+        g.lineBetween(start.x, start.y, end.x, end.y);
+      }
       targets.push({
         index,
         x: x * scale,
         y: y * scale,
-        width: tileW * scale,
-        height: tileH * scale,
+        width: TILE_WIDTH * scale,
+        height: TILE_HEIGHT * scale,
       });
-      for (let line = 0; line < 3; line++)
-        rect(x - 5 + line * 4, y - 2 + line * 2, 5, 1, 0x805333);
       const plot = this.farm.plots[index];
       if (plot) {
         const ready = plot.growth === crops[plot.crop].steps;
@@ -244,48 +284,66 @@ export class FarmScene extends Phaser.Scene {
       }
     }
     this.onLayout?.(targets);
-    // Picket fencing follows the near edge of the isometric field.
-    for (let i = 0; i < 9; i++) {
-      const x = cx - 137 + i * 18,
-        y = cy + 12 + i * 9;
-      if (i < 8)
-        for (const dy of [-6, 0]) {
-          g.lineStyle(3, 0x78583d);
-          g.lineBetween(x + 2, y + dy + 2, x + 20, y + dy + 11);
-          g.lineStyle(2, 0xf1dfb1);
-          g.lineBetween(x + 2, y + dy, x + 20, y + dy + 9);
-        }
-      rect(x - 1, y - 13, 5, 19, 0x98764c);
-      rect(x - 1, y - 13, 3, 17, 0xf2e3b9);
-      rect(x, y - 15, 2, 2, 0xffefcb);
-    }
-    const flower = (x: number, y: number, color: number) => {
-      rect(x, y - 3, 1, 5, 0x447345);
-      rect(x - 2, y - 1, 2, 1, 0x5a8e43);
-      rect(x - 2, y - 6, 5, 3, color);
-      rect(x - 1, y - 7, 3, 5, color);
-      rect(x, y - 5, 1, 1, 0xffdf8b);
-    };
-    // Dense cottage borders: flower clusters rather than evenly spaced dots.
-    for (let i = 0; i < 105; i++) {
-      const x = cx + 133 + noise(i, 5) * 65,
-        y = cy - 23 + noise(i, 6) * 112;
-      if (i % 4 === 0) diamond(x, y + 2, 10, 5, p.shade);
-      flower(
-        x,
-        y,
-        winter ? 0xe7eee0 : [0xf2b3bd, 0xe7d0ec, 0xffedba, 0xd98aa1][i % 4],
+    // A garden is a decoration footprint too, with all flowers inside its cells.
+    const garden = gardenArea;
+    polygon(footprint(garden), winter ? 0xd4ded1 : 0x597d45);
+    for (let i = 0; i < 45; i++) {
+      const pos = at(
+        garden.col + 0.15 + noise(i, 5) * 1.7,
+        garden.row + 0.15 + noise(i, 6) * 2.7,
+      );
+      rect(pos.x, pos.y - 2, 1, 3, 0x447345);
+      rect(
+        pos.x - 1,
+        pos.y - 4,
+        3,
+        2,
+        winter ? 0xe7eee0 : [0xf2b3bd, 0xe7d0ec, 0xffedba][i % 3],
       );
     }
-    sprite(3, cx + 225, cy + 28, 119);
-    sprite(2, cx + 220, cy - 101, 142);
-    sprite(5, cx - 238, cy + 33, 149);
-    // Foreground details sit outside the central farm and HUD safe areas.
-    for (let i = 0; i < Math.ceil(w / 100); i++)
-      sprite(i % 3 === 0 ? 5 : 2, i * 107 + 22, h - 29 + (i % 2) * 13, 132);
-    if (winter) {
-      for (let i = 0; i < 120; i++)
-        rect(noise(i, 8) * w, noise(i, 9) * h, 2, 1, 0xf4f6e9);
+    polygon(footprint(garden), 0x8d7449, 1, true);
+    const atlasKey =
+      this.season === "fall" || winter ? `farm-${this.season}` : "farm-spring";
+    // Draw bases first. Art is anchored to the front corner of each footprint.
+    for (const object of farmObjects) {
+      if (object.kind === "building") {
+        const base = footprint(object);
+        polygon(
+          base.map(({ x, y }) => ({ x, y: y + 3 })),
+          0x887653,
+        );
+        polygon(base, winter ? 0xdce4d9 : 0xd1c5a0);
+        polygon(base, 0x8d8063, 0.8, true);
+        for (let row = object.row; row < object.row + object.depth; row++)
+          for (let col = object.col; col < object.col + object.width; col++)
+            polygon(
+              footprint({ col, row, width: 1, depth: 1 }),
+              0xa39878,
+              0.4,
+              true,
+            );
+      }
     }
+    for (const object of [...farmObjects].sort(
+      (a, b) =>
+        a.col + a.row + a.width + a.depth - (b.col + b.row + b.width + b.depth),
+    )) {
+      const back = at(
+        object.col + object.width / 2,
+        object.row + object.depth / 2,
+      );
+      const front = at(object.col + object.width, object.row + object.depth);
+      const size =
+        (((object.width + object.depth) * TILE_WIDTH) / 2) *
+        (object.kind === "tree" ? 1.08 : 0.94);
+      const image = this.add
+        .image(back.x, front.y - 2, atlasKey, object.frame)
+        .setOrigin(0.5, 0.96)
+        .setDisplaySize(size, size)
+        .setTint(p.tint);
+      scenery.add(image);
+    }
+    // The property boundary makes the shared grid readable at a glance.
+    polygon(corners, 0x526e3e, 0.65, true);
   }
 }

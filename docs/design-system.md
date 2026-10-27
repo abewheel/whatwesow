@@ -35,3 +35,18 @@ The scene combines a detailed sprite atlas with deterministic terrain textures. 
 Use parchment panels with two-pixel timber borders, a small inset highlight, and a restrained offset shadow. Corners stay nearly square. Use Georgia for names and short story headings, system sans-serif for resources, controls, and longer text. Keep labels at least 12px, with visible keyboard focus and native controls where practical. Use an 8px spacing rhythm, with 12–18px panel padding.
 
 Reserve motion for useful feedback: crop growth, harvest rewards, selected plots, and subtle environmental life. Future animation should honor reduced-motion preferences. Never rely on color alone to communicate available actions or crop readiness.
+
+## Grid and placeable objects
+
+All farm surfaces use a shared 2:1 projection: 36 × 18 logical pixels per tile. Store positions as column and row, never screen offsets. The example property is 18 × 18 tiles. Buildings, trees, garden beds, paths, and soil use the same projection. Stone foundations mark building footprints; artwork sits above the footprint, anchored at its front corner. Draw objects from back to front using their grid depth.
+
+| Object | Footprint | Intended role |
+| --- | --- | --- |
+| Farmhouse | 3 × 3 | Home and lifetime progression |
+| Barn | 3 × 3 | Livestock and production |
+| Garden shed | 2 × 2 | Tools and farming upgrades |
+| Well | 1 × 1 | Water and crop support |
+| Orchard or flowering tree | 2 × 2 | Future harvests or decoration |
+| Flower garden | 2 × 3 | Decoration |
+
+These roles describe the design direction, not implemented unlocks. The current placement data in `src/game/layout.ts` is a visual example. Future construction rules, prices, occupancy checks, unlocks, and persisted placements belong in the micro domain. Reuse the projection when that system arrives; replace the example objects with player-owned placements rather than adding screen-positioned scenery. Keep the render footprint explicit and leave open land for expansion. Decorative canopies may overhang their cells, but building bases must remain inside their footprints.
