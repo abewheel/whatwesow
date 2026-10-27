@@ -77,10 +77,12 @@ export class FarmScene extends Phaser.Scene {
       "/art/woodland-variation-seasons.png",
     );
     this.load.image("hedgerow", "/art/hedgerow-seasons.png");
+    this.load.image("farmer-walk", "/art/farmer-walk.png");
     this.load.spritesheet("farmer", "/art/farmer-sprites.png", {
       frameWidth: 181,
       frameHeight: 181,
     });
+    this.load.image("distinct-buildings", "/art/distinct-buildings.png");
     this.load.image("farm-states", "/art/farm-states.png");
     this.load.image("farm-spring", "/art/farm-atlas.png");
     this.load.image("farm-fall", "/art/farm-atlas-fall.png");
@@ -94,6 +96,39 @@ export class FarmScene extends Phaser.Scene {
       const [x, y, width, height] = productFrames[kind];
       this.textures.get("tree-products").add(kind, 0, x, y, width, height);
     }
+    const walk = this.textures.get("farmer-walk");
+    for (let row = 0; row < 2; row++)
+      for (let col = 0; col < 6; col++)
+        walk.add(
+          row * 6 + col,
+          0,
+          col * 362,
+          row ? 350 : 0,
+          362,
+          row ? 374 : 348,
+        );
+    const distinct = this.textures.get("distinct-buildings");
+    const source = distinct.getSourceImage();
+    const buildingFrames = [
+      [40, 20, 365, 410],
+      [405, 55, 435, 380],
+      [840, 70, 440, 370],
+      [0, 435, 405, 400],
+      [425, 500, 415, 330],
+      [840, 480, 440, 360],
+      [20, 880, 380, 310],
+      [395, 860, 445, 330],
+      [840, 840, 440, 360],
+    ];
+    for (const [i, [x, y, width, height]] of buildingFrames.entries())
+      distinct.add(
+        i,
+        0,
+        (x * source.width) / 1280,
+        (y * source.height) / 1280,
+        (width * source.width) / 1280,
+        (height * source.height) / 1280,
+      );
     this.harvestEffects = this.add.container().setDepth(100000);
 
     const cropTexture = this.textures.get("crop-stages");
@@ -411,40 +446,54 @@ export class FarmScene extends Phaser.Scene {
         (((item.width + item.height) * 64) / 2) *
         (item.width === 1 ? 1.08 : 0.94);
       const working = !!(s.pendingConstruction || s.pendingUpgrade);
-      const stateAtlas = working;
+      const distinctFrame = (
+        { mill: 0, greenhouse: 1, market: 2, hall: 3 } as Partial<
+          Record<string, number>
+        >
+      )[s.kind];
+      const stateAtlas = working && distinctFrame === undefined;
       const frame = item.frame;
       scenery.add(
         this.add
           .image(
             back.x,
             front.y - 2,
-            stateAtlas ? "farm-states" : atlas,
-            stateAtlas ? frame : item.frame,
+            distinctFrame !== undefined
+              ? "distinct-buildings"
+              : stateAtlas
+                ? "farm-states"
+                : atlas,
+            distinctFrame ?? frame,
           )
           .setOrigin(0.5, 0.96)
           .setDisplaySize(
             s.pendingConstruction && isTree(s.kind) ? size * 0.8 : size,
             s.pendingConstruction && isTree(s.kind) ? size * 0.8 : size,
           )
+          .setAlpha(working && distinctFrame !== undefined ? 0.72 : 1)
           .setDepth(front.y),
       );
-      if (isTree(s.kind)) continue;
-      const label = this.add
-        .text(
-          back.x,
-          front.y + 5,
-          `${item.name} · ${working ? "⚒" : s.level}`,
-          {
-            fontFamily: "Georgia",
-            fontSize: "13px",
-            color: working ? "#77756c" : "#493621",
-            backgroundColor: "#fff0ca",
-            padding: { x: 5, y: 3 },
-          },
-        )
-        .setOrigin(0.5, 0);
-      label.setDepth(front.y + 1);
-      scenery.add(label);
+      if (working && distinctFrame !== undefined) {
+        const scaffold = this.add.graphics().setDepth(front.y + 1);
+        // Timber rails across the two front faces keep pending work visible without labels.
+        const face = [base[1], base[2], base[3]];
+        for (const [width, color] of [
+          [4, 0x68472c],
+          [1, 0xd6ad70],
+        ]) {
+          scaffold.lineStyle(width, color);
+          for (const point of face)
+            scaffold.lineBetween(point.x, point.y, point.x, point.y - 30);
+          for (let i = 0; i < 2; i++) {
+            const a = face[i],
+              b = face[i + 1];
+            for (const height of [10, 27])
+              scaffold.lineBetween(a.x, a.y - height, b.x, b.y - height);
+            scaffold.lineBetween(a.x, a.y - 27, b.x, b.y - 10);
+          }
+        }
+        scenery.add(scaffold);
+      }
     }
     for (const service of serviceLocations(this.farm)) {
       const point = projectCell(service);
@@ -459,22 +508,15 @@ export class FarmScene extends Phaser.Scene {
       if (!visible(point.x, point.y)) continue;
       scenery.add(
         this.add
-          .image(point.x, point.y + 24, atlas, service.frame)
+          .image(
+            point.x,
+            point.y + 24,
+            service.id === "home" ? atlas : "distinct-buildings",
+            { seeds: 4, builder: 5, fields: 6, home: 0 }[service.id],
+          )
           .setOrigin(0.5, 0.96)
           .setDisplaySize(120, 120)
           .setDepth(point.y + 24),
-      );
-      scenery.add(
-        this.add
-          .text(point.x, point.y + 28, service.name, {
-            fontFamily: "Georgia",
-            fontSize: "14px",
-            color: "#493621",
-            backgroundColor: "#fff0ca",
-            padding: { x: 7, y: 4 },
-          })
-          .setOrigin(0.5, 0)
-          .setDepth(WORLD_HEIGHT + point.y),
       );
     }
     if (publishLayout) this.onLayout?.(targets);

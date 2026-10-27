@@ -94,6 +94,7 @@ export class Farmer {
   private arrival?: () => void;
   private elapsed = 0;
   private clock = 0;
+  private stride = 0;
   private facing = 1;
   private back = false;
   constructor(scene: Phaser.Scene) {
@@ -200,12 +201,16 @@ export class Farmer {
         this.elapsed = 0;
       }
     }
-    const next = this.route[0];
-    if (next) {
+    const walking = this.route.length > 0;
+    let remaining = (this.tasks.length > 3 ? 9 : 5) * dt;
+    while (this.route.length && remaining > 0) {
+      const next = this.route[0];
       const dc = next.col - this.position.col,
         dr = next.row - this.position.row;
       const distance = Math.hypot(dc, dr);
-      const speed = (this.tasks.length > 3 ? 9 : 5) * dt;
+      const speed = Math.min(distance, remaining);
+      remaining -= speed;
+      this.stride += speed * 5;
       this.facing = dc - dr >= 0 ? 1 : -1;
       this.back = dc + dr < 0;
       if (distance <= speed) {
@@ -216,14 +221,16 @@ export class Farmer {
         this.position.col += (dc / distance) * speed;
         this.position.row += (dr / distance) * speed;
       }
-    } else if (
+    }
+    if (
+      !walking &&
       this.active &&
       (this.active.action === "walk" || this.active.action === "visit")
     ) {
       this.active = undefined;
       arrived = this.arrival;
       this.arrival = undefined;
-    } else if (this.active) {
+    } else if (!walking && this.active) {
       const target = this.active.target;
       const point = project(target),
         feet = project(this.cell);
@@ -233,15 +240,17 @@ export class Farmer {
     }
     const point = project(this.position);
     this.view.setPosition(point.x, point.y).setDepth(point.y);
-    this.paint(Boolean(next), project);
+    this.paint(walking, project);
     // Readable development evidence without exposing a global game reference.
     if (import.meta.env.DEV) {
       const canvas = this.view.scene.game.canvas;
+      canvas.dataset.farmerScaleY = String(this.art.scaleY);
+      canvas.dataset.farmerFrame = `${this.art.texture.key}:${this.art.frame.name}`;
       canvas.dataset.farmerCell = cellKey(this.cell);
       canvas.dataset.farmerTarget = this.active
         ? cellKey(this.active.target)
         : "";
-      canvas.dataset.farmerMotion = next
+      canvas.dataset.farmerMotion = walking
         ? "walk"
         : (this.active?.action ?? "idle");
     }
@@ -269,11 +278,47 @@ export class Farmer {
                 : 7;
     const frame = action
       ? Math.min(5, Math.floor((this.elapsed / 1.15) * 6))
-      : Math.floor(this.clock * (walking ? 10 : 3)) % 6;
-    const [cx, cy] = contacts[row][frame];
+      : 0;
+    const walkFrame = Math.floor(this.stride) % 6;
+    const walkContacts = [
+      [
+        [219, 342],
+        [197, 342],
+        [182, 343],
+        [178, 342],
+        [183, 342],
+        [172, 342],
+      ],
+      [
+        [214, 355],
+        [197, 351],
+        [182, 350],
+        [180, 352],
+        [182, 352],
+        [174, 351],
+      ],
+    ];
+    const [cx, cy] = walking
+      ? walkContacts[row][walkFrame]
+      : contacts[row][frame];
+    const width = walking ? 362 : 181;
+    const height = walking ? (row ? 374 : 348) : 181;
     this.art
-      .setFrame(row * 6 + frame)
-      .setOrigin(this.facing < 0 ? 1 - cx / 181 : cx / 181, cy / 181)
+      .setTexture(
+        walking ? "farmer-walk" : "farmer",
+        row * 6 + (walking ? walkFrame : frame),
+      )
+      // One stable idle drawing breathes continuously, with its boots fixed at the origin.
+      .setScale(
+        58 / width,
+        (58 / width) *
+          (!walking &&
+          !action &&
+          !matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? 1 + Math.sin((this.clock * Math.PI * 2) / 3.6) * 0.008
+            : 1),
+      )
+      .setOrigin(this.facing < 0 ? 1 - cx / width : cx / width, cy / height)
       .setFlipX(this.facing < 0);
     this.effect.clear();
     const navigating =

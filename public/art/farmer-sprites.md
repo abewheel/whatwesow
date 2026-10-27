@@ -13,7 +13,7 @@
 | 6 | 36–41 | Carry a produce basket |
 | 7 | 42–47 | Idle |
 
-Walking plays at 10 frames per second. Farming actions play once over 1.15 seconds. These animations are presentation only and do not delay or change saved farming results. Appearance customization is deferred; this sheet contains one complete character.
+Walking uses the separate `farmer-walk.png` atlas, with six frames per direction and a gait driven by distance traveled. The original walking rows are unused. Farming actions play once over 1.15 seconds. These animations are presentation only and do not delay or change saved farming results. Appearance customization is deferred; this sheet contains one complete character.
 
 Created with the built-in image generation tool, using `farm-atlas.png` as a style reference.
 

@@ -303,6 +303,16 @@ const preview = document.createElement("div");
 preview.id = "placement-preview";
 preview.hidden = true;
 world.append(preview);
+const buildingTooltip = document.createElement("div");
+buildingTooltip.id = "building-tooltip";
+buildingTooltip.setAttribute("role", "tooltip");
+buildingTooltip.hidden = true;
+world.append(buildingTooltip);
+world.addEventListener("pointerleave", () => {
+  hoveredCell = null;
+  preview.hidden = true;
+  buildingTooltip.hidden = true;
+});
 document.querySelector("#go-to-cell")!.addEventListener("click", () => {
   const row = Number(
       document.querySelector<HTMLInputElement>("#view-row")!.value,
@@ -486,6 +496,7 @@ function clearBuild() {
   movingPlotId = null;
   pickingPlot = false;
   preview.hidden = true;
+  buildingTooltip.hidden = true;
   document.querySelector("#placement-hint")!.textContent =
     "Drag to explore, click ground to walk, or click a building to visit.";
   render();
@@ -498,6 +509,7 @@ function selectBuild(kind: BuildingKind | "plot") {
   movingPlotId = null;
   pickingPlot = false;
   preview.hidden = true;
+  buildingTooltip.hidden = true;
   render();
   document.querySelector<HTMLDetailsElement>("#build-shop")!.open = false;
   document.querySelector("#placement-hint")!.textContent =
@@ -528,6 +540,7 @@ for (const [id, crop] of Object.entries(crops)) {
     movingPlotId = null;
     pickingPlot = false;
     preview.hidden = true;
+    buildingTooltip.hidden = true;
     selected = id as CropId;
     closeService();
     render();
@@ -574,6 +587,7 @@ function act(action: FarmAction | { type: "season" }) {
         movingPlotId = null;
         pickingPlot = false;
         preview.hidden = true;
+        buildingTooltip.hidden = true;
         render();
       }
     } catch (error) {
@@ -712,6 +726,7 @@ scene.onLayout = (targets) => {
     if (service && target.row === service.row && target.col === service.col)
       button.dataset.service = service.id;
     else delete button.dataset.service;
+    button.toggleAttribute("data-building", Boolean(structure || service));
     const plot = index === undefined ? null : state.plots[index];
     const label =
       index !== undefined
@@ -723,7 +738,8 @@ scene.onLayout = (targets) => {
             : `Land ${target.row},${target.col}`;
     if (button.getAttribute("aria-label") !== label) {
       button.setAttribute("aria-label", label);
-      button.title = label;
+      // Accessible names remain available without visible building labels.
+      button.removeAttribute("title");
     }
   }
   if (hoveredCell) showPreview(hoveredCell);
@@ -734,13 +750,39 @@ scene.onLayout = (targets) => {
 };
 function showPreview(cell: Cell) {
   hoveredCell = cell;
+  buildingTooltip.hidden = true;
   const moving = state.structures.find((s) => s.id === movingId);
   const kind = moving?.kind ?? (movingPlotId !== null ? "plot" : buildMode);
-  if (!kind) {
+  const hovered = !kind
+    ? state.structures.find((s) =>
+        footprint(s, buildings[s.kind].width, buildings[s.kind].height).some(
+          (c) => cellKey(c) === cellKey(cell),
+        ),
+      )
+    : undefined;
+  const service =
+    !kind && !hovered
+      ? serviceLocations(state).find((s) =>
+          footprint(s, s.width, s.height).some(
+            (c) => cellKey(c) === cellKey(cell),
+          ),
+        )
+      : undefined;
+  if (!kind && !hovered && !service) {
     preview.hidden = true;
+    buildingTooltip.hidden = true;
     return;
   }
-  const item = kind === "plot" ? { width: 1, height: 1 } : buildings[kind];
+  const item =
+    kind === "plot"
+      ? { width: 1, height: 1 }
+      : kind
+        ? buildings[kind]
+        : hovered
+          ? buildings[hovered.kind]
+          : service!;
+  const anchor = kind ? cell : (hovered ?? service)!;
+  preview.dataset.mode = kind ? "placement" : "hover";
   let layout = moving
     ? {
         ...state,
@@ -761,10 +803,20 @@ function showPreview(cell: Cell) {
       item.height,
       state.farmPolicy,
     ),
-    pos = projectCell(cell);
+    pos = projectCell(anchor);
   preview.hidden = false;
-  preview.dataset.valid = String(fits);
+  preview.dataset.valid = String(!kind || fits);
   const total = item.width + item.height;
+  if (!kind && (hovered || service)) {
+    buildingTooltip.textContent = hovered
+      ? buildings[hovered.kind].name
+      : service!.name;
+    buildingTooltip.hidden = false;
+    Object.assign(buildingTooltip.style, {
+      left: `${(pos.x + (item.width - item.height) * 16) * zoom}px`,
+      top: `${(pos.y + (total - 1) * 16) * zoom + 10}px`,
+    });
+  }
   Object.assign(preview.style, {
     left: `${(pos.x - item.height * 32) * zoom}px`,
     top: `${(pos.y - 16) * zoom}px`,
@@ -780,6 +832,7 @@ document.querySelector("#move-plot")!.addEventListener("click", () => {
   closeService();
   pickingPlot = true;
   preview.hidden = true;
+  buildingTooltip.hidden = true;
   render();
   document.querySelector("#placement-hint")!.textContent =
     "Choose the plot to move, then choose open land.";

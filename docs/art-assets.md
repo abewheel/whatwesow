@@ -6,7 +6,7 @@ Created with the built-in image generation tool. Generation brief: a transparent
 
 `farm-atlas-fall.png` and `farm-atlas-winter.png` use the same six-cell layout. Variant prompts preserve the exact objects, cell boundaries, and positions while changing vegetation and ground details. Autumn uses amber and russet leaves with no pink blossoms. Winter uses bare snow-covered branches, snow on roofs and ground footprints, dormant flower boxes, and warm windows.
 
-The construction renderer uses these sprites for player-owned structures. Some later building types currently reuse another type’s frame and need distinct artwork. Upgrade levels affect gameplay but still share the base artwork. Autumn and winter use distinct atlases so foliage and roofs change with the terrain. Summer adds a warm tint to the spring artwork.
+The construction renderer uses these sprites for player-owned structures. The mill, greenhouse, market, and hall use `distinct-buildings.png`, as do the village nursery, builder, and field shed, so each building type has a distinct silhouette. Upgrade levels affect gameplay but still share the base artwork. Autumn and winter use distinct atlases so foliage and roofs change with the terrain. Summer adds a warm tint to the spring artwork.
 
 See the [complete building and plant inventory](asset-inventory.md) for required seasonal, upgrade, growth, and disrepair states, current coverage, and proposed additions.
 
@@ -31,3 +31,13 @@ The southwest river now continues to the visible window edge instead of ending i
 `public/art/farmer-sprites.png` supplies farmer animation frames; [the sprite specification](../public/art/farmer-sprites.md) records its layout. `src/game/farmer.ts` handles animation, contact points, grounded shadows, and presentation tasks. `farmer-route.ts` finds permitted adjacent work positions around actual plot and structure footprints, and `farmer-task.ts` maps successful actions to visual targets. Layout changes invalidate old destinations. Farmer position and tasks are not saved and do not delay economic results.
 
 The detailed HUD frame and 4 × 4 icon atlas are documented in [HUD artwork](art/hud-generation.md). They are static shipped assets, with no runtime generation.
+
+## Distinct buildings and walking cycle
+
+`distinct-buildings.png` is a transparent 1280 × 1280 atlas. Its nine cells show a windmill, greenhouse, market, hall, nursery, carpenter workshop, field shed, barn, and farmhouse. The last two remain reference cells; the existing seasonal barn and farmhouse artwork stays in use. Explicit frame bounds in `scene.ts` preserve complete roofs and steps. Building names remain in accessible hit targets and inspection menus, with a parchment tooltip in the game font on hover and no permanent building labels or native tooltips. Hovering any occupied cell highlights the complete footprint. New building sprites use timber scaffolding and faded artwork during construction and upgrades; both clear when work finishes.
+
+`farmer-walk.png` is a transparent 2172 × 724 walking atlas with six columns and two directions. Explicit frame bounds exclude the neighboring row. Boot baselines anchor each frame to the shadow. Distance traveled drives the gait, and movement carries unused distance across cell boundaries. The original sheet still supplies idle and work poses. Idle uses one stable pose with continuous, foot-anchored breathing; reduced motion keeps it still.
+
+Both assets used the built-in image generation tool. Building prompt: a warm painted pixel-style isometric farm atlas with a four-sail grain windmill, glass greenhouse, striped produce market, bell-tower hall, green-roof nursery with sapling racks, open carpenter workshop with lumber, and slate-roof tool shed. Each building has a distinct silhouette, with no text. A second pass removed the backdrop, then a layout pass added clear row gutters.
+
+Walking prompt: a six-column, two-row transparent sprite sheet of the same straw-hatted farmer in a green shirt, blue overalls, and brown boots, facing southeast and northeast. Show contact, lift, passing, opposite contact, lift, and passing poses with opposing arms; keep body size and ground baseline consistent, with no text or scenery.
