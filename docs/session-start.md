@@ -5,13 +5,13 @@ Read this after the repository's `AGENTS.md` and `README.md`. It describes the i
 ## Current playable scope
 
 - Plant turnips, carrots, and corn in their allowed seasons; end a turn to grow crops across seasons; harvest crops and ripe fruit for coins; buy plots and soil improvements.
-- Place, repeat, move, and upgrade structures on a 128 × 128 estate. Pan, jump to coordinates, and zoom from 25% to 200%.
+- Place, repeat, move, and upgrade structures on a 64 × 64 estate. Pan, jump to coordinates, and zoom from 25% to 200%.
 - Advance through four seasons across 40 years, ending at turn 160. Construction and upgrades charge immediately, complete next season, and then apply their benefits. Apple trees mature after three years and oaks after ten; mature trees produce harvestable apples or acorns each fall. Markets pay seasonal income. Authored construction unlocks work, but the full lifetime economy is not balanced.
 - Apply macro farm policies and explicit losses through integration. Narrative dialogue, authored community decisions, relationships, animals, and the legacy ending are still future work.
-- See seasonal scenery, exterior woodland and river, and an animated farmer who walks to adjacent work positions. Actions commit before their visual animation; farmer movement is presentation, not a labor or timing rule.
+- See seasonal scenery, exterior woodland and river, and an animated farmer who walks to adjacent work positions. Clicking ground sends the farmer there. Building menus open on arrival, and planting and harvesting commit only after reaching the plot or tree. A new destination or Escape cancels unfinished travel actions.
 - Autosave locally, export/import saves, and edit development-only playtest states. Current saves are version 3; versions 1 and 2 migrate.
 
-The HUD uses Plant, Build, and Upgrade activities in a folding bottom dock. Open Estate controls for season advancement, navigation, zoom, and plot movement. Open the farm menu for save status and export/import. See [construction](construction.md) for controls and [farming](micro-game.md) for the loop.
+Click the farmhouse for the calendar, the nursery for seeds and saplings, the field shed for plots, soil and tree care, and the builder for structures. The compact HUD shows the selected seeds, placement cancellation, and folded View controls for camera navigation. Open the farm menu for save status and export/import. See [construction](construction.md) for controls and [farming](micro-game.md) for the loop.
 
 ## Find the owning code
 

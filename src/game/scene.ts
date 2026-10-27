@@ -16,6 +16,7 @@ import type { MacroState } from "../macro/state";
 import { initialMicroState, type MicroState } from "../micro/state";
 import {
   buildings,
+  serviceLocations,
   isTree,
   cellAllowed,
   cellKey,
@@ -148,6 +149,25 @@ export class FarmScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     this.farmer?.update(delta, projectCell);
     this.scenery?.sort("depth");
+  }
+  travelTo(
+    target: Cell,
+    width = 1,
+    height = 1,
+    adjacent = false,
+    preference: "rear" | "front" = "front",
+    onArrival?: () => void,
+  ) {
+    return (
+      this.farmer?.travel(
+        target,
+        width,
+        height,
+        adjacent,
+        preference,
+        onArrival,
+      ) ?? false
+    );
   }
   resetFarmer() {
     this.farmer?.reset();
@@ -425,6 +445,37 @@ export class FarmScene extends Phaser.Scene {
         .setOrigin(0.5, 0);
       label.setDepth(front.y + 1);
       scenery.add(label);
+    }
+    for (const service of serviceLocations(this.farm)) {
+      const point = projectCell(service);
+      if (publishLayout && service.row < 0)
+        targets.push({
+          ...service,
+          x: point.x,
+          y: point.y,
+          width: 64,
+          height: 32,
+        });
+      if (!visible(point.x, point.y)) continue;
+      scenery.add(
+        this.add
+          .image(point.x, point.y + 24, atlas, service.frame)
+          .setOrigin(0.5, 0.96)
+          .setDisplaySize(120, 120)
+          .setDepth(point.y + 24),
+      );
+      scenery.add(
+        this.add
+          .text(point.x, point.y + 28, service.name, {
+            fontFamily: "Georgia",
+            fontSize: "14px",
+            color: "#493621",
+            backgroundColor: "#fff0ca",
+            padding: { x: 7, y: 4 },
+          })
+          .setOrigin(0.5, 0)
+          .setDepth(WORLD_HEIGHT + point.y),
+      );
     }
     if (publishLayout) this.onLayout?.(targets);
   }

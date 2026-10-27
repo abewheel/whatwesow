@@ -17,12 +17,12 @@ export function presetState(id: string): GameState {
     state.structures.push({
       id: state.nextStructureId++,
       kind: "barn",
-      row: 124,
-      col: 124,
+      row: 60,
+      col: 60,
       level: 1,
     });
     state.plots.push({ crop: "corn", growth: 3 });
-    state.plotCells.push({ row: 127, col: 127 });
+    state.plotCells.push({ row: 63, col: 63 });
     state.plotIds.push(state.nextPlotId++);
     return parseState(state);
   }

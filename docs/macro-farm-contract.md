@@ -8,10 +8,10 @@ Start with [ownership](game-boundaries.md) and [construction](construction.md). 
 
 | Field | Meaning |
 | --- | --- |
-| `land` | Union of granted rectangles, each `{row,col,width,height}`. Omitted means all 128 × 128 cells; `[]` means no land. |
+| `land` | Union of granted rectangles, each `{row,col,width,height}`. Omitted means all 64 × 64 cells; `[]` means no land. |
 | `blockedBuildings` | Building kind IDs forbidden for new construction and upgrades. Existing buildings remain until removed explicitly. |
 | `buildingLimits` | Optional per-kind counts. Omitted kinds have no quota. Lowering a quota prevents new builds, and does not choose which existing buildings disappear. |
-| `maxPlots` | Optional new-plot limit, 0–16,384. Removing existing plots requires an explicit loss or land revocation. |
+| `maxPlots` | Optional new-plot limit, 0–4,096. Removing existing plots requires an explicit loss or land revocation. |
 | `costMultiplier` | Applied to seeds, new plots, buildings, soil improvements, and upgrades. Costs round up. Default 1; zero supports free construction. |
 | `productionMultiplier` | Applied to harvest and seasonal income totals, rounded down. Default 1; zero supports seizure of output. |
 | `allowWork` | Whether emergency delivery work is allowed. Defaults to true. |

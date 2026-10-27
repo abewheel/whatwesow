@@ -1415,3 +1415,153 @@ button:not(.plot-hit):disabled {
     max-height: max(100px, calc(100svh - 520px));
   }
 }
+
+/* Building services use the same pixel frames, fonts, and icons as the HUD. */
+[hidden] {
+  display: none !important;
+}
+#service-panel {
+  position: absolute;
+  z-index: 8;
+  top: 100px;
+  right: 18px;
+  bottom: 150px;
+  width: min(440px, calc(100% - 36px));
+  overflow: auto;
+  padding: 20px;
+  color: var(--ink);
+  background: var(--paper) url("/art/hud-frame-detailed.png") center / 100% 100%;
+  border: 4px solid var(--wood);
+  box-shadow: 4px 4px 0 #49362155;
+}
+.service-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.service-heading h2 {
+  margin: 0;
+  font-size: 28px;
+}
+#service-description,
+#selected-building,
+#progression {
+  font-size: 17px;
+  line-height: 1.4;
+}
+#service-panel #crop-options,
+#build-options,
+#sapling-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+#service-panel #crop-options button {
+  width: 100%;
+}
+#service-panel button {
+  margin: 4px 0;
+}
+#structure-inspection {
+  margin: 16px 0;
+  border-top: 2px solid #b39162;
+  padding-top: 12px;
+}
+#structure-inspection label {
+  display: block;
+}
+#structure-target {
+  width: 100%;
+  padding: 8px;
+}
+.work-tools.mode-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+#camera-controls {
+  margin-left: auto;
+}
+#camera-controls summary {
+  cursor: pointer;
+  padding: 8px 12px;
+}
+.camera-panel {
+  position: absolute;
+  z-index: 9;
+  right: 0;
+  bottom: calc(100% + 8px);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: min(430px, 100%);
+  padding: 12px;
+  background: var(--paper);
+  border: 3px solid var(--wood);
+  pointer-events: auto;
+}
+.camera-panel input {
+  width: 64px;
+}
+#seed-selection {
+  font-size: 17px;
+}
+#placement-hint {
+  flex-basis: 100%;
+}
+#service-panel .control-detail {
+  display: block;
+  position: static;
+  font-size: 14px;
+  width: auto;
+  padding: 4px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+@media (max-width: 600px) {
+  #service-panel {
+    top: 110px;
+    bottom: 170px;
+    right: 8px;
+    width: calc(100% - 16px);
+    padding: 14px;
+  }
+}
+/* Reuse the HUD's nine-slice frame so tall menus retain a clear paper interior. */
+#service-panel {
+  border: 18px solid transparent;
+  border-image: url("/art/hud-frame-detailed.png") 150 fill / 18px / 0 stretch;
+  background: none;
+  padding: 12px;
+}
+.service-heading h2 {
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.farm-tools {
+  width: fit-content;
+  max-width: calc(100% - 24px);
+}
+#service-panel #crop-options button {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  justify-content: stretch;
+}
+#service-panel #crop-options .seed-price {
+  grid-column: 3;
+  grid-row: 1;
+}
+#service-panel #crop-options button > .pixel-icon {
+  grid-row: 1;
+}
+#service-panel .control-detail {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  transform: none;
+}
+@media (max-width: 800px) {
+  #service-panel {
+    top: 210px;
+  }
+}

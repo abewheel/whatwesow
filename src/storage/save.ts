@@ -6,16 +6,20 @@ export async function openSaveStore(namespace: string) {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
+  async function readRaw(): Promise<unknown> {
+    return new Promise((resolve, reject) => {
+      const request = db
+        .transaction("saves")
+        .objectStore("saves")
+        .get("current");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
   return {
+    readRaw,
     async load(): Promise<GameState | undefined> {
-      const value = await new Promise<unknown>((resolve, reject) => {
-        const request = db
-          .transaction("saves")
-          .objectStore("saves")
-          .get("current");
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
+      const value = await readRaw();
       return value === undefined ? undefined : parseState(value);
     },
     async save(state: GameState) {

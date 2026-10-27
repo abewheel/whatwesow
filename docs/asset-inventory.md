@@ -29,7 +29,7 @@ Eight building types are implemented in the construction catalog; the coop and s
 | ID | Building | Status | Footprint | Tiers | Intended role |
 | --- | --- | --- | --- | --- | --- |
 | `home` | Farmhouse | Implemented, frame 0 | 3 × 2 | 1 | Home |
-| `shed` | Tool shed | Implemented, frame 4 | 2 × 2 | 3 | Cheaper seeds |
+| `shed` | Seed storehouse | Implemented, frame 4 | 2 × 2 | 3 | Cheaper seeds |
 | `well` | Irrigation well | Implemented, frame 3 | 2 × 2 | 3 | Growth and harvest support |
 | `barn` | Harvest barn | Implemented, frame 1 | 3 × 2 | 3 | Harvest value |
 | `mill` | Grain mill | Implemented, currently reuses barn frame | 3 × 3 | 3 | Corn processing; windmill artwork from the reference |
@@ -126,4 +126,4 @@ Produce distinct artwork for the implemented eight buildings, two construction t
 
 ## Estate boundary set
 
-The decorative outer boundary has two sets of four seasonal woodland-cluster frames, a southwest river with banks and reeds, a southeast gravel road with split rails and a footbridge, and a northeast low stone wall with flowering hedges. These sit outside the 128 × 128 buildable estate. They are environment compositions, separate from the 28 placeable/planned building and plant types counted above. Broadleaf trees change foliage and become bare in winter; the pine remains evergreen. The boundary currently has maintained seasonal art only; decaying and dilapidated treatments remain future asset work.
+The decorative outer boundary has two sets of four seasonal woodland-cluster frames, a southwest river with banks and reeds, a southeast gravel road with split rails and a footbridge, and a northeast low stone wall with flowering hedges. These sit outside the 64 × 64 buildable estate. They are environment compositions, separate from the 28 placeable/planned building and plant types counted above. Broadleaf trees change foliage and become bare in winter; the pine remains evergreen. The boundary currently has maintained seasonal art only; decaying and dilapidated treatments remain future asset work.

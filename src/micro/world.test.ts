@@ -81,7 +81,7 @@ describe("estate construction", () => {
       actOnFarm(start, {
         type: "build",
         kind: "shed",
-        cell: { row: 127, col: 127 },
+        cell: { row: 63, col: 63 },
       }),
     ).toThrow(/outside/);
     expect(() =>
@@ -152,7 +152,7 @@ describe("estate construction", () => {
     for (const patch of [
       { plotCells: [] },
       { plotCells: Array(9).fill({ row: 16, col: 16 }) },
-      { structures: [{ id: 1, kind: "shed", row: 127, col: 127, level: 1 }] },
+      { structures: [{ id: 1, kind: "shed", row: 63, col: 63, level: 1 }] },
       { structures: [{ id: 1, kind: "shed", row: 5, col: 5, level: 4 }] },
       { structures: [...start.structures, ...start.structures] },
     ])
@@ -168,39 +168,69 @@ describe("estate construction", () => {
     );
   });
 });
-it("supports the full 128-square estate and rejects footprints beyond it", () => {
+it("supports the full 64-square estate and rejects footprints beyond it", () => {
   const start = { ...establishedFarm(), coins: 100000 };
   const far = actOnFarm(
     start,
-    { type: "build", kind: "barn", cell: { row: 125, col: 125 } },
+    { type: "build", kind: "barn", cell: { row: 61, col: 61 } },
     159,
   ).state;
-  expect(far.structures.at(-1)).toMatchObject({ row: 125, col: 125 });
+  expect(far.structures.at(-1)).toMatchObject({ row: 61, col: 61 });
   expect(() =>
     actOnFarm(
       start,
-      { type: "build", kind: "shed", cell: { row: 127, col: 127 } },
+      { type: "build", kind: "shed", cell: { row: 63, col: 63 } },
       159,
     ),
   ).toThrow(/outside/);
   const plotted = actOnFarm(start, {
     type: "expand",
-    cell: { row: 127, col: 127 },
+    cell: { row: 63, col: 63 },
   }).state;
-  expect(plotted.plotCells.at(-1)).toEqual({ row: 127, col: 127 });
+  expect(plotted.plotCells.at(-1)).toEqual({ row: 63, col: 63 });
   expect(() =>
-    actOnFarm(start, { type: "expand", cell: { row: 128, col: 127 } }),
+    actOnFarm(start, { type: "expand", cell: { row: 64, col: 63 } }),
   ).toThrow();
   const many = {
     ...start,
     structures: [],
     plots: Array(1025).fill(null),
     plotCells: Array.from({ length: 1025 }, (_, i) => ({
-      row: Math.floor(i / 128),
-      col: i % 128,
+      row: Math.floor(i / 64),
+      col: i % 64,
     })),
     plotIds: Array.from({ length: 1025 }, (_, i) => i + 1),
     nextPlotId: 1026,
   };
   expect(parseMicroState(many).plots).toHaveLength(1025);
+});
+
+it("keeps services at reachable roadside entrances when dense farms fill every lot", async () => {
+  const { serviceLocations } = await import("./world");
+  const { farmerWorkRoute } = await import("../game/farmer-route");
+  const dense = {
+    plotCells: Array.from({ length: 1024 }, (_, i) => ({
+      row: Math.floor(i / 32) * 2,
+      col: (i % 32) * 2,
+    })),
+    structures: [],
+  };
+  const locations = serviceLocations(dense);
+  expect(locations.map((s) => s.id)).toContain("home");
+  for (const service of locations) {
+    expect(service.row).toBe(-2);
+    expect(
+      farmerWorkRoute(
+        { row: 0, col: 1 },
+        service,
+        { layout: dense },
+        service.width,
+        service.height,
+        "front",
+      ),
+    ).toBeDefined();
+  }
+  expect(
+    serviceLocations(initialMicroState()).some((s) => s.id === "home"),
+  ).toBe(false);
 });

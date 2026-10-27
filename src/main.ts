@@ -10,11 +10,18 @@ import {
   upgradeHint,
   type Opportunity,
 } from "./micro/progression";
+import {
+  serviceMenus,
+  isTree,
+  constructionService,
+  inspectionService,
+  type ServiceId,
+} from "./game/services";
 import { WORLD_CELLS, WORLD_SIZE } from "./contracts/world";
 import { turnNumber } from "./macro/state";
 import {
   buildings,
-  isTree,
+  serviceLocations,
   canPlace,
   cellKey,
   footprint,
@@ -45,9 +52,9 @@ import "./style.css";
 import { actOnFarm, type FarmAction } from "./micro/rules";
 import {
   crops,
+  canPlant,
   expansionCost,
   harvestValue,
-  canPlant,
   soilCost,
   seedCost,
   type CropId,
@@ -56,17 +63,11 @@ import {
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div>
-<header class="hud-top"><div class="farm-title"><span class="eyebrow">Your first acre</span><h1>What We Sow</h1></div><output id="season"></output><button id="estate-toggle" aria-expanded="false" aria-controls="estate-controls" aria-label="Estate controls" title="Estate controls">${icon("build")}</button><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
-<div id="estate-controls" class="estate-tools"><button id="next-season">Next season</button><button id="farm-mode" aria-label="Farm tool / cancel build">${icon("seeds")}<span>Farm</span></button><button id="home-view" aria-label="Center farm">${icon("home")}<span>Home</span></button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level" aria-live="polite">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">100%</button></span><details id="land-tools"><summary>Explore land</summary><button id="move-plot">Move a plot</button><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="127" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="127" value="16"></label><button id="go-to-cell">Go to land</button></details><p id="placement-hint">Drag the field or use arrow keys to explore.</p></div><div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Choose seeds, then click an empty plot.</strong><span id="farm-summary" class="sr-only"></span><div id="farm-stats" aria-hidden="true"></div></div>
-<section class="farm-tools" aria-label="Farming tools">
-<div id="tool-panels">
-<section id="panel-plant" class="tool-panel" aria-label="Planting"><div id="crop-options"></div><p id="crop-opportunity"></p></section>
-<section id="panel-build" class="tool-panel" aria-label="Construction" hidden><div id="build-shop"><div class="build-heading"><span class="eyebrow">Construction</span><button id="expand"></button></div><p id="progression"></p><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></div></section>
-<section id="panel-upgrade" class="tool-panel" aria-label="Upgrades" hidden><div class="upgrade-soil"><button id="improve"></button></div><div class="building-inspector"><p id="selected-building">Select a building on the farm to inspect it.</p><div><button id="upgrade-building" hidden>Upgrade selected building</button><button id="move-building" hidden>Move selected building</button></div></div></section>
-</div>
-<div class="mode-bar"><div class="mode-switch" aria-label="Farm activities"><button id="mode-plant" aria-pressed="true" aria-controls="panel-plant">${icon("seeds")}<span>Plant</span></button><button id="mode-build" aria-pressed="false" aria-controls="panel-build">${icon("build")}<span>Build</span></button><button id="mode-upgrade" aria-pressed="false" aria-controls="panel-upgrade">${icon("improve")}<span>Upgrade</span></button></div><span id="active-tool" role="status">Turnip seeds</span><button id="grow" aria-label="End turn" title="End this turn and advance one season">${icon("grow")}<span>End turn</span></button><button id="work" aria-label="Help with a delivery · +4 coins" title="Help with a delivery · +4 coins" hidden>${icon("harvest")}<span>+4</span>${icon("coin")}</button><button id="collapse-tools" aria-expanded="true" aria-controls="tool-panels" aria-label="Collapse tools" title="Collapse tools"><span aria-hidden="true">⌄</span></button></div>
-</section></div>
-<dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><p class="menu-note">A little care, season after season.</p><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><p class="menu-help">Choose seeds. Plant an empty plot. End your turn to grow crops into the next season, then harvest for coins.</p><button id="resume">Back to the farm</button></dialog>
+<header class="hud-top"><div class="farm-title"><span class="eyebrow">Your first acre</span><h1>What We Sow</h1></div><output id="season"></output><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
+<div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Click a building to visit, or an empty plot to plant.</strong><span id="farm-summary" class="sr-only"></span><div id="farm-stats" aria-hidden="true"></div></div>
+<section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><span id="seed-selection"></span><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
+<div id="service-controls" hidden><div class="seed-shop"><div id="crop-options"></div><p id="crop-opportunity"></p></div><button id="next-season">End turn</button><p id="progression"></p><button id="work" hidden>Unload a seed delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><button id="move-plot">Move a plot</button><details id="build-shop"><summary>Building plans</summary><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></details><p id="selected-building"></p><button id="upgrade-building" hidden></button><button id="move-building" hidden></button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">100%</button></span><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="63" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="63" value="16"></label><button id="go-to-cell">Go to land</button></div>
+<dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><p class="menu-note">A little care, season after season.</p><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><p class="menu-help">Visit the nursery for seeds. End a season at the farmhouse to grow crops and complete construction.</p><button id="resume">Back to the farm</button></dialog>
 </section></main>`;
 const menu = document.querySelector<HTMLDialogElement>("#farm-menu")!;
 document
@@ -80,27 +81,129 @@ document
   .addEventListener("click", () =>
     document.querySelector<HTMLInputElement>("#import")!.click(),
   );
-document.querySelector("#estate-toggle")!.addEventListener("click", (event) => {
-  const button = event.currentTarget as HTMLButtonElement;
-  const open = button.getAttribute("aria-expanded") !== "true";
-  button.setAttribute("aria-expanded", String(open));
-  document.querySelector(".estate-tools")!.classList.toggle("is-open", open);
-  if (open) collapseTools();
+// Keep only field work and view controls on the HUD. Services own their menus.
+const servicePanel = document.createElement("section");
+servicePanel.id = "service-panel";
+servicePanel.hidden = true;
+servicePanel.setAttribute("aria-labelledby", "service-title");
+servicePanel.innerHTML = `<div class="service-heading"><div><span class="eyebrow">Around the farm</span><h2 id="service-title"></h2></div><button id="close-service" aria-label="Close building menu">×</button></div><p id="service-description"></p><div id="home-actions" hidden></div><div id="seed-actions" hidden></div><div id="builder-actions" hidden></div><div id="field-actions" hidden></div>`;
+document.querySelector(".farm-card")!.append(servicePanel);
+function moveControls(target: string, selectors: string[]) {
+  for (const selector of selectors)
+    document.querySelector(target)!.append(document.querySelector(selector)!);
+}
+moveControls("#home-actions", ["#next-season", "#progression"]);
+moveControls("#seed-actions", [".seed-shop", "#work"]);
+moveControls("#field-actions", ["#expand", "#improve", "#move-plot"]);
+moveControls("#builder-actions", ["#build-shop"]);
+document.querySelector<HTMLButtonElement>("#expand")!.dataset.build = "plot";
+const saplings = document.createElement("div");
+saplings.innerHTML = `<h3>Saplings & shade trees</h3><div id="sapling-options"></div>`;
+document.querySelector("#seed-actions")!.append(saplings);
+const inspection = document.createElement("section");
+inspection.id = "structure-inspection";
+inspection.innerHTML = `<h3 id="inspection-heading">Your buildings</h3><label for="structure-target" id="inspection-label">Choose a building</label><select id="structure-target"></select>`;
+document.querySelector("#builder-actions")!.append(inspection);
+moveControls("#structure-inspection", [
+  "#selected-building",
+  "#upgrade-building",
+  "#move-building",
+]);
+document
+  .querySelector("#structure-target")!
+  .addEventListener("change", (event) => {
+    const value = (event.target as HTMLSelectElement).value;
+    inspectedId = value ? Number(value) : null;
+    render();
+  });
+document.querySelector("#build-shop summary")!.textContent = "Building plans";
+
+const cameraControls = document.createElement("details");
+cameraControls.id = "camera-controls";
+cameraControls.addEventListener("toggle", () => {
+  if (cameraControls.open) closeService();
 });
-const estateControls = document.querySelector<HTMLElement>("#estate-controls")!;
-const hudHeader = document.querySelector<HTMLElement>(".hud-top")!;
-const hudDock = document.querySelector<HTMLElement>(".hud-bottom")!;
-const farmCard = document.querySelector<HTMLElement>(".farm-card")!;
-// Navigation occupies the space between the live header and folded activity dock.
-const fitEstateControls = new ResizeObserver(() => {
-  const header = hudHeader.getBoundingClientRect();
-  const dock = hudDock.getBoundingClientRect();
-  const farm = farmCard.getBoundingClientRect();
-  estateControls.style.top = `${header.bottom - farm.top + 8}px`;
-  estateControls.style.maxHeight = `${Math.max(44, dock.top - header.bottom - 16)}px`;
+cameraControls.innerHTML = `<summary>View controls</summary><div class="camera-panel"></div>`;
+document.querySelector(".work-tools")!.append(cameraControls);
+moveControls(".camera-panel", [
+  "#home-view",
+  ".zoom-controls",
+  "#pan-left",
+  "#pan-right",
+]);
+for (const input of ["#view-row", "#view-col"])
+  document
+    .querySelector(".camera-panel")!
+    .append(document.querySelector(input)!.closest("label")!);
+moveControls(".camera-panel", ["#go-to-cell"]);
+document.querySelector("#farm-mode")!.textContent = "Cancel placement";
+function closeService() {
+  if (!servicePanel.hidden) viewport.focus({ preventScroll: true });
+  servicePanel.hidden = true;
+}
+let activeService: ServiceId | null = null;
+function openService(service: ServiceId) {
+  activeService = service;
+  const inspected = state.structures.find((s) => s.id === inspectedId);
+  if (
+    (service === "fields" && inspected && !isTree(inspected.kind)) ||
+    (service === "builder" && inspected && isTree(inspected.kind))
+  )
+    inspectedId = null;
+  if (service === "fields")
+    document.querySelector("#field-actions")!.append(inspection);
+  else document.querySelector("#builder-actions")!.prepend(inspection);
+  render();
+  servicePanel.hidden = false;
+  servicePanel.scrollTop = 0;
+  const menu = serviceMenus[service];
+  document.querySelector("#service-title")!.textContent = menu.name;
+  document.querySelector("#service-description")!.textContent =
+    menu.description;
+  for (const [id, entry] of Object.entries(serviceMenus))
+    document.getElementById(entry.container)!.hidden = id !== service;
+  document
+    .querySelector<HTMLButtonElement>("#close-service")!
+    .focus({ preventScroll: true });
+  if (service === "builder")
+    document.querySelector<HTMLDetailsElement>("#build-shop")!.open = true;
+}
+function visit(
+  service: ServiceId,
+  destination: Cell & { width: number; height: number },
+) {
+  cameraControls.open = false;
+  closeService();
+  clearBuild();
+  const request = ++navigationVersion;
+  const menu = serviceMenus[service];
+  const reached = scene.travelTo(
+    destination,
+    destination.width,
+    destination.height,
+    true,
+    "front",
+    () => {
+      if (request !== navigationVersion) return;
+      openService(service);
+      message.textContent = menu.name;
+    },
+  );
+  message.textContent = reached
+    ? `Walking to ${menu.name}.`
+    : `No walking path to ${menu.name}.`;
+}
+document
+  .querySelector("#close-service")!
+  .addEventListener("click", closeService);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    navigationVersion++;
+    cameraControls.open = false;
+    closeService();
+    clearBuild();
+  }
 });
-for (const element of [hudHeader, hudDock, farmCard])
-  fitEstateControls.observe(element);
 const status = document.querySelector<HTMLElement>("#save-status")!;
 const scene = new FarmScene();
 const game = new Phaser.Game({
@@ -116,6 +219,8 @@ let state = initialState();
 const harvestFeedback = new HarvestFeedback(state.coins);
 let selected: CropId = "turnip";
 let saving = false;
+let loadFailed = false;
+let navigationVersion = 0;
 let buildMode: BuildingKind | "plot" | null = null;
 let movingId: number | null = null;
 let movingPlotId: number | null = null;
@@ -125,85 +230,6 @@ let centered = false;
 const zoomLevels = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 let zoomIndex = 3;
 let zoom = zoomLevels[zoomIndex];
-type ToolMode = "plant" | "build" | "upgrade";
-let toolMode: ToolMode = "plant";
-let toolsCollapsed = false;
-function renderTools() {
-  if (!toolsCollapsed) {
-    document.querySelector(".estate-tools")!.classList.remove("is-open");
-    document
-      .querySelector("#estate-toggle")!
-      .setAttribute("aria-expanded", "false");
-  }
-  const panels = document.querySelector<HTMLElement>("#tool-panels")!;
-  panels.hidden = toolsCollapsed;
-  for (const mode of ["plant", "build", "upgrade"] as const) {
-    document
-      .querySelector(`#mode-${mode}`)!
-      .setAttribute("aria-pressed", String(mode === toolMode));
-    document.querySelector<HTMLElement>(`#panel-${mode}`)!.hidden =
-      mode !== toolMode;
-  }
-  const collapse =
-    document.querySelector<HTMLButtonElement>("#collapse-tools")!;
-  collapse.setAttribute("aria-expanded", String(!toolsCollapsed));
-  collapse.setAttribute(
-    "aria-label",
-    toolsCollapsed ? "Expand tools" : "Collapse tools",
-  );
-  collapse.title = toolsCollapsed ? "Expand tools" : "Collapse tools";
-  collapse.innerHTML = `<span class="dock-chevron" aria-hidden="true"></span>`;
-  collapse.dataset.collapsed = String(toolsCollapsed);
-  document.querySelector("#active-tool")!.textContent =
-    movingId !== null
-      ? "Move building"
-      : movingPlotId !== null || pickingPlot
-        ? "Move plot"
-        : buildMode
-          ? `Place ${buildMode === "plot" ? "plot" : buildings[buildMode].name}`
-          : toolMode === "upgrade"
-            ? "Select a building"
-            : toolMode === "build"
-              ? "Choose a structure"
-              : `${crops[selected].name} seeds`;
-}
-function showTools(mode: ToolMode, reset = true) {
-  document.querySelector(".estate-tools")!.classList.remove("is-open");
-  document
-    .querySelector("#estate-toggle")!
-    .setAttribute("aria-expanded", "false");
-  toolMode = mode;
-  toolsCollapsed = false;
-  if (reset) {
-    buildMode = null;
-    movingId = null;
-    movingPlotId = null;
-    pickingPlot = false;
-    preview.hidden = true;
-  }
-  renderTools();
-}
-function collapseTools() {
-  toolsCollapsed = true;
-  renderTools();
-  const focused = document.activeElement;
-  if (focused && document.querySelector("#tool-panels")!.contains(focused))
-    document.querySelector<HTMLButtonElement>(`#mode-${toolMode}`)!.focus();
-}
-for (const mode of ["plant", "build", "upgrade"] as const)
-  document
-    .querySelector(`#mode-${mode}`)!
-    .addEventListener("click", () => showTools(mode));
-document.querySelector("#collapse-tools")!.addEventListener("click", () => {
-  toolsCollapsed = !toolsCollapsed;
-  renderTools();
-});
-document.querySelector(".farm-tools")!.addEventListener("keydown", (event) => {
-  if ((event as KeyboardEvent).key === "Escape" && !toolsCollapsed) {
-    event.stopPropagation();
-    collapseTools();
-  }
-});
 const viewport = document.querySelector<HTMLElement>("#farm")!;
 const world = document.querySelector<HTMLElement>("#farm-world")!;
 world.style.width = `${WORLD_WIDTH}px`;
@@ -216,13 +242,8 @@ function updateViewport() {
     height = viewport.clientHeight;
   renderer.style.width = `${width}px`;
   renderer.style.height = `${height}px`;
-  if (game.scale.width !== width || game.scale.height !== height) {
-    if (centered) {
-      viewport.scrollLeft += (game.scale.width - width) / 2;
-      viewport.scrollTop += (game.scale.height - height) / 2;
-    }
+  if (game.scale.width !== width || game.scale.height !== height)
     game.scale.resize(width, height);
-  }
   scene.setViewport(
     viewport.scrollLeft / zoom,
     viewport.scrollTop / zoom,
@@ -295,14 +316,14 @@ document.querySelector("#go-to-cell")!.addEventListener("click", () => {
     row >= WORLD_SIZE ||
     col >= WORLD_SIZE
   ) {
+    document.querySelector<HTMLElement>("#placement-hint")!.hidden = false;
     document.querySelector("#placement-hint")!.textContent =
-      "Choose row and column 0–127.";
+      "Choose row and column 0–63.";
     return;
   }
   const p = projectCell({ row, col });
   viewport.scrollLeft = p.x * zoom - viewport.clientWidth / 2;
   viewport.scrollTop = p.y * zoom - viewport.clientHeight / 2;
-  document.querySelector<HTMLDetailsElement>("#land-tools")!.open = false;
 });
 function centerFarm() {
   const p = projectCell({ row: 16, col: 16 });
@@ -384,10 +405,81 @@ viewport.addEventListener(
       e.preventDefault();
       e.stopImmediatePropagation();
       suppressClick = false;
+      return;
+    }
+    if (
+      !e.detail ||
+      buildMode ||
+      movingId !== null ||
+      movingPlotId !== null ||
+      pickingPlot
+    )
+      return;
+    const bounds = viewport.getBoundingClientRect();
+    const x = (e.clientX - bounds.left + viewport.scrollLeft) / zoom;
+    const y = (e.clientY - bounds.top + viewport.scrollTop) / zoom;
+    // Match the visible artwork as well as its keyboard-accessible ground tiles.
+    const service = serviceLocations(state).find((s) => {
+      const p = projectCell(s);
+      return Math.abs(x - p.x) < 45 && y > p.y - 75 && y < p.y + 24;
+    });
+    const building = [...state.structures].reverse().find((s) => {
+      const item = buildings[s.kind];
+      const back = projectCell({
+        row: s.row + (item.height - 1) / 2,
+        col: s.col + (item.width - 1) / 2,
+      });
+      const front = projectCell({
+        row: s.row + item.height - 0.5,
+        col: s.col + item.width - 0.5,
+      });
+      const size =
+        (item.width + item.height) * 32 * (item.width === 1 ? 1.08 : 0.94);
+      return (
+        Math.abs(x - back.x) < size * 0.32 &&
+        y > front.y - size * 0.8 &&
+        y < front.y - 2
+      );
+    });
+    if (service || building) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (service) visit(service.id, service);
+      else inspectBuilding(building!.id);
     }
   },
   true,
 );
+function inspectBuilding(id: number) {
+  const building = state.structures.find((s) => s.id === id);
+  if (!building) return;
+  if (isTree(building.kind) && Boolean(building.product)) {
+    closeService();
+    const request = ++navigationVersion;
+    const item = buildings[building.kind];
+    const reached = scene.travelTo(
+      building,
+      item.width,
+      item.height,
+      true,
+      "rear",
+      () => {
+        if (request === navigationVersion)
+          void act({ type: "harvestTree", id });
+      },
+    );
+    message.textContent = reached
+      ? "Walking to harvest this tree."
+      : "No walking path to this tree.";
+    return;
+  }
+  inspectedId = id;
+  visit(inspectionService(building.kind), {
+    ...building,
+    width: buildings[building.kind].width,
+    height: buildings[building.kind].height,
+  });
+}
 function clearBuild() {
   buildMode = null;
   movingId = null;
@@ -395,31 +487,33 @@ function clearBuild() {
   pickingPlot = false;
   preview.hidden = true;
   document.querySelector("#placement-hint")!.textContent =
-    "Farm tool selected. Drag or use arrow keys to explore.";
+    "Drag to explore, click ground to walk, or click a building to visit.";
   render();
 }
-document.querySelector("#farm-mode")!.addEventListener("click", () => {
-  clearBuild();
-  showTools("plant");
-});
+document.querySelector("#farm-mode")!.addEventListener("click", clearBuild);
 function selectBuild(kind: BuildingKind | "plot") {
+  closeService();
   buildMode = kind;
   movingId = null;
   movingPlotId = null;
   pickingPlot = false;
   preview.hidden = true;
   render();
-  collapseTools();
+  document.querySelector<HTMLDetailsElement>("#build-shop")!.open = false;
   document.querySelector("#placement-hint")!.textContent =
-    `Place ${kind === "plot" ? "a plot" : buildings[kind].name}: choose open land. Green fits; red is blocked. Farm tool cancels.`;
+    `Place ${kind === "plot" ? "a plot" : buildings[kind].name}: choose open land. Green fits; red is blocked. Escape or Cancel placement cancels.`;
 }
-for (const kind of ["plot", ...Object.keys(buildings)] as (
-  "plot" | BuildingKind
-)[]) {
+for (const kind of Object.keys(buildings) as BuildingKind[]) {
   const button = document.createElement("button");
   button.dataset.build = kind;
   button.addEventListener("click", () => selectBuild(kind));
-  document.querySelector("#build-options")!.append(button);
+  document
+    .querySelector(
+      constructionService(kind) === "seeds"
+        ? "#sapling-options"
+        : "#build-options",
+    )!
+    .append(button);
 }
 
 const message = document.querySelector<HTMLElement>("#farm-message")!;
@@ -435,6 +529,7 @@ for (const [id, crop] of Object.entries(crops)) {
     pickingPlot = false;
     preview.hidden = true;
     selected = id as CropId;
+    closeService();
     render();
     message.textContent = `${crop.name} · ${crop.steps} season${crop.steps === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")} · Harvest ${policyProduction(harvestValue(state, id as CropId), state.farmPolicy ?? {})} coins.`;
   });
@@ -442,6 +537,7 @@ for (const [id, crop] of Object.entries(crops)) {
 }
 let farmQueue: Promise<void> = Promise.resolve();
 function act(action: FarmAction | { type: "season" }) {
+  const requestedNavigation = navigationVersion;
   farmQueue = farmQueue.then(async () => {
     try {
       const previous = state;
@@ -453,10 +549,12 @@ function act(action: FarmAction | { type: "season" }) {
         action.type === "season"
           ? (result.state as typeof state)
           : replaceDomain(state, "micro", result.state),
-        action.type === "season",
+        false,
+        false,
         action.type === "harvest" || action.type === "harvestTree",
       );
-      if (action.type !== "season") scene.performAction(action, previous);
+      if (action.type !== "season" && requestedNavigation === navigationVersion)
+        scene.performAction(action, previous);
       if (action.type === "harvest" || action.type === "harvestTree") {
         const cell =
           action.type === "harvest"
@@ -486,6 +584,13 @@ function act(action: FarmAction | { type: "season" }) {
   return farmQueue;
 }
 scene.onLayout = (targets) => {
+  const keys = new Set(targets.map(cellKey));
+  for (const [key, button] of cellButtons)
+    if (!keys.has(key)) {
+      button.remove();
+      cellButtons.delete(key);
+    }
+  const services = serviceLocations(state);
   const plotMap = new Map(state.plotCells.map((c, i) => [cellKey(c), i]));
   const structureMap = new Map(
     state.structures.flatMap((s) =>
@@ -502,6 +607,7 @@ scene.onLayout = (targets) => {
       button.className = "plot-hit";
       button.dataset.cell = key;
       button.addEventListener("click", () => {
+        cameraControls.open = false;
         const cell = { row: target.row, col: target.col };
         if (movingPlotId !== null) {
           void act({ type: "movePlot", id: movingPlotId, cell });
@@ -529,17 +635,37 @@ scene.onLayout = (targets) => {
           );
           return;
         }
+        const service = serviceLocations(state).find((s) =>
+          footprint(s, s.width, s.height).some((c) => cellKey(c) === key),
+        );
+        if (service) {
+          visit(service.id, service);
+          return;
+        }
         const index = state.plotCells.findIndex((c) => cellKey(c) === key);
         if (index >= 0) {
-          if (toolMode !== "plant") {
-            message.textContent = "Choose Plant to work this plot.";
-            return;
-          }
-          void act(
-            state.plots[index]
-              ? { type: "harvest", plot: index }
-              : { type: "plant", plot: index, crop: selected },
-          );
+          closeService();
+          const request = ++navigationVersion;
+          const plotId = state.plotIds[index],
+            crop = selected;
+          const actionType = state.plots[index] ? "harvest" : "plant";
+          const reached = scene.travelTo(cell, 1, 1, true, "rear", () => {
+            if (request !== navigationVersion) return;
+            const currentIndex = state.plotIds.indexOf(plotId);
+            if (
+              currentIndex < 0 ||
+              cellKey(state.plotCells[currentIndex]) !== key
+            )
+              return;
+            void act(
+              actionType === "harvest"
+                ? { type: "harvest", plot: currentIndex }
+                : { type: "plant", plot: currentIndex, crop },
+            );
+          });
+          message.textContent = reached
+            ? `Walking to ${actionType === "plant" ? "plant" : "harvest"} this plot.`
+            : "No walking path to this plot.";
           return;
         }
         const building = state.structures.find((s) =>
@@ -548,19 +674,15 @@ scene.onLayout = (targets) => {
           ),
         );
         if (building) {
-          if (toolMode === "plant" && isTree(building.kind)) {
-            if (building.product) {
-              void act({ type: "harvestTree", id: building.id });
-              return;
-            } else message.textContent = treeStatus(building);
-          }
-          inspectedId = building.id;
-          showTools("upgrade", false);
-          render();
+          inspectBuilding(building.id);
           return;
         }
-        message.textContent =
-          "Open land. Choose a plot, tree, or structure in Build & progression.";
+        closeService();
+        navigationVersion++;
+        const walking = scene.travelTo(cell);
+        message.textContent = walking
+          ? "Walking to that spot."
+          : "That tile cannot be reached.";
       });
       button.addEventListener("pointerenter", () => showPreview(target));
       button.addEventListener("focus", () => showPreview(target));
@@ -584,22 +706,30 @@ scene.onLayout = (targets) => {
     else delete button.dataset.structure;
     if (index !== undefined) button.dataset.plot = String(index);
     else delete button.dataset.plot;
+    const service = services.find((s) =>
+      footprint(s, s.width, s.height).some((c) => cellKey(c) === key),
+    );
+    if (service && target.row === service.row && target.col === service.col)
+      button.dataset.service = service.id;
+    else delete button.dataset.service;
     const plot = index === undefined ? null : state.plots[index];
     const label =
       index !== undefined
         ? `Plot ${index + 1}: ${!plot ? "empty" : `${crops[plot.crop].name}, ${plot.growth === crops[plot.crop].steps ? "ready to harvest" : `growing ${plot.growth}/${crops[plot.crop].steps}`}`}`
         : structure
           ? `${buildings[structure.kind].name} ${structure.id}, ${isTree(structure.kind) ? treeStatus(structure) : structure.pendingConstruction ? "under construction, ready next season" : `level ${structure.level}`}`
-          : `Land ${target.row},${target.col}`;
+          : service
+            ? `Visit ${service.name}`
+            : `Land ${target.row},${target.col}`;
     if (button.getAttribute("aria-label") !== label) {
       button.setAttribute("aria-label", label);
-      button.title = structure && isTree(structure.kind) ? "" : label;
+      button.title = label;
     }
   }
   if (hoveredCell) showPreview(hoveredCell);
   if (!centered) {
     centered = true;
-    requestAnimationFrame(centerFarm);
+    centerFarm();
   }
 };
 function showPreview(cell: Cell) {
@@ -647,9 +777,8 @@ document.querySelector("#move-plot")!.addEventListener("click", () => {
   buildMode = null;
   movingId = null;
   movingPlotId = null;
+  closeService();
   pickingPlot = true;
-  document.querySelector<HTMLDetailsElement>("#land-tools")!.open = false;
-  collapseTools();
   preview.hidden = true;
   render();
   document.querySelector("#placement-hint")!.textContent =
@@ -662,21 +791,20 @@ document.querySelector("#upgrade-building")!.addEventListener("click", () => {
   if (inspectedId !== null) void act({ type: "upgrade", id: inspectedId });
 });
 document.querySelector("#move-building")!.addEventListener("click", () => {
+  closeService();
   movingId = inspectedId;
   movingPlotId = null;
   pickingPlot = false;
   buildMode = null;
   render();
-  collapseTools();
+  document.querySelector<HTMLDetailsElement>("#build-shop")!.open = false;
   document.querySelector("#placement-hint")!.textContent =
-    "Move selected structure onto open land. Moving is free. Farm tool cancels.";
+    "Choose open land for the selected building or tree. Moving is free. Escape or Cancel placement cancels.";
 });
 document
   .querySelector("#work")!
   .addEventListener("click", () => void act({ type: "work" }));
-document
-  .querySelector("#grow")!
-  .addEventListener("click", () => void act({ type: "season" }));
+
 document
   .querySelector("#expand")!
   .addEventListener("click", () => selectBuild("plot"));
@@ -691,10 +819,16 @@ const namespace = import.meta.env.DEV ? `dev-${instance}` : "player";
 let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
 function render() {
   if (!cropUnlocked(state, selected)) selected = "turnip";
-  renderTools();
   document.querySelector("#season")!.innerHTML =
     `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span></span>`;
   scene.setState(state);
+  const placing = Boolean(
+    buildMode || movingId !== null || movingPlotId !== null || pickingPlot,
+  );
+  document.querySelector<HTMLButtonElement>("#farm-mode")!.hidden = !placing;
+  document.querySelector<HTMLElement>("#placement-hint")!.hidden = !placing;
+  document.querySelector("#seed-selection")!.textContent =
+    `${crops[selected].name} seeds in basket`;
   const turn = turnNumber(state),
     policy = state.farmPolicy ?? {};
   document.querySelector<HTMLButtonElement>("#next-season")!.disabled =
@@ -715,10 +849,7 @@ function render() {
   )) {
     const kind = button.dataset.build as BuildingKind | "plot";
     if (kind === "plot") {
-      const label = `Crop plot · 1×1 · ${policyCost(expansionCost(state), state.farmPolicy)} coins`;
-      button.setAttribute("aria-label", label);
-      button.title = label;
-      button.innerHTML = `${icon("expand")}<span>Crop plot<small>1 × 1</small></span><span class="tool-price">${icon("coin")}${policyCost(expansionCost(state), policy)}</span>`;
+      button.textContent = `Crop plot · 1×1 · ${policyCost(expansionCost(state), state.farmPolicy)} coins`;
       button.disabled =
         state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
         state.coins < policyCost(expansionCost(state), policy);
@@ -740,14 +871,37 @@ function render() {
       policy.blockedBuildings?.includes(kind) === true ||
       (limit !== undefined && count >= limit);
   }
+  const orchard = activeService === "fields";
+  document.querySelector("#inspection-heading")!.textContent = orchard
+    ? "Your orchard"
+    : "Your buildings";
+  document.querySelector("#inspection-label")!.textContent = orchard
+    ? "Choose a tree to care for or transplant"
+    : "Choose a building to upgrade or move";
+  const target =
+    document.querySelector<HTMLSelectElement>("#structure-target")!;
+  target.replaceChildren(
+    new Option(orchard ? "Select a tree…" : "Select a building…", ""),
+    ...state.structures
+      .filter((s) => isTree(s.kind) === orchard)
+      .map(
+        (s) =>
+          new Option(
+            `${buildings[s.kind].name} ${s.id} · Level ${s.level}`,
+            String(s.id),
+          ),
+      ),
+  );
+  target.value = inspectedId === null ? "" : String(inspectedId);
   const inspected = state.structures.find((s) => s.id === inspectedId),
     upgrade = document.querySelector<HTMLButtonElement>("#upgrade-building")!,
     move = document.querySelector<HTMLButtonElement>("#move-building")!;
-  upgrade.hidden = !inspected;
+  upgrade.hidden = !inspected || buildings[inspected.kind].levels === 1;
   move.hidden = !inspected;
   if (!inspected)
-    document.querySelector("#selected-building")!.textContent =
-      "Select a building on the farm to inspect it.";
+    document.querySelector("#selected-building")!.textContent = orchard
+      ? "Select a planted tree to improve its care or transplant it."
+      : "Select a building to see its facilities, upgrade it, or move it.";
   if (inspected) {
     document
       .querySelector("#selected-building")!
@@ -755,6 +909,9 @@ function render() {
         "pending-building",
         !!(inspected.pendingConstruction || inspected.pendingUpgrade),
       );
+    move.textContent = isTree(inspected.kind)
+      ? "Transplant selected tree"
+      : "Move selected building";
     const item = buildings[inspected.kind],
       remaining = upgradeRemaining(state, inspected),
       cost = policyCost(upgradeCost(inspected), policy);
@@ -768,7 +925,7 @@ function render() {
         ? "⚒ Upgrade underway · ready next season"
         : inspected.level === item.levels
           ? "Fully upgraded"
-          : `Upgrade · ${cost} coins · ${remaining ? upgradeHint(state, inspected) : "ready next season"}`;
+          : `${isTree(inspected.kind) ? "Improve tree care" : "Upgrade"} · ${cost} coins · ${remaining ? upgradeHint(state, inspected) : "ready next season"}`;
     upgrade.disabled =
       !!inspected.pendingConstruction ||
       !!inspected.pendingUpgrade ||
@@ -808,8 +965,6 @@ function render() {
         : policyCost(expansionCost(state), policy) +
           Math.max(1, policyCost(seedCost(state, "turnip"), policy))) ||
     state.plots.some(Boolean);
-  const grow = document.querySelector<HTMLButtonElement>("#grow")!;
-  grow.disabled = turn === 160;
   const expand = document.querySelector<HTMLButtonElement>("#expand")!;
   const expandLabel =
     state.plots.length === WORLD_CELLS
@@ -850,7 +1005,16 @@ function render() {
   document.querySelector("#farm-stats")!.innerHTML =
     `<span title="${state.plots.length} plots">${icon("expand")}${state.plots.length}</span><span title="${ready} ready to harvest">${icon("harvest")}${ready}</span><span title="Soil level ${state.soilLevel}/3">${icon("improve")}<span class="soil-meter">${[1, 2, 3].map((level) => `<i class="${level <= state.soilLevel ? "filled" : ""}"></i>`).join("")}</span></span>`;
 }
-async function apply(next: typeof state, resetFarmer = true, reward = false) {
+async function apply(
+  next: typeof state,
+  resetFarmer = true,
+  recover = false,
+  reward = false,
+) {
+  if (loadFailed && !recover)
+    throw new Error(
+      "Export your original save, then import a valid 64 × 64 farm to continue.",
+    );
   const valid = parseState(next);
   if (!store) throw new Error("Local saves are unavailable.");
   if (saving) throw new Error("A save is in progress. Try again.");
@@ -860,7 +1024,13 @@ async function apply(next: typeof state, resetFarmer = true, reward = false) {
     if (resetFarmer) harvestFeedback.reset(valid.coins);
     else if (reward) harvestFeedback.reserve(valid.coins);
     state = valid;
-    if (resetFarmer) scene.resetFarmer();
+    loadFailed = false;
+    if (resetFarmer) {
+      navigationVersion++;
+      closeService();
+      cameraControls.open = false;
+      scene.resetFarmer();
+    }
     render();
     status.textContent = "Saved on this browser";
   } finally {
@@ -872,15 +1042,17 @@ try {
   state = (await store.load()) ?? initialState();
   await store.save(state);
   status.textContent = "Saved on this browser";
-} catch {
-  status.textContent =
+} catch (error) {
+  loadFailed = true;
+  message.textContent =
     "Could not load local save. Export before closing; import a valid save to recover.";
-  message.textContent = status.textContent;
+  status.textContent = `Could not load your farm: ${error instanceof Error ? error.message : "Local storage is unavailable."} Your saved farm is unchanged. Export it before importing a valid save.`;
 }
 render();
-document.querySelector("#export")!.addEventListener("click", () => {
+document.querySelector("#export")!.addEventListener("click", async () => {
+  const exported = loadFailed && store ? await store.readRaw() : state;
   const url = URL.createObjectURL(
-    new Blob([JSON.stringify(state, null, 2)], { type: "application/json" }),
+    new Blob([JSON.stringify(exported, null, 2)], { type: "application/json" }),
   );
   const link = document.createElement("a");
   link.href = url;
@@ -895,7 +1067,7 @@ document
     const file = input.files?.[0];
     if (!file) return;
     try {
-      await apply(parseState(JSON.parse(await file.text())));
+      await apply(parseState(JSON.parse(await file.text())), true, true);
     } catch (error) {
       status.textContent =
         error instanceof Error ? error.message : "Could not import save.";
@@ -906,6 +1078,6 @@ if (import.meta.env.DEV) {
   const { mountDevPanel } = await import("./dev/panel");
   mountDevPanel(
     () => state,
-    (next) => apply(next),
+    (next) => apply(next, true, true),
   );
 }

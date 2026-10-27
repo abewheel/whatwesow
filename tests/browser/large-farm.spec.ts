@@ -1,7 +1,9 @@
+import { visitBuilding, setCameraCell } from "./helpers";
 import { test, expect } from "@playwright/test";
-test("uses the far corner of a 128-square farm with a viewport-sized canvas", async ({
+test("uses the far corner of a 64-square farm with a viewport-sized canvas", async ({
   page,
 }) => {
+  test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("requestfailed", (r) => errors.push(r.url()));
@@ -15,35 +17,32 @@ test("uses the far corner of a 128-square farm with a viewport-sized canvas", as
   await expect(page.locator("#dev-status")).toHaveText(
     "State applied and saved.",
   );
-  if (
-    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
-    "true"
-  )
-    await page.locator("#estate-toggle").click();
-  await page.locator("#land-tools").evaluate((el: HTMLDetailsElement) => {
-    el.open = true;
-  });
-  await page.getByLabel("View row").fill("127");
-  await page.getByLabel("View column").fill("127");
+  await setCameraCell(page, "row", "63");
+  await setCameraCell(page, "column", "63");
   await page.getByRole("button", { name: "Go to land", exact: true }).click();
-  await page.locator('[data-cell="127,127"]').click();
-  await expect(page.locator("#season")).toContainText("100,036 coins");
+  await page.locator('[data-cell="63,63"]').click();
+  await expect(page.locator("#season")).toContainText("100,036 coins", {
+    timeout: 60000,
+  });
   const dimensions = await page.locator("canvas").evaluate((el) => ({
     width: (el as HTMLCanvasElement).width,
     height: (el as HTMLCanvasElement).height,
   }));
   expect(dimensions.width).toBeLessThanOrEqual(1280);
   expect(dimensions.height).toBeLessThanOrEqual(720);
-  await page.locator("#mode-build").click();
+  await visitBuilding(page, "seeds", 60000);
   await page.locator('[data-build="oak"]').click();
-  await page.getByRole("button", { name: "Land 126,127", exact: true }).click();
+  await setCameraCell(page, "row", "63");
+  await setCameraCell(page, "column", "63");
+  await page.locator("#go-to-cell").click();
+  await page.getByRole("button", { name: "Land 62,63", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText("Oak tree planted");
   await page.reload();
-  await expect(page.locator('[data-cell="126,127"]')).toHaveAttribute(
+  await expect(page.locator('[data-cell="62,63"]')).toHaveAttribute(
     "data-structure",
     "3",
   );
-  await expect(page.locator('[data-cell="127,127"]')).toHaveAttribute(
+  await expect(page.locator('[data-cell="63,63"]')).toHaveAttribute(
     "data-plot",
     "9",
   );

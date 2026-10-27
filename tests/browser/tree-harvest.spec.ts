@@ -54,11 +54,12 @@ test("harvest rewards animate from the tile, count up, and stay correct across r
     .toBeGreaterThan(100);
   await expect(page.locator("#coin-count")).toHaveText("124");
   // Harvest stays in Plant mode so neighbors can be picked without changing tools.
-  await expect(page.locator("#mode-plant")).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(page.locator("#service-panel")).toBeHidden();
   await page.locator('[data-structure="3"]').click();
+  await expect(page.locator('[data-structure="3"]')).not.toHaveAttribute(
+    "aria-label",
+    /ready to harvest/,
+  );
   await page.locator('[data-plot="0"]').click();
   await expect(page.locator("#season .sr-only")).toContainText("141 coins");
   await page.locator('[data-plot="0"]').click();
@@ -87,8 +88,8 @@ test("failed harvest saves create no reward, and reduced motion settles the coun
     };
   });
   await page.locator('[data-structure="2"]').click();
-  await expect(page.locator("#farm-message")).not.toHaveText(
-    "Choose seeds, then click an empty plot.",
+  await expect(page.locator("#farm-message")).toContainText(
+    /abort|save|transaction/i,
   );
   await expect(page.locator("#coin-count")).toHaveText("100");
   await expect(page.locator(".harvest-feedback")).toHaveCount(0);

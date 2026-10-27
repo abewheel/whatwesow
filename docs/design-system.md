@@ -20,7 +20,7 @@ Summer deepens greens; fall turns foliage amber and rust; winter adds pale snow 
 
 ## Composition and scale
 
-Use nearly the whole viewport for the farm. The farm name, seasonal resources, estate toggle, and menu sit over its top edge. A folding activity dock and action feedback sit at the bottom. Save status and export/import live inside the farm menu. Estate controls open a contextual panel, and selecting an activity closes it. On small screens, hide secondary copy and keep controls within the viewport. Keep development tools below the game.
+Use nearly the whole viewport for the farm. The farm name, seasonal resources, and menu sit over its top edge. Selected seeds, placement cancellation, folded camera controls, and action feedback sit at the bottom. Save status and export/import live inside the farm menu. Building menus open when the farmer reaches their entrance. On small screens, hide secondary copy and keep controls within the viewport. Keep development tools below the game.
 
 Keep the field at the center with buildings, trees, paths, and water around it. Empty plots must remain recognizable. Scenery is decorative until a game system gives it behavior; avoid buttons that imply unavailable actions.
 
@@ -40,7 +40,7 @@ The current HUD uses the detailed nine-slice frame and icon atlas described in [
 
 ## Grid and placeable objects
 
-All farm surfaces use a shared 2:1 projection: 36 × 18 logical pixels per tile. Store positions as column and row, never screen offsets. The playable estate is 128 × 128 tiles, displayed at 64 × 32 pixels per tile in a scrollable world. Buildings, trees, garden beds, paths, and soil use the same projection. Stone foundations mark building footprints; artwork sits above the footprint, anchored at its front corner. Draw objects from back to front using their grid depth.
+All farm surfaces use a shared 2:1 projection: 36 × 18 logical pixels per tile. Store positions as column and row, never screen offsets. The playable estate is 64 × 64 tiles, displayed at 64 × 32 pixels per tile in a scrollable world. Buildings, trees, garden beds, paths, and soil use the same projection. Stone foundations mark building footprints; artwork sits above the footprint, anchored at its front corner. Draw objects from back to front using their grid depth.
 
 The following footprints belong to the older layout fixtures and art planning. For live placement, use the [construction catalog](construction.md#authored-track), which includes a 3 × 2 farmhouse and barn, a 2 × 2 well, and 1 × 1 construction trees.
 

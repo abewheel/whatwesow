@@ -5,7 +5,7 @@ import type { FarmAction } from "../micro/rules";
 import { farmerSpawn } from "./farmer-route";
 export type FarmerTask = {
   target: Cell;
-  action: FarmAction["type"] | "grow";
+  action: FarmAction["type"] | "grow" | "walk" | "visit";
   width?: number;
   height?: number;
 };

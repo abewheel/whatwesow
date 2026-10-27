@@ -8,9 +8,9 @@ Choose a crop in the seed basket, then click an empty plot to plant. Seeds are p
 | Carrot | 7 coins | 2 | 18 coins |
 | Corn | 12 coins | 3 | 34 coins |
 
-Ripe crops keep indefinitely. Growth is manual and deterministic; there are no timers, withering, or offscreen progress. Plant turnips in spring or fall, carrots in spring or summer, and corn in spring. Crops continue growing across seasons, including winter. Both **End turn** controls advance the same calendar and pay seasonal building income; crop money arrives only when harvested. See [construction](construction.md) for placeable plots, repeated buildings, upgrades, and the full progression track.
+Ripe crops keep indefinitely. Growth is manual and deterministic; there are no timers, withering, or offscreen progress. Plant turnips in spring or fall, carrots in spring or summer, and corn in spring. Crops continue growing across seasons, including winter. The farmhouse’s **End turn** control advances the calendar and pays seasonal building income; crop money arrives only when harvested. See [construction](construction.md) for placeable plots, repeated buildings, upgrades, and the full progression track.
 
-Start with 100 coins and nine plots. Opening another plot costs 30 coins, then 5 more for each plot already opened. The farm has 16,384 cells shared by plots and building footprints. Soil improvements cost 80, 160, then 240 coins; each level adds 3 coins to every harvest, including crops already planted. Both investments persist. If you have fewer than 4 coins and no planted crops, helping with a delivery earns one packet of turnip seeds' worth of coins so you can resume.
+Start with 100 coins and nine plots. Opening another plot costs 30 coins, then 5 more for each plot already opened. The farm has 4,096 cells shared by plots and building footprints. Soil improvements cost 80, 160, then 240 coins; each level adds 3 coins to every harvest, including crops already planted. Both investments persist. If you have fewer than 4 coins and no planted crops, helping with a delivery earns one packet of turnip seeds' worth of coins so you can resume.
 
 ## Rules and saves
 

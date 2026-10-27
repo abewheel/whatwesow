@@ -80,7 +80,7 @@ export function parseMicroState(value: unknown): MicroState {
     s.plots.length < 0 ||
     s.plots.length > WORLD_CELLS
   )
-    throw new Error("Use 0–16384 plots.");
+    throw new Error("Use 0–4096 plots.");
   if (
     !Number.isInteger(s.soilLevel) ||
     Number(s.soilLevel) < 0 ||
@@ -113,10 +113,10 @@ export function parseMicroState(value: unknown): MicroState {
     !Array.isArray(s.structures) ||
     s.structures.length > WORLD_CELLS
   )
-    throw new Error("Provide a cell per plot and at most 16,384 structures.");
+    throw new Error("Provide a cell per plot and at most 4,096 structures.");
   const parseCell = (value: unknown): Cell => {
     if (!value || typeof value !== "object" || !inBounds(value as Cell))
-      throw new Error("Cells must be inside the 128 × 128 farm.");
+      throw new Error("Cells must be inside the 64 × 64 farm.");
     const { row, col } = value as Cell;
     return { row, col };
   };

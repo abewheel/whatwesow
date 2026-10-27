@@ -1,3 +1,4 @@
+import { visitBuilding, endTurn, clickCamera } from "./helpers";
 import { test, expect } from "@playwright/test";
 import { initialMicroState } from "../../src/micro/state";
 
@@ -22,13 +23,14 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
     .map(Number);
   expect(Math.abs(stance[0] - 16) + Math.abs(stance[1] - 16)).toBe(1);
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
-  await page.getByRole("button", { name: "End turn", exact: true }).click();
+  await endTurn(page);
   await expect(page.locator("#season")).toContainText("summer");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.getByRole("button", { name: /Plot 1: Turnip, ready/ }).click();
   await expect(canvas).toHaveAttribute("data-farmer-motion", "harvest");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
 
+  await visitBuilding(page, "seeds");
   await page.locator('[data-crop="carrot"]').click();
   const farm = initialMicroState();
   farm.plotCells[0] = { row: 18, col: 16 };
@@ -47,8 +49,8 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
     .split(",")
     .map(Number);
   expect(Math.abs(relocated[0] - 18) + Math.abs(relocated[1] - 16)).toBe(1);
-  await page.locator("#estate-toggle").click();
-  await page.getByRole("button", { name: "Zoom out", exact: true }).click();
+
+  await clickCamera(page, "#zoom-out");
   await expect(canvas).toHaveAttribute("data-farmer-cell", relocated.join(","));
   expect(errors).toEqual([]);
 });
@@ -72,7 +74,7 @@ test("farmer recovers on permitted land and waters only a crop that grew", async
   await expect(page.locator("#dev-status")).toHaveText(
     "State applied and saved.",
   );
-  await page.locator("#grow").click();
+  await endTurn(page);
   await expect(
     page.getByRole("button", { name: /Plot 1: Turnip, growing 0/ }),
   ).toHaveCount(1);

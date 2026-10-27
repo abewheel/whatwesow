@@ -3,6 +3,7 @@ import {
   farmerBlocked,
   farmerSpawn,
   farmerWorkRoute,
+  farmerWalkRoute,
   type FarmerWorld,
 } from "./farmer-route";
 import { cellKey, type Cell, type Layout } from "../micro/world";
@@ -78,7 +79,7 @@ const contacts = [
   ],
 ];
 
-/** Transient presentation only. The caller has already validated and saved actions. */
+/** Transient movement and effects. Arrival hands interactions back to the app. */
 export class Farmer {
   readonly view: Phaser.GameObjects.Container;
   private art: Phaser.GameObjects.Sprite;
@@ -90,6 +91,7 @@ export class Farmer {
   private tasks: FarmerTask[] = [];
   private route: Cell[] = [];
   private active?: FarmerTask;
+  private arrival?: () => void;
   private elapsed = 0;
   private clock = 0;
   private facing = 1;
@@ -108,9 +110,9 @@ export class Farmer {
   setWorld(layout: Layout, policy?: FarmPolicy) {
     this.world = { layout, policy };
     const signature = JSON.stringify([
-      layout.plotCells,
-      layout.structures,
-      policy?.land,
+      layout.plotCells.map((c) => [c.row, c.col]),
+      layout.structures.map((s) => [s.id, s.kind, s.row, s.col]),
+      policy?.land?.map((r) => [r.row, r.col, r.width, r.height]),
     ]);
     if (signature !== this.layoutKey) {
       this.layoutKey = signature;
@@ -118,6 +120,7 @@ export class Farmer {
       this.tasks = [];
       this.route = [];
       this.active = undefined;
+      this.arrival = undefined;
       this.position = { ...this.cell };
     }
     if (farmerBlocked(this.cell, this.world) || !this.view.visible)
@@ -127,11 +130,51 @@ export class Farmer {
     if (this.tasks.length >= 12) this.tasks.shift();
     this.tasks.push(task);
   }
+  travel(
+    target: Cell,
+    width = 1,
+    height = 1,
+    adjacent = false,
+    preference: "rear" | "front" = "front",
+    onArrival?: () => void,
+  ): boolean {
+    this.arrival = undefined;
+    const plan = adjacent
+      ? farmerWorkRoute(
+          this.cell,
+          target,
+          this.world,
+          width,
+          height,
+          preference,
+        )
+      : farmerWalkRoute(this.cell, target, this.world);
+    if (!plan || !this.view.visible) return false;
+    this.tasks = [];
+    this.arrival = onArrival;
+    this.active = {
+      target: plan.target,
+      action: adjacent ? "visit" : "walk",
+      width,
+      height,
+    };
+    // Finish returning along the current edge before following a replacement route.
+    this.route =
+      Math.hypot(
+        this.position.col - this.cell.col,
+        this.position.row - this.cell.row,
+      ) > 0.001
+        ? [{ ...this.cell }, ...plan.route]
+        : plan.route;
+    this.elapsed = 0;
+    return true;
+  }
   reset() {
     this.tasks = [];
     this.route = [];
     this.active = undefined;
     this.elapsed = 0;
+    this.arrival = undefined;
     const spawn = farmerSpawn(this.world);
     this.view.setVisible(Boolean(spawn));
     if (spawn) this.cell = spawn;
@@ -141,6 +184,7 @@ export class Farmer {
     if (!this.view.visible) return;
     const dt = Math.min(delta, 100) / 1000;
     this.clock += dt;
+    let arrived: (() => void) | undefined;
     if (!this.active && this.tasks.length) {
       const task = this.tasks.shift()!;
       const plan = farmerWorkRoute(
@@ -172,6 +216,13 @@ export class Farmer {
         this.position.col += (dc / distance) * speed;
         this.position.row += (dr / distance) * speed;
       }
+    } else if (
+      this.active &&
+      (this.active.action === "walk" || this.active.action === "visit")
+    ) {
+      this.active = undefined;
+      arrived = this.arrival;
+      this.arrival = undefined;
     } else if (this.active) {
       const target = this.active.target;
       const point = project(target),
@@ -194,6 +245,7 @@ export class Farmer {
         ? "walk"
         : (this.active?.action ?? "idle");
     }
+    arrived?.();
   }
   private paint(
     walking: boolean,
@@ -224,7 +276,9 @@ export class Farmer {
       .setOrigin(this.facing < 0 ? 1 - cx / 181 : cx / 181, cy / 181)
       .setFlipX(this.facing < 0);
     this.effect.clear();
-    if (!action || !this.active) return;
+    const navigating =
+      this.active?.action === "walk" || this.active?.action === "visit";
+    if ((!action && !navigating) || !this.active) return;
     const target = project(this.active.target);
     const x = target.x - this.view.x,
       y = target.y - this.view.y;
@@ -240,6 +294,7 @@ export class Farmer {
       ].map((p) => new Phaser.Math.Vector2(p.x, p.y)),
       true,
     );
+    if (navigating) return;
     const progress = this.elapsed / 1.15;
     if (progress < 0.2 || progress > 0.9) return;
     for (let i = 0; i < 7; i++) {

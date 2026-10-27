@@ -15,13 +15,13 @@ export const buildings = {
     income: 0,
   },
   shed: {
-    name: "Tool shed",
+    name: "Seed storehouse",
     cost: 60,
     width: 2,
     height: 2,
     frame: 4,
     levels: 3,
-    benefit: "Seeds cost 1 less per level",
+    benefit: "Bulk seed storage: seeds cost 1 less per level",
     bonus: 0,
     income: 0,
   },
@@ -115,6 +115,7 @@ export const buildings = {
   },
 } as const;
 export type BuildingKind = keyof typeof buildings;
+
 export type Structure = Cell & {
   id: number;
   kind: BuildingKind;
@@ -126,7 +127,83 @@ export type Structure = Cell & {
   age?: number;
   product?: boolean;
 };
+// Permanent village services remain available on every farm, including imported saves.
+export const services = [
+  {
+    id: "home",
+    name: "Farmhouse office",
+    row: 7,
+    col: 24,
+    width: 2,
+    height: 2,
+    frame: 0,
+  },
+  {
+    id: "seeds",
+    name: "Seed shop & nursery",
+    row: 7,
+    col: 14,
+    width: 2,
+    height: 2,
+    frame: 4,
+  },
+  {
+    id: "builder",
+    name: "Builder's workshop",
+    row: 7,
+    col: 19,
+    width: 2,
+    height: 2,
+    frame: 1,
+  },
+  {
+    id: "fields",
+    name: "Field shed",
+    row: 11,
+    col: 9,
+    width: 2,
+    height: 2,
+    frame: 4,
+  },
+] as const;
 export type Layout = { plotCells: Cell[]; structures: Structure[] };
+/** Keep village lots clear of existing farms when loading an older layout. */
+export function serviceLocations(layout: Layout) {
+  const used = new Set(
+    [
+      ...layout.plotCells,
+      ...layout.structures.flatMap((s) =>
+        footprint(s, buildings[s.kind].width, buildings[s.kind].height),
+      ),
+    ].map(cellKey),
+  );
+  return services
+    .filter(
+      (service) =>
+        service.id !== "home" ||
+        !layout.structures.some((s) => s.kind === "home"),
+    )
+    .map((service) => {
+      const candidates = [
+        service,
+        ...Array.from({ length: WORLD_SIZE * WORLD_SIZE }, (_, i) => ({
+          row: Math.floor(i / WORLD_SIZE),
+          col: i % WORLD_SIZE,
+        })),
+      ];
+      const cell = candidates.find((c) =>
+        footprint(c, service.width, service.height).every(
+          (p) => inBounds(p) && !used.has(cellKey(p)),
+        ),
+      ) ?? {
+        row: -2,
+        col: 9 + services.findIndex((s) => s.id === service.id) * 5,
+      };
+      for (const p of footprint(cell, service.width, service.height))
+        used.add(cellKey(p));
+      return { ...service, ...cell };
+    });
+}
 export const upgradeCost = (structure: Structure) =>
   buildings[structure.kind].cost * (structure.level + 1);
 export function initialPlotCells(count = 9): Cell[] {
@@ -160,6 +237,9 @@ export const inBounds = (cell: Cell) =>
 export function occupiedCells(layout: Layout): Set<string> {
   return new Set(
     [
+      ...serviceLocations(layout).flatMap((s) =>
+        footprint(s, s.width, s.height),
+      ),
       ...layout.plotCells,
       ...layout.structures.flatMap((s) =>
         footprint(s, buildings[s.kind].width, buildings[s.kind].height),
