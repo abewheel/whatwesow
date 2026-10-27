@@ -16,8 +16,8 @@ Definitions live in `src/micro/world.ts`. Costs are prototype tuning values, wit
 | --- | --- | --- | --- | --- |
 | Farmhouse | 1 | 120, first home provided | 3 × 2 | Home and decoration |
 | Tool shed | 1 | 60 | 2 × 2 | Seeds cost 1 less, minimum 1 before policy |
-| Oak tree | 1 | 15 | 1 × 1 | Decoration |
-| Apple tree | 5 | 60 | 1 × 1 | Click ripe fruit for 6 coins per level each season |
+| Oak tree | 1 | 15 | 1 × 1 | Acorns each fall after ten years |
+| Apple tree | 5 | 60 | 1 × 1 | 24 coins per level per fall harvest after three years |
 | Irrigation well | 9 | 180 | 2 × 2 | 1 extra grow step and 1 extra harvest coin |
 | Harvest barn | 25 | 600 | 3 × 2 | 2 extra harvest coins |
 | Grain mill | 49 | 1,800 | 3 × 3 | 15 extra coins per corn harvest |
@@ -27,9 +27,9 @@ Definitions live in `src/micro/world.ts`. Costs are prototype tuning values, wit
 
 Production buildings and apple trees have three levels. Level 2 normally unlocks eight turns after their build unlock, and level 3 sixteen turns after it. Legacy hall's final upgrade unlocks on turn 159. An upgrade costs base cost × the new level. Homes and oaks have one level. Soil improvements unlock on turns 1, 33, and 97.
 
-Upgrades and soil improvements cost coins when started and finish at the start of the next turn. Their benefits stay at the current level until then. Each building and the soil can have one upgrade underway; different buildings can upgrade together. Pending work survives saving, reloading, and moving a building. Losing a building also loses its pending upgrade, without a refund. New construction also charges immediately and finishes next season. Its footprint stays reserved while work is underway, but its benefits remain inactive. Buildings use unfinished timber-and-stone artwork, with a work symbol and grey name while construction or an upgrade is pending. Trees show as small saplings, mature next season, and have no labels on the farm. The starting farmhouse and structures in older saves are already complete.
+Upgrades and soil improvements cost coins when started and finish at the start of the next turn. Their benefits stay at the current level until then. Each building and the soil can have one upgrade underway; different buildings can upgrade together. Pending work survives saving, reloading, and moving a building. Losing a building also loses its pending upgrade, without a refund. New construction also charges immediately and finishes next season. Its footprint stays reserved while work is underway, but its benefits remain inactive. Buildings use unfinished timber-and-stone artwork, with a work symbol and grey name while construction or an upgrade is pending. Trees start as saplings and grow over multiple years, with visible sapling, growing, and mature stages. The starting farmhouse and structures in older saves are already complete.
 
-**End turn** advances one season, grows crops using the previous turn's irrigation, completes construction and upgrades, then pays seasonal market income at the completed levels. Apple trees become ripe at the start of each season; click a ripe tree in Plant mode to harvest it. The tree stays planted and regrows next season. Unpicked fruit keeps without stacking, and fruit earns no automatic income. Choose Upgrade before clicking a tree to inspect or move it. Seed discounts and harvest bonuses apply to actions in the new turn. Turn 160 is year 40, winter; the calendar stops there, so new construction and upgrades cannot start in that final season. There is no end-of-life narrative in this slice.
+**End turn** advances one season, grows crops using the previous turn's irrigation, completes construction and upgrades, then pays seasonal market income at the completed levels. Mature trees produce in fall; click a ripe tree in Plant mode to harvest it. The tree stays planted and produces again the following fall. Unpicked fruit keeps without stacking, and fruit earns no automatic income. Choose Upgrade before clicking a tree to inspect or move it. Seed discounts and harvest bonuses apply to actions in the new turn. Turn 160 is year 40, winter; the calendar stops there, so new construction and upgrades cannot start in that final season. There is no end-of-life narrative in this slice.
 
 This is an authored default progression, not a claim that the full 40-year economy is balanced. Tune unlocks, costs, and effects here as the macro experience develops; farming rules consume its turn and policy instead of storing a second clock.
 
@@ -51,3 +51,5 @@ Version 3 saves carry `plotCells`, `plotIds`, `nextPlotId`, `structures`, and `n
 Whole-game presets cover **Building · turn 1**, **Community · turn 25**, **Industry · turn 81**, **Legacy · turn 159**, **Policy · land and building loss**, and **Large estate · far corner**. They include affordable money and existing structures. Use the whole-game scope when checking unlock dates. The micro scope intentionally preserves the live date and policy.
 
 Run `pnpm test:micro` for construction, repeated effects, losses, relocation, and policies; `pnpm test:integration` for migration and macro consequences; `pnpm test:browser` for placement, panning, repeated builds, upgrades, and persistence. Finish with `pnpm validate`.
+
+Trees start as saplings and grow only when the calendar advances. Apples first bear after 12 seasons (three years); oaks bear acorns after 40 seasons (ten years). Mature trees produce each fall. In Plant mode, click a tree with visible product to harvest apples for 24 coins per level or acorns for 8 coins. Trees and unpicked product persist through winter. Older completed trees without ages load as mature, preserving any saved fruit readiness. Newly planted trees start at age zero.

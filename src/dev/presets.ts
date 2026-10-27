@@ -1,5 +1,10 @@
 import { buildings, type BuildingKind } from "../micro/world";
-import { initialState, applyMacroChange, type GameState } from "../game/state";
+import {
+  parseState,
+  initialState,
+  applyMacroChange,
+  type GameState,
+} from "../game/state";
 import { crops, type CropId } from "../micro/state";
 export const farmPresets = [
   "planting",
@@ -22,7 +27,7 @@ export function presetState(id: string): GameState {
     state.plots.push({ crop: "corn", growth: 3 });
     state.plotCells.push({ row: 127, col: 127 });
     state.plotIds.push(state.nextPlotId++);
-    return state;
+    return parseState(state);
   }
   if (id === "restricted") {
     const base = presetState("community");
@@ -85,7 +90,7 @@ export function presetState(id: string): GameState {
         level: 1,
       });
     state.nextStructureId = Math.max(...state.structures.map((s) => s.id)) + 1;
-    return state;
+    return parseState(state);
   }
   if (id === "mid" || id === "late")
     return {
@@ -102,5 +107,5 @@ export function presetState(id: string): GameState {
     state.coins = 31;
   }
   if (id === "reinvesting") state.coins = 250;
-  return state;
+  return parseState(state);
 }

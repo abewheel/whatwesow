@@ -208,7 +208,7 @@ export class Farmer {
         ? 2
         : action === "grow"
           ? 3
-          : action === "harvest"
+          : action === "harvest" || action === "harvestTree"
             ? 4
             : action === "work"
               ? 6
@@ -256,7 +256,7 @@ export class Farmer {
         g.fillStyle(
           action === "plant"
             ? 0xf0d48d
-            : action === "harvest"
+            : action === "harvest" || action === "harvestTree"
               ? 0x83a657
               : 0x9a7048,
           0.85,

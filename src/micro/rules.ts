@@ -3,7 +3,7 @@ import { parseFarmPolicy, type FarmPolicy } from "../contracts/farm-policy";
 import {
   buildings,
   isTree,
-  hasRipeFruit,
+  treeProduct,
   buildingLevel,
   canPlace,
   WORLD_SIZE,
@@ -33,6 +33,7 @@ export type FarmAction =
   | { type: "plant"; plot: number; crop: CropId }
   | { type: "harvest"; plot: number }
   | { type: "harvestFruit"; id: number }
+  | { type: "harvestTree"; id: number }
   | { type: "work" }
   | { type: "expand"; cell?: Cell }
   | { type: "build"; kind: BuildingKind; cell: Cell }
@@ -54,19 +55,9 @@ export function actOnFarm(
     throw new Error("Use turn 1–160.");
   const state = parseMicroState(current);
   let message: string;
-  if (action.type === "harvestFruit") {
-    const tree = state.structures.find((s) => s.id === action.id);
-    if (!tree || !hasRipeFruit(tree))
-      throw new Error(
-        "This tree has no ripe fruit yet. Fruit grows next season.",
-      );
-    if (!cellAllowed(tree, policy))
-      throw new Error("This tree is outside the current land grant.");
-    const value = policyProduction(6 * tree.level, policy);
-    tree.fruitReady = false;
-    state.coins += value;
-    message = `Apples harvested! +${value} coins. More fruit grows next season.`;
-  } else if (action.type === "plant" || action.type === "harvest") {
+  if (action.type === "harvestFruit")
+    return actOnFarm(state, { type: "harvestTree", id: action.id }, context);
+  if (action.type === "plant" || action.type === "harvest") {
     if (
       !Number.isInteger(action.plot) ||
       action.plot < 0 ||
@@ -98,6 +89,24 @@ export function actOnFarm(
       state.plots[action.plot] = null;
       message = `${crops[plot.crop].name} harvested! +${value} coins.`;
     }
+  } else if (action.type === "harvestTree") {
+    const tree = state.structures.find((s) => s.id === action.id);
+    if (
+      !tree ||
+      !isTree(tree.kind) ||
+      tree.pendingConstruction ||
+      !tree.product
+    )
+      throw new Error("This tree has no ripe product yet.");
+    if (!cellAllowed(tree, policy))
+      throw new Error("This tree is outside the current land grant.");
+    const value = policyProduction(
+      (tree.kind === "apple" ? 24 : 8) * tree.level,
+      policy,
+    );
+    tree.product = false;
+    state.coins += value;
+    message = `${treeProduct(tree.kind)} harvested! +${value} coins.`;
   } else if (action.type === "work") {
     if (
       policy.allowWork === false ||
@@ -166,6 +175,7 @@ export function actOnFarm(
       kind: action.kind,
       level: 1,
       pendingConstruction: true,
+      ...(isTree(action.kind) ? { age: 0, product: false } : {}),
     });
     message = `${item.name} ${isTree(action.kind) ? "planted" : "construction started"}. Ready next season. −${policyCost(item.cost, policy)} coins.`;
   } else if (action.type === "movePlot") {
@@ -269,7 +279,6 @@ export function completeUpgrades(current: MicroState): MicroState {
   const state = parseMicroState(current);
   for (const building of state.structures) {
     delete building.pendingConstruction;
-    if (building.kind === "apple") building.fruitReady = true;
     if (building.pendingUpgrade) {
       building.level++;
       delete building.pendingUpgrade;

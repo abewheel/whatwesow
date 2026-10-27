@@ -1349,3 +1349,41 @@ button:not(.plot-hit):disabled {
 #selected-building.pending-building {
   color: #77756c;
 }
+
+/* Reward effects live in viewport space so coins can travel from farm to HUD. */
+.harvest-feedback {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  user-select: none;
+}
+.harvest-reward {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #fff0a0;
+  font:
+    700 30px "Farm Pixel",
+    monospace;
+  text-shadow:
+    2px 2px #68431d,
+    -1px -1px #68431d,
+    0 3px 3px #493621;
+  white-space: nowrap;
+}
+.harvest-reward .pixel-icon,
+.harvest-coin .pixel-icon {
+  width: 26px;
+  height: 26px;
+}
+.harvest-ring {
+  width: 64px;
+  height: 30px;
+  border: 3px solid #ffe78b;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #f9d35d80;
+}
+#coin-count {
+  min-width: 3ch;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,9 +1,10 @@
+import { HarvestFeedback } from "./game/harvest-feedback";
+import { treeStatus } from "./micro/world";
 import { WORLD_CELLS, WORLD_SIZE } from "./contracts/world";
 import { turnNumber } from "./macro/state";
 import {
   buildings,
   isTree,
-  hasRipeFruit,
   canPlace,
   cellKey,
   footprint,
@@ -104,6 +105,7 @@ const game = new Phaser.Game({
   audio: { noAudio: true },
 });
 let state = initialState();
+const harvestFeedback = new HarvestFeedback(state.coins);
 let selected: CropId = "turnip";
 let saving = false;
 let buildMode: BuildingKind | "plot" | null = null;
@@ -444,8 +446,22 @@ function act(action: FarmAction | { type: "season" }) {
           ? (result.state as typeof state)
           : replaceDomain(state, "micro", result.state),
         action.type === "season",
+        action.type === "harvest" || action.type === "harvestTree",
       );
       if (action.type !== "season") scene.performAction(action, previous);
+      if (action.type === "harvest" || action.type === "harvestTree") {
+        const cell =
+          action.type === "harvest"
+            ? previous.plotCells[action.plot]
+            : previous.structures.find((s) => s.id === action.id);
+        const tile =
+          cell && cellButtons.get(cellKey(cell))?.getBoundingClientRect();
+        if (tile && state.coins > previous.coins)
+          harvestFeedback.award(
+            { x: tile.x + tile.width / 2, y: tile.y + tile.height / 2 },
+            state.coins - previous.coins,
+          );
+      }
       message.textContent = result.message;
       if (action.type === "move" || action.type === "movePlot") {
         movingId = null;
@@ -523,11 +539,13 @@ scene.onLayout = (targets) => {
             (c) => cellKey(c) === key,
           ),
         );
-        if (building?.kind === "apple" && toolMode === "plant") {
-          void act({ type: "harvestFruit", id: building.id });
-          return;
-        }
         if (building) {
+          if (toolMode === "plant" && isTree(building.kind)) {
+            if (building.product) {
+              void act({ type: "harvestTree", id: building.id });
+              return;
+            } else message.textContent = treeStatus(building);
+          }
           inspectedId = building.id;
           showTools("upgrade", false);
           render();
@@ -563,7 +581,7 @@ scene.onLayout = (targets) => {
       index !== undefined
         ? `Plot ${index + 1}: ${!plot ? "empty" : `${crops[plot.crop].name}, ${plot.growth === crops[plot.crop].steps ? "ready to harvest" : `growing ${plot.growth}/${crops[plot.crop].steps}`}`}`
         : structure
-          ? `${buildings[structure.kind].name} ${structure.id}, ${structure.pendingConstruction ? (isTree(structure.kind) ? "growing, ready next season" : "under construction, ready next season") : structure.kind === "apple" ? (hasRipeFruit(structure) ? "ripe fruit, click to harvest" : "fruit growing, ready next season") : `level ${structure.level}`}`
+          ? `${buildings[structure.kind].name} ${structure.id}, ${isTree(structure.kind) ? treeStatus(structure) : structure.pendingConstruction ? "under construction, ready next season" : `level ${structure.level}`}`
           : `Land ${target.row},${target.col}`;
     if (button.getAttribute("aria-label") !== label) {
       button.setAttribute("aria-label", label);
@@ -666,7 +684,7 @@ let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
 function render() {
   renderTools();
   document.querySelector("#season")!.innerHTML =
-    `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}${state.coins.toLocaleString()}</span>`;
+    `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span></span>`;
   scene.setState(state);
   const turn = turnNumber(state),
     policy = state.farmPolicy ?? {};
@@ -807,13 +825,15 @@ function render() {
   document.querySelector("#farm-stats")!.innerHTML =
     `<span title="${state.plots.length} plots">${icon("expand")}${state.plots.length}</span><span title="${ready} ready to harvest">${icon("harvest")}${ready}</span><span title="Soil level ${state.soilLevel}/3">${icon("improve")}<span class="soil-meter">${[1, 2, 3].map((level) => `<i class="${level <= state.soilLevel ? "filled" : ""}"></i>`).join("")}</span></span>`;
 }
-async function apply(next: typeof state, resetFarmer = true) {
+async function apply(next: typeof state, resetFarmer = true, reward = false) {
   const valid = parseState(next);
   if (!store) throw new Error("Local saves are unavailable.");
   if (saving) throw new Error("A save is in progress. Try again.");
   saving = true;
   try {
     await store.save(valid);
+    if (resetFarmer) harvestFeedback.reset(valid.coins);
+    else if (reward) harvestFeedback.reserve(valid.coins);
     state = valid;
     if (resetFarmer) scene.resetFarmer();
     render();

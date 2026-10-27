@@ -116,7 +116,7 @@ describe("estate construction", () => {
       actOnFarm(moved, { type: "move", id, cell: moved.plotCells[0] }),
     ).toThrow(/occupied/);
   });
-  it("applies building bonuses and orchard income", () => {
+  it("applies building bonuses and market income", () => {
     let state = { ...initialMicroState(), coins: 100000 };
     for (const [i, kind] of (
       [

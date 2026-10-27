@@ -35,7 +35,7 @@ export const buildings = {
     height: 1,
     frame: 5,
     levels: 1,
-    benefit: "A tree to make this place your own",
+    benefit: "Matures in 10 years; harvest acorns each fall",
     bonus: 0,
     income: 0,
   },
@@ -47,7 +47,7 @@ export const buildings = {
     height: 1,
     frame: 2,
     levels: 3,
-    benefit: "Harvest fruit for 6 coins per level each season",
+    benefit: "First apples after 3 years; harvest each fall",
     bonus: 0,
     income: 0,
   },
@@ -132,6 +132,8 @@ export type Structure = Cell & {
   pendingUpgrade?: true;
   pendingConstruction?: true;
   fruitReady?: boolean;
+  age?: number;
+  product?: boolean;
 };
 export type Layout = { plotCells: Cell[]; structures: Structure[] };
 export const upgradeTurn = (
@@ -226,7 +228,34 @@ export const seasonalIncome = (layout: Layout) =>
   );
 
 export const isTree = (kind: BuildingKind) =>
-  kind === "oak" || kind === "apple";
+  kind === "apple" || kind === "oak";
+export const treeMaturity = (kind: BuildingKind) =>
+  kind === "apple" ? 12 : 40;
+export const treeProduct = (kind: BuildingKind) =>
+  kind === "apple" ? "Apples" : "Acorns";
+export const treeStatus = (s: Structure) =>
+  s.product
+    ? `${treeProduct(s.kind)} ready to harvest`
+    : (s.age ?? 0) < treeMaturity(s.kind)
+      ? `${(s.age ?? 0) < treeMaturity(s.kind) / 4 ? "Sapling" : "Growing tree"} · ${s.age ?? 0}/${treeMaturity(s.kind)} seasons`
+      : "Mature · produces in fall";
+export function seasonTrees(
+  structures: Structure[],
+  season: string,
+): Structure[] {
+  return structures.map((s) => {
+    if (!isTree(s.kind)) return s;
+    const age = Math.min(160, (s.age ?? 0) + 1);
+    return {
+      ...s,
+      age,
+      product:
+        season === "fall" && age >= treeMaturity(s.kind)
+          ? true
+          : (s.product ?? false),
+    };
+  });
+}
 
 export const hasRipeFruit = (s: Structure) =>
-  s.kind === "apple" && !s.pendingConstruction && s.fruitReady !== false;
+  isTree(s.kind) && !s.pendingConstruction && s.product === true;

@@ -1,3 +1,11 @@
+import {
+  treeFrames,
+  productFrames,
+  productPositions,
+  treeFrame,
+  treeStage,
+} from "./tree-sprites";
+import { cropFrames, cropStages } from "./crop-sprites";
 import { project, footprint as renderFootprint, TILE_WIDTH } from "./layout";
 import Phaser from "phaser";
 import { drawBoundary } from "./boundary";
@@ -5,11 +13,10 @@ import { Farmer } from "./farmer";
 import { farmerTaskForAction } from "./farmer-task";
 import type { FarmAction } from "../micro/rules";
 import type { MacroState } from "../macro/state";
-import { crops, initialMicroState, type MicroState } from "../micro/state";
+import { initialMicroState, type MicroState } from "../micro/state";
 import {
   buildings,
   isTree,
-  hasRipeFruit,
   cellAllowed,
   cellKey,
   WORLD_SIZE,
@@ -41,6 +48,8 @@ export class FarmScene extends Phaser.Scene {
   private farmer?: Farmer;
   private ground?: Phaser.GameObjects.Graphics;
   private scenery?: Phaser.GameObjects.Container;
+  private treeViews = new Map<number, Phaser.GameObjects.Container>();
+  private harvestEffects?: Phaser.GameObjects.Container;
   private farm = initialMicroState();
   private season: MacroState["season"] = "spring";
   private policy: MacroState["farmPolicy"];
@@ -57,6 +66,10 @@ export class FarmScene extends Phaser.Scene {
     super("farm");
   }
   preload() {
+    this.load.image("tree-apple", "/art/apple-stages.png");
+    this.load.image("tree-oak", "/art/oak-stages.png");
+    this.load.image("tree-products", "/art/tree-products.png");
+    this.load.image("crop-stages", "/art/crop-stages.png");
     this.load.image("woodland", "/art/woodland-seasons.png");
     this.load.image(
       "woodland-variation",
@@ -73,6 +86,19 @@ export class FarmScene extends Phaser.Scene {
     this.load.image("farm-winter", "/art/farm-atlas-winter.png");
   }
   create() {
+    for (const kind of ["apple", "oak"] as const) {
+      const texture = this.textures.get(`tree-${kind}`);
+      for (const [index, [x, y, width, height]] of treeFrames[kind].entries())
+        texture.add(index, 0, x, y, width, height);
+      const [x, y, width, height] = productFrames[kind];
+      this.textures.get("tree-products").add(kind, 0, x, y, width, height);
+    }
+    this.harvestEffects = this.add.container().setDepth(100000);
+
+    const cropTexture = this.textures.get("crop-stages");
+    for (const [index, frame] of cropFrames.entries()) {
+      cropTexture.add(index, 0, frame.x, frame.y, frame.width, frame.height);
+    }
     for (const key of [
       "farm-spring",
       "farm-fall",
@@ -129,6 +155,53 @@ export class FarmScene extends Phaser.Scene {
   performAction(action: FarmAction, previous: MicroState) {
     const task = farmerTaskForAction(action, previous, this.farm, this.policy);
     if (task) this.farmer?.enqueue(task);
+    if (action.type === "harvestTree") {
+      const tree = previous.structures.find((s) => s.id === action.id);
+      if (tree && isTree(tree.kind)) this.animateTreeHarvest(tree);
+    }
+  }
+  private animateTreeHarvest(tree: MicroState["structures"][number]) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const view = this.treeViews.get(tree.id);
+    const startX = view?.x ?? 0;
+    if (view)
+      this.tweens.add({
+        targets: view,
+        x: { from: startX - 2, to: startX + 2 },
+        duration: 65,
+        yoyo: true,
+        repeat: 3,
+        onComplete: () => view.setX(startX),
+      });
+    const { x, y } = projectCell(tree);
+    const kind = tree.kind as "apple" | "oak";
+    for (const [i, [dx, dy]] of productPositions[kind].entries()) {
+      const fruit = this.add
+        .image(x + dx, y + dy, "tree-products", kind)
+        .setDisplaySize(kind === "apple" ? 11 : 9, 13);
+      this.harvestEffects?.add(fruit);
+      this.tweens.add({
+        targets: fruit,
+        x: x + dx * 1.5,
+        y: y + 8,
+        angle: i % 2 ? 75 : -75,
+        duration: 380,
+        delay: i * 35,
+        ease: "Quad.easeIn",
+        onComplete: () => {
+          this.tweens.add({
+            targets: fruit,
+            y: y - 12,
+            alpha: 0,
+            scaleX: fruit.scaleX * 0.5,
+            scaleY: fruit.scaleY * 0.5,
+            duration: 260,
+            ease: "Quad.easeOut",
+            onComplete: () => fruit.destroy(),
+          });
+        },
+      });
+    }
   }
   setState(state: MacroState & MicroState) {
     this.farm = state;
@@ -152,6 +225,8 @@ export class FarmScene extends Phaser.Scene {
       .setScroll(this.view.x, this.view.y);
     g.clear();
     if (this.farmer) scenery.remove(this.farmer.view);
+    for (const tree of this.treeViews.values()) this.tweens.killTweensOf(tree);
+    this.treeViews.clear();
     scenery.removeAll(true);
     if (this.farmer) scenery.add(this.farmer.view);
     this.cameras.main.setBackgroundColor(p.grass);
@@ -223,15 +298,23 @@ export class FarmScene extends Phaser.Scene {
           rect(x - 14 + line * 7, y - 4 + line * 3, 10, 2, 0x794c2f);
         const plot = this.farm.plots[index];
         if (!plot) continue;
-        const ready = plot.growth === crops[plot.crop].steps;
-        for (const offset of [-12, 0, 12]) {
-          const stem = 5 + plot.growth * 4;
-          rect(x + offset, y - stem, 3, stem, 0x397244);
-          rect(x + offset - 4, y - stem + 2, 7, 3, 0x73a448);
-          if (ready) {
-            rect(x + offset - 3, y - stem - 5, 8, 8, crops[plot.crop].color);
-            rect(x + offset - 2, y - stem - 5, 3, 2, 0xffedaf);
-          }
+        for (const [offset, depth] of [
+          [-14, -2],
+          [0, -7],
+          [14, 3],
+        ]) {
+          scenery.add(
+            this.add
+              .image(
+                x + offset,
+                y + depth,
+                "crop-stages",
+                cropStages[plot.crop][plot.growth],
+              )
+              .setOrigin(0.5, 0.95)
+              .setScale(0.1)
+              .setDepth(y + depth),
+          );
         }
       }
     for (const s of [...this.farm.structures].sort(
@@ -245,6 +328,44 @@ export class FarmScene extends Phaser.Scene {
       const item = buildings[s.kind];
       const location = projectCell(s);
       if (!visible(location.x, location.y)) continue;
+      if (isTree(s.kind)) {
+        const { x, y } = location;
+        const kind = s.kind as "apple" | "oak";
+        const stage = treeStage(s);
+        const tree = this.add.container(x, y).setDepth(y);
+        tree.add(
+          this.add
+            .image(0, 0, `tree-${kind}`, treeFrame(s, this.season))
+            .setOrigin(0.5, 1)
+            .setScale([0.13, 0.17, 0.18][stage]),
+        );
+        if (s.product)
+          for (const [dx, dy] of productPositions[kind])
+            tree.add(
+              this.add
+                .image(dx, dy, "tree-products", kind)
+                .setDisplaySize(kind === "apple" ? 11 : 9, 13),
+            );
+        this.treeViews.set(s.id, tree);
+        scenery.add(tree);
+        scenery.add(
+          this.add
+            .text(
+              x,
+              y + 8,
+              `${item.name}${s.product ? " · Harvest" : stage === 0 ? " · Sapling" : stage === 1 ? " · Growing" : ""}`,
+              {
+                fontSize: "11px",
+                color: "#493621",
+                backgroundColor: "#fff0ca",
+                padding: { x: 3, y: 2 },
+              },
+            )
+            .setOrigin(0.5, 0)
+            .setDepth(y + 1),
+        );
+        continue;
+      }
       const base = renderFootprint({
         row: s.row - 0.5,
         col: s.col - 0.5,
@@ -270,14 +391,8 @@ export class FarmScene extends Phaser.Scene {
         (((item.width + item.height) * 64) / 2) *
         (item.width === 1 ? 1.08 : 0.94);
       const working = !!(s.pendingConstruction || s.pendingUpgrade);
-      const stateAtlas = isTree(s.kind)
-        ? s.pendingConstruction || (s.kind === "apple" && !hasRipeFruit(s))
-        : working;
-      const frame = isTree(s.kind)
-        ? s.pendingConstruction
-          ? 5
-          : 2
-        : item.frame;
+      const stateAtlas = working;
+      const frame = item.frame;
       scenery.add(
         this.add
           .image(

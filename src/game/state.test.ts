@@ -296,7 +296,7 @@ it("reserves and saves paid construction, activating benefits only next season",
   ).toThrow(/next season/);
 });
 
-it("harvests fruit once per season, keeps the tree, and regrows without automatic income", async () => {
+it("harvests mature fruit each fall, keeps the tree, and never pays automatically", async () => {
   const { advanceSeason, farmContext } = await import("./state");
   const { actOnFarm } = await import("../micro/rules");
   const { hasRipeFruit } = await import("../micro/world");
@@ -313,8 +313,9 @@ it("harvests fruit once per season, keeps the tree, and regrows without automati
   const id = state.structures.at(-1)!.id;
   expect(() =>
     actOnFarm(state, { type: "harvestFruit", id }, farmContext(state)),
-  ).toThrow(/no ripe fruit/);
-  state = advanceSeason(state).state;
+  ).toThrow(/no ripe product/);
+  for (let season = 0; season < 14; season++)
+    state = advanceSeason(state).state;
   expect(state.coins).toBe(940);
   expect(hasRipeFruit(state.structures.at(-1)!)).toBe(true);
   state = replaceDomain(
@@ -322,16 +323,16 @@ it("harvests fruit once per season, keeps the tree, and regrows without automati
     "micro",
     actOnFarm(state, { type: "harvestFruit", id }, farmContext(state)).state,
   );
-  expect(state.coins).toBe(946);
+  expect(state.coins).toBe(964);
   expect(state.structures.at(-1)).toMatchObject({
     id,
     kind: "apple",
-    fruitReady: false,
+    product: false,
   });
   state = parseState(JSON.parse(JSON.stringify(state)));
   expect(() =>
     actOnFarm(state, { type: "harvestFruit", id }, farmContext(state)),
-  ).toThrow(/no ripe fruit/);
+  ).toThrow(/no ripe product/);
   state = replaceDomain(
     state,
     "micro",
@@ -342,15 +343,15 @@ it("harvests fruit once per season, keeps the tree, and regrows without automati
     ).state,
   );
   expect(hasRipeFruit(state.structures.at(-1)!)).toBe(false);
-  state = advanceSeason(state).state;
-  expect(state.coins).toBe(946);
+  for (let season = 0; season < 4; season++) state = advanceSeason(state).state;
+  expect(state.coins).toBe(964);
   state.farmPolicy = { productionMultiplier: 0.5 };
   state.structures.at(-1)!.level = 2;
   expect(
     actOnFarm(state, { type: "harvestFruit", id }, farmContext(state)).state
       .coins,
-  ).toBe(952);
+  ).toBe(988);
   const unpicked = advanceSeason(advanceSeason(state).state).state;
-  expect(unpicked.coins).toBe(946);
+  expect(unpicked.coins).toBe(964);
   expect(hasRipeFruit(unpicked.structures.at(-1)!)).toBe(true);
 });

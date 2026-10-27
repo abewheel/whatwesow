@@ -21,7 +21,8 @@ export function farmerTaskForAction(
     action.type === "harvestFruit" ||
     action.type === "build" ||
     action.type === "move" ||
-    action.type === "upgrade"
+    action.type === "upgrade" ||
+    action.type === "harvestTree"
   ) {
     const structure =
       action.type === "build"

@@ -3,7 +3,7 @@ import {
   applyFarmConsequences,
   type FarmConsequences,
 } from "../micro/consequences";
-import { policyProduction } from "../micro/world";
+import { seasonTrees, policyProduction } from "../micro/world";
 import { initialPlotCells, seasonalIncome } from "../micro/world";
 import { seasons, nextSeason, turnNumber } from "../macro/state";
 import {
@@ -99,6 +99,7 @@ export function advanceSeason(state: GameState): {
     ...farm,
     pendingSoilUpgrade: farm.pendingSoilUpgrade,
     ...macro,
+    structures: seasonTrees(farm.structures, macro.season),
     coins: current.coins + income,
   });
   return {

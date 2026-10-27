@@ -334,7 +334,7 @@ test("construction persists, withholds benefits, and completes next season", asy
   await expect(page.locator("#season")).toContainText("2,940 coins");
 });
 
-test("apple harvests pay on click, persist after picking, and regrow next season", async ({
+test("apple harvests pay on click, persist after picking, and regrow in fall", async ({
   page,
 }) => {
   test.setTimeout(60000);
@@ -344,18 +344,21 @@ test("apple harvests pay on click, persist after picking, and regrow next season
   );
   await load(page, "community");
   const tree = page.locator('[data-cell="13,19"]');
-  await expect(tree).toHaveAttribute("aria-label", /ripe fruit/);
+  await expect(tree).toHaveAttribute("aria-label", /ready to harvest/);
   await tree.click();
-  await expect(page.locator("#season")).toContainText("3,006 coins");
-  await expect(tree).toHaveAttribute("aria-label", /fruit growing/);
-  await tree.click();
-  await expect(page.locator("#farm-message")).toContainText("no ripe fruit");
+  await expect(page.locator("#season")).toContainText("3,024 coins");
+  await expect(tree).toHaveAttribute("aria-label", /produces in fall/);
+  await expect(page.locator("#mode-plant")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await page.reload();
-  await expect(tree).toHaveAttribute("aria-label", /fruit growing/);
-  await page.locator("#grow").click();
-  await expect(page.locator("#season")).toContainText("3,006 coins");
-  await expect(tree).toHaveAttribute("aria-label", /ripe fruit/);
+  await expect(tree).toHaveAttribute("aria-label", /produces in fall/);
+  for (let season = 0; season < 2; season++)
+    await page.locator("#grow").click();
+  await expect(page.locator("#season")).toContainText("3,024 coins");
+  await expect(tree).toHaveAttribute("aria-label", /ready to harvest/);
   await tree.click();
-  await expect(page.locator("#season")).toContainText("3,012 coins");
+  await expect(page.locator("#season")).toContainText("3,048 coins");
   await expect(tree).toHaveAttribute("data-structure", "4");
 });

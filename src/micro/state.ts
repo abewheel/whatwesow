@@ -1,6 +1,8 @@
 import { WORLD_CELLS } from "../contracts/world";
 import {
   buildings,
+  isTree,
+  treeMaturity,
   buildingLevel,
   cellKey,
   footprint,
@@ -144,14 +146,38 @@ export function parseMicroState(value: unknown): MicroState {
         (b.pendingConstruction && b.fruitReady))
     )
       throw new Error("Invalid fruit readiness.");
+    if (
+      isTree(kind) &&
+      ((b.age !== undefined &&
+        (!Number.isInteger(b.age) ||
+          Number(b.age) < 0 ||
+          Number(b.age) > 160)) ||
+        (b.product !== undefined && typeof b.product !== "boolean"))
+    )
+      throw new Error("Invalid tree age or product.");
     return {
-      ...(typeof b.fruitReady === "boolean"
-        ? { fruitReady: b.fruitReady }
-        : {}),
       ...(b.pendingConstruction === true
         ? { pendingConstruction: true as const }
         : {}),
       ...(b.pendingUpgrade === true ? { pendingUpgrade: true as const } : {}),
+      ...(isTree(kind)
+        ? {
+            age:
+              b.age === undefined
+                ? b.pendingConstruction
+                  ? 0
+                  : treeMaturity(kind)
+                : (b.age as number),
+            product:
+              b.product === undefined
+                ? b.fruitReady === undefined
+                  ? kind === "apple" &&
+                    b.age === undefined &&
+                    !b.pendingConstruction
+                  : b.fruitReady === true
+                : b.product === true,
+          }
+        : {}),
       ...parseCell(b),
       kind,
       id: b.id as number,
