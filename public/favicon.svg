@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <title>What We Sow</title>
+  <!-- A seedling on its first plot of land, drawn on a 32-pixel grid. -->
+  <path fill="#493621" d="M4 17h24v2h2v10h-2v2H4v-2H2V19h2z"/>
+  <path fill="#96623f" d="M4 19h24v8H4z"/>
+  <path fill="#805331" d="M4 27h24v2H4z"/>
+  <path fill="#c48a54" d="M4 19h24v2H4z"/>
+  <path fill="#493621" d="M3 3h8v2h4v4h2V7h2V5h4V3h6v8h-2v4h-4v2h-5v6h-4v-8H9v-2H5V9H3z"/>
+  <path fill="#4e8547" d="M5 5h6v2h4v6H9v-2H7V9H5zM19 9h2V7h4V5h2v6h-2v2h-4v2h-3v6h-2V11h3z"/>
+  <path fill="#a5cf68" d="M5 5h6v2h2v2H9V7H5zM21 7h4V5h2v2h-2v2h-4z"/>
+  <path fill="#83ad65" d="M9 9h4v2h2v2h-4v-2H9zM19 11h4v2h-4z"/>
+  <path fill="#805331" d="M7 23h4v2H7zM23 23h3v2h-3zM17 26h3v2h-3z"/>
+</svg>
