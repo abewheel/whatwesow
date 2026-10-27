@@ -5,13 +5,13 @@ import { openSaveStore } from "./storage/save";
 import "./style.css";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `<header><span class="eyebrow">A farm. A lifetime.</span><h1>What We Sow</h1><p>Every season starts with possibility.</p></header><main><section class="farm-card" aria-label="Farm overview"><div class="farm-heading"><h2>Your first acre</h2><output id="season"></output></div><div id="farm" role="img" aria-label="Empty isometric farm grid, awaiting future gameplay"></div><p class="caption">The ground is ready. Our story is still taking root.</p></section><aside class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><label class="button" for="import">Import save</label><input id="import" type="file" accept="application/json,.json" hidden /></div></aside><p class="footnote">Development build · Farming and story are coming later.</p></main>`;
+app.innerHTML = `<header><div><span class="eyebrow">A farm. A lifetime.</span><h1>What We Sow</h1></div><p>Grow a little. Leave something good.</p><span class="build-tag">Early preview</span></header><main><section class="farm-card" aria-label="Farm overview"><div class="farm-heading"><div><span class="eyebrow">Home, for now</span><h2>Your first acre</h2></div><output id="season"></output></div><div id="farm" role="img" aria-label="Isometric farm with tilled plots, a farmhouse, trees, and a pond"></div><div class="field-note"><span class="note-icon" aria-hidden="true">✦</span><div><strong>A place to begin</strong><p>The ground is ready. Our story is still taking root.</p></div><span class="preview-note">Farming & story coming later</span></div></section><aside class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><label class="button" for="import">Import save</label><input id="import" type="file" accept="application/json,.json" hidden /></div></aside></main>`;
 const status = document.querySelector<HTMLElement>("#save-status")!;
 const scene = new FarmScene();
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: "farm",
-  backgroundColor: "#e7ecd9",
+  backgroundColor: "#83ad65",
   scene,
   scale: { mode: Phaser.Scale.RESIZE, width: "100%", height: "100%" },
   render: { antialias: false, pixelArt: true },
