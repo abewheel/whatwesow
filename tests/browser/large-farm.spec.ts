@@ -15,6 +15,14 @@ test("uses the far corner of a 128-square farm with a viewport-sized canvas", as
   await expect(page.locator("#dev-status")).toHaveText(
     "State applied and saved.",
   );
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
+  await page.locator("#land-tools").evaluate((el: HTMLDetailsElement) => {
+    el.open = true;
+  });
   await page.getByLabel("View row").fill("127");
   await page.getByLabel("View column").fill("127");
   await page.getByRole("button", { name: "Go to land", exact: true }).click();
@@ -26,9 +34,7 @@ test("uses the far corner of a 128-square farm with a viewport-sized canvas", as
   }));
   expect(dimensions.width).toBeLessThanOrEqual(1280);
   expect(dimensions.height).toBeLessThanOrEqual(720);
-  await page.locator("#build-shop").evaluate((el: HTMLDetailsElement) => {
-    el.open = true;
-  });
+  await page.locator("#mode-build").click();
   await page.locator('[data-build="oak"]').click();
   await page.getByRole("button", { name: "Land 126,127", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText("Oak tree built");

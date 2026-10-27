@@ -9,9 +9,7 @@ async function load(page: Page, id: string) {
   );
 }
 async function buildTool(page: Page, kind: string) {
-  await page.locator("#build-shop").evaluate((el: HTMLDetailsElement) => {
-    el.open = true;
-  });
+  await page.locator("#mode-build").click();
   await page.locator('[data-build="' + kind + '"]').click();
 }
 test("places plots, trees and structures with footprints, moves and upgrades them, and preserves the estate", async ({
@@ -48,6 +46,11 @@ test("places plots, trees and structures with footprints, moves and upgrades the
   await buildTool(page, "plot");
   await page.getByRole("button", { name: "Land 18,16", exact: true }).click();
   await expect(page.locator("#farm-summary")).toContainText("10 plots");
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
   await page
     .getByRole("button", { name: "Farm tool / cancel build", exact: true })
     .click();
@@ -58,10 +61,20 @@ test("places plots, trees and structures with footprints, moves and upgrades the
   await page.getByRole("button", { name: "Land 13,21", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText("moved");
   await expect(page.locator("#season")).toContainText("145 coins");
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
   await page
     .getByRole("button", { name: "Farm tool / cancel build", exact: true })
     .click();
   for (let turn = 2; turn <= 9; turn++) {
+    if (
+      (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+      "true"
+    )
+      await page.locator("#estate-toggle").click();
     await page.locator("#next-season").click();
     await expect(page.locator("#next-season")).toContainText(turn + "/160");
   }
@@ -90,8 +103,21 @@ test("explores distant land and drag panning does not plant or spend", async ({
     "Saved on this browser",
   );
   const farm = page.locator("#farm");
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
   await page.locator("#home-view").click();
   const before = await farm.evaluate((el) => el.scrollLeft);
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
+  await page.locator("#land-tools").evaluate((el: HTMLDetailsElement) => {
+    el.open = true;
+  });
   await page.getByRole("button", { name: "Pan right", exact: true }).click();
   await expect
     .poll(() => farm.evaluate((el) => el.scrollLeft))
@@ -139,6 +165,11 @@ test("late progression and the final seasonal income respect the 160-turn bounda
   await page.locator("#upgrade-building").click();
   await expect(page.locator("#selected-building")).toContainText("Level 3/3");
   await expect(page.locator("#upgrade-building")).toBeDisabled();
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
   await page.locator("#next-season").click();
   await expect(page.locator("#next-season")).toHaveText(
     "Final season · 160/160",
@@ -168,9 +199,22 @@ test("repeated builds, plot relocation, and macro land policies remain playable"
   }
   await expect(page.locator("[data-structure]")).toHaveCount(3);
   await expect(page.locator("#season")).toContainText("130 coins");
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
   await page.locator("#farm-mode").click();
   await page.locator('[data-plot="0"]').click();
   await expect(page.locator("#season")).toContainText("128 coins");
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
+  await page.locator("#land-tools").evaluate((el: HTMLDetailsElement) => {
+    el.open = true;
+  });
   await page.locator("#move-plot").click();
   await page.locator('[data-plot="0"]').click();
   await page.getByRole("button", { name: "Land 22,22", exact: true }).click();
@@ -193,12 +237,10 @@ test("repeated builds, plot relocation, and macro land policies remain playable"
   );
   await page.getByRole("button", { name: "Land 1,1", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText("unoccupied");
-  await page.locator("#build-shop").evaluate((el: HTMLDetailsElement) => {
-    el.open = true;
-  });
+  await page.locator("#mode-build").click();
   await expect(page.locator('[data-build="barn"]')).toBeDisabled();
   await page.reload();
-  await page.locator("#build-shop summary").click();
+  await page.locator("#mode-build").click();
   await expect(page.locator('[data-build="barn"]')).toBeDisabled();
 });
 test("switching from plot relocation to building relocation clears the previous target", async ({
@@ -209,11 +251,17 @@ test("switching from plot relocation to building relocation clears the previous 
     "Saved on this browser",
   );
   await page.locator('[data-structure="1"]').click();
-  await page.locator("#move-plot").click();
-  await page.locator('[data-plot="0"]').click();
-  await page.locator("#build-shop").evaluate((el: HTMLDetailsElement) => {
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
+  await page.locator("#land-tools").evaluate((el: HTMLDetailsElement) => {
     el.open = true;
   });
+  await page.locator("#move-plot").click();
+  await page.locator('[data-plot="0"]').click();
+  await page.locator("#mode-upgrade").click();
   await page.locator("#move-building").click();
   await page.getByRole("button", { name: "Land 22,22", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText("Farmhouse moved");
@@ -226,10 +274,16 @@ test("switching from plot relocation to building relocation clears the previous 
     "16,16",
   );
   await page.locator('[data-structure="1"]').click();
-  await page.locator("#move-plot").click();
-  await page.locator("#build-shop").evaluate((el: HTMLDetailsElement) => {
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
+  await page.locator("#land-tools").evaluate((el: HTMLDetailsElement) => {
     el.open = true;
   });
+  await page.locator("#move-plot").click();
+  await page.locator("#mode-upgrade").click();
   await page.locator("#move-building").click();
   await page.getByRole("button", { name: "Land 25,25", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText("Farmhouse moved");

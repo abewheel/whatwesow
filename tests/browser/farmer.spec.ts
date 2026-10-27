@@ -49,6 +49,7 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
     .split(",")
     .map(Number);
   expect(Math.abs(relocated[0] - 18) + Math.abs(relocated[1] - 16)).toBe(1);
+  await page.locator("#estate-toggle").click();
   await page.getByRole("button", { name: "Zoom out", exact: true }).click();
   await expect(canvas).toHaveAttribute("data-farmer-cell", relocated.join(","));
   expect(errors).toEqual([]);

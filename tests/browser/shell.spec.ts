@@ -39,6 +39,7 @@ test("imports and exports saves", async ({ page }) => {
     ),
   });
   await expect(page.locator("#season")).toContainText("Year 40");
+  await page.getByRole("button", { name: "Open farm menu" }).click();
   const downloaded = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export save" }).click();
   const download = await downloaded;

@@ -15,6 +15,7 @@ import {
   type BuildingKind,
 } from "./micro/world";
 import Phaser from "phaser";
+import { icon } from "./game/icons";
 import {
   FarmScene,
   projectCell,
@@ -41,10 +42,53 @@ import {
 } from "./micro/state";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `<header><div><span class="eyebrow">A farm. A lifetime.</span><h1>What We Sow</h1></div><p>Grow a little. Leave something good.</p><span class="build-tag">Early preview</span></header><main><section class="farm-card" aria-label="Farm overview"><div class="farm-heading"><div><span class="eyebrow">Home, for now</span><h2>Your growing farm</h2></div><output id="season"></output></div><div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div><div class="field-note"><span class="note-icon" aria-hidden="true">✦</span><div><strong id="farm-message" role="status">Choose seeds, then click an empty plot.</strong><p>Plant → advance growth → harvest → reinvest. No real-time waiting.</p></div></div></section><section class="farm-tools" aria-label="Farming tools"><div class="seed-shop"><span class="eyebrow">Seed basket</span><div id="crop-options"></div></div><div class="work-tools"><button id="grow">Advance growth</button><button id="work" hidden>Help with a delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><p id="farm-summary"></p><button id="next-season">Next season</button><button id="farm-mode">Farm tool / cancel build</button><button id="move-plot">Move a plot</button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level" aria-live="polite">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">100%</button></span><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="127" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="127" value="16"></label><button id="go-to-cell">Go to land</button><p id="placement-hint">Drag the field or use arrow keys to explore 16,384 cells.</p></div></section><details id="build-shop"><summary>Build & progression</summary><p id="progression"></p><div id="build-options"></div><p id="selected-building">Click a placed structure to inspect, upgrade, or move it.</p><button id="upgrade-building" hidden>Upgrade selected building</button><button id="move-building" hidden>Move selected building</button></details><aside class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><label class="button" for="import">Import save</label><input id="import" type="file" accept="application/json,.json" hidden /></div></aside></main>`;
-const tools = document.querySelector(".farm-tools")!;
-document.querySelector("main")!.prepend(document.querySelector("#build-shop")!);
-document.querySelector("main")!.prepend(tools);
+app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
+<div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div>
+<header class="hud-top"><div class="farm-title"><span class="eyebrow">Your first acre</span><h1>What We Sow</h1></div><output id="season"></output><button id="estate-toggle" aria-expanded="false" aria-controls="estate-controls" aria-label="Estate controls" title="Estate controls">${icon("build")}</button><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
+<div id="estate-controls" class="estate-tools"><button id="next-season">Next season</button><button id="farm-mode" aria-label="Farm tool / cancel build">${icon("seeds")}<span>Farm</span></button><button id="home-view" aria-label="Center farm">${icon("home")}<span>Home</span></button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level" aria-live="polite">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">100%</button></span><details id="land-tools"><summary>Explore land</summary><button id="move-plot">Move a plot</button><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="127" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="127" value="16"></label><button id="go-to-cell">Go to land</button></details><p id="placement-hint">Drag the field or use arrow keys to explore.</p></div><div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Choose seeds, then click an empty plot.</strong><span id="farm-summary" class="sr-only"></span><div id="farm-stats" aria-hidden="true"></div></div>
+<section class="farm-tools" aria-label="Farming tools">
+<div id="tool-panels">
+<section id="panel-plant" class="tool-panel" aria-label="Planting"><div id="crop-options"></div></section>
+<section id="panel-build" class="tool-panel" aria-label="Construction" hidden><div id="build-shop"><div class="build-heading"><span class="eyebrow">Construction</span><button id="expand"></button></div><p id="progression"></p><div id="build-options"></div></div></section>
+<section id="panel-upgrade" class="tool-panel" aria-label="Upgrades" hidden><div class="upgrade-soil"><button id="improve"></button></div><div class="building-inspector"><p id="selected-building">Select a building on the farm to inspect it.</p><div><button id="upgrade-building" hidden>Upgrade selected building</button><button id="move-building" hidden>Move selected building</button></div></div></section>
+</div>
+<div class="mode-bar"><div class="mode-switch" aria-label="Farm activities"><button id="mode-plant" aria-pressed="true" aria-controls="panel-plant">${icon("seeds")}<span>Plant</span></button><button id="mode-build" aria-pressed="false" aria-controls="panel-build">${icon("build")}<span>Build</span></button><button id="mode-upgrade" aria-pressed="false" aria-controls="panel-upgrade">${icon("improve")}<span>Upgrade</span></button></div><span id="active-tool" role="status">Turnip seeds</span><button id="grow" aria-label="Advance growth" title="Advance growth within this season">${icon("grow")}<span>Grow</span></button><button id="work" aria-label="Help with a delivery · +4 coins" title="Help with a delivery · +4 coins" hidden>${icon("harvest")}<span>+4</span>${icon("coin")}</button><button id="collapse-tools" aria-expanded="true" aria-controls="tool-panels" aria-label="Collapse tools" title="Collapse tools"><span aria-hidden="true">⌄</span></button></div>
+</section></div>
+<dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><p class="menu-note">A little care, season after season.</p><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><p class="menu-help">Choose seeds. Plant an empty plot. Advance growth, then pick the ripe crops.</p><button id="resume">Back to the farm</button></dialog>
+</section></main>`;
+const menu = document.querySelector<HTMLDialogElement>("#farm-menu")!;
+document
+  .querySelector("#open-menu")!
+  .addEventListener("click", () => menu.showModal());
+document
+  .querySelector("#resume")!
+  .addEventListener("click", () => menu.close());
+document
+  .querySelector("#import-trigger")!
+  .addEventListener("click", () =>
+    document.querySelector<HTMLInputElement>("#import")!.click(),
+  );
+document.querySelector("#estate-toggle")!.addEventListener("click", (event) => {
+  const button = event.currentTarget as HTMLButtonElement;
+  const open = button.getAttribute("aria-expanded") !== "true";
+  button.setAttribute("aria-expanded", String(open));
+  document.querySelector(".estate-tools")!.classList.toggle("is-open", open);
+  if (open) collapseTools();
+});
+const estateControls = document.querySelector<HTMLElement>("#estate-controls")!;
+const hudHeader = document.querySelector<HTMLElement>(".hud-top")!;
+const hudDock = document.querySelector<HTMLElement>(".hud-bottom")!;
+const farmCard = document.querySelector<HTMLElement>(".farm-card")!;
+// Navigation occupies the space between the live header and folded activity dock.
+const fitEstateControls = new ResizeObserver(() => {
+  const header = hudHeader.getBoundingClientRect();
+  const dock = hudDock.getBoundingClientRect();
+  const farm = farmCard.getBoundingClientRect();
+  estateControls.style.top = `${header.bottom - farm.top + 8}px`;
+  estateControls.style.maxHeight = `${Math.max(44, dock.top - header.bottom - 16)}px`;
+});
+for (const element of [hudHeader, hudDock, farmCard])
+  fitEstateControls.observe(element);
 const status = document.querySelector<HTMLElement>("#save-status")!;
 const scene = new FarmScene();
 const game = new Phaser.Game({
@@ -68,6 +112,85 @@ let centered = false;
 const zoomLevels = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 let zoomIndex = 3;
 let zoom = zoomLevels[zoomIndex];
+type ToolMode = "plant" | "build" | "upgrade";
+let toolMode: ToolMode = "plant";
+let toolsCollapsed = false;
+function renderTools() {
+  if (!toolsCollapsed) {
+    document.querySelector(".estate-tools")!.classList.remove("is-open");
+    document
+      .querySelector("#estate-toggle")!
+      .setAttribute("aria-expanded", "false");
+  }
+  const panels = document.querySelector<HTMLElement>("#tool-panels")!;
+  panels.hidden = toolsCollapsed;
+  for (const mode of ["plant", "build", "upgrade"] as const) {
+    document
+      .querySelector(`#mode-${mode}`)!
+      .setAttribute("aria-pressed", String(mode === toolMode));
+    document.querySelector<HTMLElement>(`#panel-${mode}`)!.hidden =
+      mode !== toolMode;
+  }
+  const collapse =
+    document.querySelector<HTMLButtonElement>("#collapse-tools")!;
+  collapse.setAttribute("aria-expanded", String(!toolsCollapsed));
+  collapse.setAttribute(
+    "aria-label",
+    toolsCollapsed ? "Expand tools" : "Collapse tools",
+  );
+  collapse.title = toolsCollapsed ? "Expand tools" : "Collapse tools";
+  collapse.innerHTML = `<span class="dock-chevron" aria-hidden="true"></span>`;
+  collapse.dataset.collapsed = String(toolsCollapsed);
+  document.querySelector("#active-tool")!.textContent =
+    movingId !== null
+      ? "Move building"
+      : movingPlotId !== null || pickingPlot
+        ? "Move plot"
+        : buildMode
+          ? `Place ${buildMode === "plot" ? "plot" : buildings[buildMode].name}`
+          : toolMode === "upgrade"
+            ? "Select a building"
+            : toolMode === "build"
+              ? "Choose a structure"
+              : `${crops[selected].name} seeds`;
+}
+function showTools(mode: ToolMode, reset = true) {
+  document.querySelector(".estate-tools")!.classList.remove("is-open");
+  document
+    .querySelector("#estate-toggle")!
+    .setAttribute("aria-expanded", "false");
+  toolMode = mode;
+  toolsCollapsed = false;
+  if (reset) {
+    buildMode = null;
+    movingId = null;
+    movingPlotId = null;
+    pickingPlot = false;
+    preview.hidden = true;
+  }
+  renderTools();
+}
+function collapseTools() {
+  toolsCollapsed = true;
+  renderTools();
+  const focused = document.activeElement;
+  if (focused && document.querySelector("#tool-panels")!.contains(focused))
+    document.querySelector<HTMLButtonElement>(`#mode-${toolMode}`)!.focus();
+}
+for (const mode of ["plant", "build", "upgrade"] as const)
+  document
+    .querySelector(`#mode-${mode}`)!
+    .addEventListener("click", () => showTools(mode));
+document.querySelector("#collapse-tools")!.addEventListener("click", () => {
+  toolsCollapsed = !toolsCollapsed;
+  renderTools();
+});
+document.querySelector(".farm-tools")!.addEventListener("keydown", (event) => {
+  if ((event as KeyboardEvent).key === "Escape" && !toolsCollapsed) {
+    event.stopPropagation();
+    collapseTools();
+  }
+});
 const viewport = document.querySelector<HTMLElement>("#farm")!;
 const world = document.querySelector<HTMLElement>("#farm-world")!;
 world.style.width = `${WORLD_WIDTH}px`;
@@ -80,8 +203,13 @@ function updateViewport() {
     height = viewport.clientHeight;
   renderer.style.width = `${width}px`;
   renderer.style.height = `${height}px`;
-  if (game.scale.width !== width || game.scale.height !== height)
+  if (game.scale.width !== width || game.scale.height !== height) {
+    if (centered) {
+      viewport.scrollLeft += (game.scale.width - width) / 2;
+      viewport.scrollTop += (game.scale.height - height) / 2;
+    }
     game.scale.resize(width, height);
+  }
   scene.setViewport(
     viewport.scrollLeft / zoom,
     viewport.scrollTop / zoom,
@@ -161,6 +289,7 @@ document.querySelector("#go-to-cell")!.addEventListener("click", () => {
   const p = projectCell({ row, col });
   viewport.scrollLeft = p.x * zoom - viewport.clientWidth / 2;
   viewport.scrollTop = p.y * zoom - viewport.clientHeight / 2;
+  document.querySelector<HTMLDetailsElement>("#land-tools")!.open = false;
 });
 function centerFarm() {
   const p = projectCell({ row: 16, col: 16 });
@@ -256,7 +385,10 @@ function clearBuild() {
     "Farm tool selected. Drag or use arrow keys to explore.";
   render();
 }
-document.querySelector("#farm-mode")!.addEventListener("click", clearBuild);
+document.querySelector("#farm-mode")!.addEventListener("click", () => {
+  clearBuild();
+  showTools("plant");
+});
 function selectBuild(kind: BuildingKind | "plot") {
   buildMode = kind;
   movingId = null;
@@ -264,7 +396,7 @@ function selectBuild(kind: BuildingKind | "plot") {
   pickingPlot = false;
   preview.hidden = true;
   render();
-  document.querySelector<HTMLDetailsElement>("#build-shop")!.open = false;
+  collapseTools();
   document.querySelector("#placement-hint")!.textContent =
     `Place ${kind === "plot" ? "a plot" : buildings[kind].name}: choose open land. Green fits; red is blocked. Farm tool cancels.`;
 }
@@ -282,7 +414,7 @@ const cropOptions = document.querySelector<HTMLElement>("#crop-options")!;
 for (const [id, crop] of Object.entries(crops)) {
   const button = document.createElement("button");
   button.dataset.crop = id;
-  button.innerHTML = `<strong>${crop.name}</strong><span>${crop.steps} grow step${crop.steps === 1 ? "" : "s"}</span><span class="crop-return"></span>`;
+  button.innerHTML = `${icon(id as CropId)}<strong>${crop.name}</strong><span class="seed-price" aria-hidden="true">${icon("coin")}${crop.seed}</span><span class="control-detail"></span>`;
   button.addEventListener("click", () => {
     buildMode = null;
     movingId = null;
@@ -291,7 +423,7 @@ for (const [id, crop] of Object.entries(crops)) {
     preview.hidden = true;
     selected = id as CropId;
     render();
-    message.textContent = `${crop.name} seeds selected. Click an empty plot.`;
+    message.textContent = `${crop.name} · ${crop.steps} growth step${crop.steps === 1 ? "" : "s"} · Harvest ${policyProduction(harvestValue(state, id as CropId), state.farmPolicy ?? {})} coins.`;
   });
   cropOptions.append(button);
 }
@@ -372,6 +504,10 @@ scene.onLayout = (targets) => {
         }
         const index = state.plotCells.findIndex((c) => cellKey(c) === key);
         if (index >= 0) {
+          if (toolMode !== "plant") {
+            message.textContent = "Choose Plant to work this plot.";
+            return;
+          }
           void act(
             state.plots[index]
               ? { type: "harvest", plot: index }
@@ -386,8 +522,7 @@ scene.onLayout = (targets) => {
         );
         if (building) {
           inspectedId = building.id;
-          document.querySelector<HTMLDetailsElement>("#build-shop")!.open =
-            true;
+          showTools("upgrade", false);
           render();
           return;
         }
@@ -480,6 +615,8 @@ document.querySelector("#move-plot")!.addEventListener("click", () => {
   movingId = null;
   movingPlotId = null;
   pickingPlot = true;
+  document.querySelector<HTMLDetailsElement>("#land-tools")!.open = false;
+  collapseTools();
   preview.hidden = true;
   render();
   document.querySelector("#placement-hint")!.textContent =
@@ -497,7 +634,7 @@ document.querySelector("#move-building")!.addEventListener("click", () => {
   pickingPlot = false;
   buildMode = null;
   render();
-  document.querySelector<HTMLDetailsElement>("#build-shop")!.open = false;
+  collapseTools();
   document.querySelector("#placement-hint")!.textContent =
     "Move selected structure onto open land. Moving is free. Farm tool cancels.";
 });
@@ -520,8 +657,9 @@ const instance = import.meta.env.DEV
 const namespace = import.meta.env.DEV ? `dev-${instance}` : "player";
 let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
 function render() {
-  document.querySelector("#season")!.textContent =
-    `Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins`;
+  renderTools();
+  document.querySelector("#season")!.innerHTML =
+    `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}${state.coins.toLocaleString()}</span>`;
   scene.setState(state);
   const turn = turnNumber(state),
     policy = state.farmPolicy ?? {};
@@ -530,13 +668,16 @@ function render() {
   document.querySelector("#next-season")!.textContent =
     turn === 160 ? "Final season · 160/160" : `Next season · ${turn}/160`;
   document.querySelector("#progression")!.textContent =
-    `Turn ${turn}/160 · ${state.structures.length} structures · Seasonal income ${policyProduction(seasonalIncome(state), policy)} coins. Unlocks follow the seasons; growth stays within a season.`;
+    `Turn ${turn}/160 · ${state.structures.length} structures · +${policyProduction(seasonalIncome(state), policy)} coins / season`;
   for (const button of document.querySelectorAll<HTMLButtonElement>(
     "[data-build]",
   )) {
     const kind = button.dataset.build as BuildingKind | "plot";
     if (kind === "plot") {
-      button.textContent = `Crop plot · 1×1 · ${policyCost(expansionCost(state), state.farmPolicy)} coins`;
+      const label = `Crop plot · 1×1 · ${policyCost(expansionCost(state), state.farmPolicy)} coins`;
+      button.setAttribute("aria-label", label);
+      button.title = label;
+      button.innerHTML = `${icon("expand")}<span>Crop plot<small>1 × 1</small></span><span class="tool-price">${icon("coin")}${policyCost(expansionCost(state), policy)}</span>`;
       button.disabled =
         state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
         state.coins < policyCost(expansionCost(state), policy);
@@ -547,7 +688,10 @@ function render() {
     const unlock = buildUnlock(kind, policy),
       cost = policyCost(item.cost, policy),
       limit = policy.buildingLimits?.[kind];
-    button.textContent = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${turn < unlock ? `Unlock turn ${unlock}` : `${count} built`} · ${item.benefit}`;
+    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${turn < unlock ? `Unlock turn ${unlock}` : `${count} built`} · ${item.benefit}`;
+    button.setAttribute("aria-label", label);
+    button.title = label;
+    button.innerHTML = `${icon(kind === "oak" || kind === "apple" ? "spring" : "home")}<span>${item.name}<small>${turn < unlock ? `Turn ${unlock}` : `${item.width} × ${item.height} · ${count} built`}</small></span><span class="tool-price">${icon("coin")}${cost.toLocaleString()}</span>`;
     button.disabled =
       turn < unlock ||
       state.coins < cost ||
@@ -559,6 +703,9 @@ function render() {
     move = document.querySelector<HTMLButtonElement>("#move-building")!;
   upgrade.hidden = !inspected;
   move.hidden = !inspected;
+  if (!inspected)
+    document.querySelector("#selected-building")!.textContent =
+      "Select a building on the farm to inspect it.";
   if (inspected) {
     const item = buildings[inspected.kind],
       unlock = upgradeTurn(inspected.kind, inspected.level, policy),
@@ -581,8 +728,12 @@ function render() {
   )) {
     const id = button.dataset.crop as CropId;
     button.setAttribute("aria-pressed", String(id === selected));
-    button.querySelector(".crop-return")!.textContent =
-      `Seeds: ${policyCost(seedCost(state, id), policy)} · Harvest: ${policyProduction(harvestValue(state, id), policy)} coins`;
+    const crop = crops[id];
+    const detail = `${crop.name}: ${policyCost(seedCost(state, id), policy)} coins to plant, ${crop.steps} growth step${crop.steps === 1 ? "" : "s"}, harvest ${policyProduction(harvestValue(state, id), policy)} coins.`;
+    button.querySelector(".seed-price")!.innerHTML =
+      `${icon("coin")}${policyCost(seedCost(state, id), policy)}`;
+    button.setAttribute("aria-label", detail);
+    button.querySelector(".control-detail")!.textContent = detail;
   }
   document.querySelector<HTMLButtonElement>("#work")!.hidden =
     policy.allowWork === false ||
@@ -595,15 +746,18 @@ function render() {
   const grow = document.querySelector<HTMLButtonElement>("#grow")!;
   grow.disabled = !state.plots.some((p) => p && p.growth < crops[p.crop].steps);
   const expand = document.querySelector<HTMLButtonElement>("#expand")!;
-  expand.textContent =
+  const expandLabel =
     state.plots.length === WORLD_CELLS
-      ? "All 16384 plots open"
-      : `Open a plot · ${policyCost(expansionCost(state), state.farmPolicy)} coins`;
+      ? "All plots open"
+      : `Open a plot · ${policyCost(expansionCost(state), policy)} coins`;
+  expand.setAttribute("aria-label", expandLabel);
+  expand.title = expandLabel;
+  expand.innerHTML = `${icon("expand")}<span>Expand</span><span class="tool-price" aria-hidden="true">${state.plots.length === WORLD_CELLS ? "✓" : `${icon("coin")}${policyCost(expansionCost(state), policy)}`}</span>`;
   expand.disabled =
     state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
     state.coins < policyCost(expansionCost(state), policy);
   const improve = document.querySelector<HTMLButtonElement>("#improve")!;
-  improve.textContent =
+  const improveLabel =
     state.soilLevel === 3
       ? "Soil fully improved"
       : `Improve soil · ${policyCost(soilCost(state), policy)} coins (+3 / harvest)`;
@@ -611,13 +765,21 @@ function render() {
     state.soilLevel === 3 ||
     state.coins < policyCost(soilCost(state), policy) ||
     turn < [1, 33, 97][state.soilLevel];
-  if (state.soilLevel < 3 && turn < [1, 33, 97][state.soilLevel])
-    improve.textContent += ` · unlock turn ${[1, 33, 97][state.soilLevel]}`;
+  const soilLabel =
+    improveLabel +
+    (state.soilLevel < 3 && turn < [1, 33, 97][state.soilLevel]
+      ? ` · unlock turn ${[1, 33, 97][state.soilLevel]}`
+      : "");
+  improve.setAttribute("aria-label", soilLabel);
+  improve.title = soilLabel;
+  improve.innerHTML = `${icon("improve")}<span>Soil</span><span class="tool-price" aria-hidden="true">${state.soilLevel === 3 ? "✓" : `${icon("coin")}${policyCost(soilCost(state), policy)}`}</span>`;
   const ready = state.plots.filter(
     (p) => p && p.growth === crops[p.crop].steps,
   ).length;
   document.querySelector("#farm-summary")!.textContent =
     `${state.plots.length} plots · ${ready} ready to harvest · Soil level ${state.soilLevel}/3`;
+  document.querySelector("#farm-stats")!.innerHTML =
+    `<span title="${state.plots.length} plots">${icon("expand")}${state.plots.length}</span><span title="${ready} ready to harvest">${icon("harvest")}${ready}</span><span title="Soil level ${state.soilLevel}/3">${icon("improve")}<span class="soil-meter">${[1, 2, 3].map((level) => `<i class="${level <= state.soilLevel ? "filled" : ""}"></i>`).join("")}</span></span>`;
 }
 async function apply(next: typeof state, resetFarmer = true) {
   const valid = parseState(next);
@@ -642,6 +804,7 @@ try {
 } catch {
   status.textContent =
     "Could not load local save. Export before closing; import a valid save to recover.";
+  message.textContent = status.textContent;
 }
 render();
 document.querySelector("#export")!.addEventListener("click", () => {

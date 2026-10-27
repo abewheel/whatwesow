@@ -1,12 +1,21 @@
+@font-face {
+  font-family: "Farm Pixel";
+  src: url("/fonts/pixelify-sans.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
-  font-family: Georgia, serif;
+  font-family: "Farm Pixel", monospace;
+  font-size: 18px;
+  line-height: 1.25;
   color: #493621;
-  background: #efe1bb;
+  background: #4b633b;
   font-synthesis: none;
   --paper: #fff0ca;
   --wood: #805331;
   --ink: #493621;
-  --muted: #766647;
+  --muted: #69583c;
 }
 * {
   box-sizing: border-box;
@@ -14,157 +23,423 @@
 body {
   margin: 0;
 }
-header {
-  height: 84px;
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  padding: 12px 28px;
-  background: var(--paper);
-  border-bottom: 4px solid var(--wood);
-  box-shadow: inset 0 -3px #d9b579;
-}
-h1 {
-  font-size: 28px;
-  margin: 0;
-  letter-spacing: -0.04em;
-}
-.eyebrow {
-  font: 700 10px/1.6 system-ui;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-header p {
-  font-size: 15px;
-  color: var(--muted);
-}
-.build-tag {
-  margin-left: auto;
-  font: 600 11px system-ui;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  border: 1px solid #c9a974;
-  padding: 8px 12px;
-}
 main {
-  padding: 12px;
+  padding: 8px;
+}
+button,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--wood);
+  border-radius: 0;
+  box-shadow: inset 0 -3px #dfbf86;
+  padding: 10px 14px;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover {
+  background: #ffe3a0;
+}
+button:active {
+  box-shadow: inset 0 2px #b7935c;
+}
+button:disabled {
+  color: #76684e;
+  background: #e1d4af;
+  box-shadow: none;
+  cursor: default;
+}
+button[hidden] {
+  display: none;
+}
+:focus-visible {
+  outline: 3px solid #214c3a;
+  outline-offset: 3px;
 }
 .farm-card {
   position: relative;
-  height: calc(100svh - 160px);
-  min-height: 460px;
+  height: calc(100svh - 16px);
+  min-height: 640px;
   overflow: hidden;
   border: 4px solid var(--wood);
-  box-shadow:
-    0 2px 0 #4f3726,
-    inset 0 0 0 2px #ddb77c;
   background: #83ad65;
-}
-.farm-heading {
-  position: absolute;
-  z-index: 1;
-  top: 18px;
-  left: 18px;
-  right: 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  pointer-events: none;
-}
-.farm-heading > div,
-output {
-  background: var(--paper);
-  border: 2px solid var(--wood);
-  box-shadow:
-    3px 3px 0 #49362135,
-    inset 0 0 0 2px #e2c28b;
-  padding: 10px 18px;
-}
-h2 {
-  font-size: 23px;
-  margin: 0;
-}
-output {
-  font: 600 14px/1.6 system-ui;
-  text-transform: capitalize;
+  box-shadow: 0 0 0 2px #c5a171;
 }
 #farm {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
 }
 #farm canvas {
   display: block;
   image-rendering: pixelated;
 }
-.field-note {
+.hud-top {
   position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 18px;
+  top: 16px;
+  left: 16px;
+  right: 16px;
   display: flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--paper);
-  border: 2px solid var(--wood);
-  padding: 13px 18px;
-  box-shadow: 3px 3px 0 #49362135;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
 }
-.note-icon {
-  font-size: 30px;
-  color: #8a9b46;
+.hud-top > * {
+  pointer-events: auto;
+}
+.farm-title,
+output,
+.farm-tools,
+.field-note,
+dialog {
+  background: var(--paper);
+  border: 3px solid var(--wood);
+  box-shadow:
+    inset 0 0 0 2px #e2c28b,
+    3px 4px 0 #3d32254d;
+}
+.farm-title {
+  padding: 9px 18px 12px;
+}
+h1 {
+  font-size: 32px;
+  margin: 0;
+  letter-spacing: 0;
+  font-weight: 600;
+  text-shadow: 0 2px #d8b77c;
+}
+.eyebrow {
+  font:
+    500 14px/1.2 "Farm Pixel",
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+output {
+  margin-left: auto;
+  padding: 14px 18px;
+  font:
+    600 14px/1.5 "Farm Pixel",
+    monospace;
+  text-transform: capitalize;
+}
+#open-menu {
+  padding: 13px;
+}
+.hud-bottom {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+}
+.hud-bottom > * {
+  pointer-events: auto;
+}
+.field-note {
+  justify-self: center;
+  max-width: 100%;
+  padding: 8px 16px;
+  text-align: center;
 }
 .field-note strong {
-  font-size: 17px;
+  font:
+    400 16px/1.25 "Farm Pixel",
+    monospace;
 }
-.field-note p {
-  margin: 4px 0 0;
-  font: 13px/1.5 system-ui;
+#farm-summary {
+  display: block;
+  font:
+    16px/1.3 "Farm Pixel",
+    monospace;
   color: var(--muted);
 }
-.preview-note {
-  margin-left: auto;
-  font: 12px system-ui;
-  color: var(--muted);
+.farm-tools {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 12px 16px;
+  width: fit-content;
+  max-width: 100%;
+  justify-self: center;
 }
-.save-bar {
+#crop-options {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+#crop-options button {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  width: 100px;
+  padding: 8px 10px;
+  position: relative;
+}
+#crop-options strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+#crop-options [aria-pressed="true"] {
+  background: #e1e7b4;
+  border-color: #3e6235;
+  box-shadow: inset 0 0 0 2px #afbf7c;
+}
+#crop-options [aria-pressed="true"]::after {
+  content: "✓";
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  color: #31532e;
+  font:
+    500 16px "Farm Pixel",
+    monospace;
+}
+.pixel-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px #49362126);
+}
+.seed-price,
+.tool-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font:
+    500 16px/1 "Farm Pixel",
+    monospace;
+}
+.seed-price .pixel-icon,
+.tool-price .pixel-icon {
+  width: 18px;
+  height: 18px;
+}
+.work-tools {
+  display: grid;
+  text-align: center;
+  gap: 5px;
+  align-self: end;
+}
+#grow {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  min-width: 100px;
+  min-height: 109px;
+  background: #486a3e;
+  color: #fff5d5;
+  border-color: #304e2e;
+  box-shadow: inset 0 -3px #35542f;
+}
+#grow:disabled {
+  background: #d3d4af;
+  color: #5c6045;
+  box-shadow: none;
+}
+.upgrades {
+  display: grid;
+  grid-template-columns: repeat(2, 88px);
+  align-self: stretch;
+  gap: 4px 6px;
+  padding-left: 18px;
+  border-left: 1px solid #bf9d67;
+}
+.upgrades .eyebrow {
+  grid-column: 1 / -1;
+}
+.upgrades button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 8px;
+  font-size: 16px;
+}
+.control-detail {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 210px;
+  z-index: 4;
+  padding: 12px;
+  border: 2px solid var(--wood);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 2px 3px #49362140;
+  text-align: left;
+  font:
+    16px/1.3 "Farm Pixel",
+    monospace;
+  pointer-events: none;
+}
+button:hover .control-detail,
+button:focus-visible .control-detail {
+  display: block;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+#season {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 14px;
+}
+.calendar,
+.coin-balance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.calendar {
+  padding-right: 18px;
+  border-right: 1px solid #c9a974;
+}
+.calendar .pixel-icon {
+  width: 36px;
+  height: 36px;
+}
+.calendar small {
+  display: block;
+  font:
+    14px/1.2 "Farm Pixel",
+    monospace;
+}
+.coin-balance {
+  font:
+    600 24px "Farm Pixel",
+    monospace;
+}
+.coin-balance .pixel-icon {
+  width: 30px;
+  height: 30px;
+}
+#open-menu {
+  display: grid;
+  place-items: center;
+  padding: 5px;
+}
+#open-menu .pixel-icon {
+  width: 44px;
+  height: 44px;
+}
+.field-note {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+#farm-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font:
+    500 16px "Farm Pixel",
+    monospace;
+}
+#farm-stats > span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+#farm-stats .pixel-icon {
+  width: 24px;
+  height: 24px;
+}
+.soil-meter {
+  display: flex;
+  gap: 2px;
+}
+.soil-meter i {
+  width: 6px;
+  height: 12px;
+  border: 1px solid #937247;
+  background: #dfcba0;
+}
+.soil-meter .filled {
+  background: #597741;
+  border-color: #365634;
+}
+.plot-hit {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  min-height: 0;
+}
+.plot-hit:hover {
+  background: #ffedaf55;
+}
+.plot-hit:focus-visible {
+  background: #ffedafcc;
+  outline: none;
+}
+dialog {
+  color: var(--ink);
+  width: min(440px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  padding: 24px;
+}
+dialog::backdrop {
+  background: #1f302a88;
+}
+.menu-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 10px 6px 0;
-  font: 12px/1.5 system-ui;
+  gap: 16px;
+}
+h2 {
+  font-size: 32px;
+  margin: 0;
+}
+.menu-note {
+  font-size: 18px;
   color: var(--muted);
+}
+.save-bar {
+  font:
+    16px/1.4 "Farm Pixel",
+    monospace;
+  padding: 16px 0;
+  border-block: 1px solid #c9a974;
 }
 .save-bar > div {
   display: flex;
   gap: 8px;
+  margin-top: 12px;
 }
-button,
-.button,
-select,
-textarea {
-  font: inherit;
+.menu-help {
+  font:
+    18px/1.4 "Farm Pixel",
+    monospace;
 }
-button,
-.button {
-  display: inline-block;
-  background: var(--paper);
-  color: var(--ink);
-  border: 2px solid var(--wood);
-  border-radius: 3px;
-  box-shadow: inset 0 -3px #dfbf86;
-  padding: 7px 12px;
-  cursor: pointer;
-}
-button:hover,
-.button:hover {
-  background: #ffe3a0;
-}
-:focus-visible {
-  outline: 3px solid #2d674f;
-  outline-offset: 3px;
+#resume {
+  width: 100%;
 }
 .dev-panel {
   margin-top: 18px;
@@ -198,133 +473,269 @@ button:hover,
 #dev-status {
   min-height: 24px;
 }
-@media (max-width: 600px) {
-  header {
-    height: 72px;
-    padding: 10px 14px;
-  }
-  header p,
-  .build-tag,
-  .preview-note {
-    display: none;
-  }
-  h1 {
-    font-size: 25px;
-  }
-  main {
-    padding: 6px;
-  }
-  .farm-card {
-    height: calc(100svh - 148px);
-    min-height: 450px;
-  }
-  .farm-heading {
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    flex-wrap: wrap;
-  }
-  .farm-heading > div,
-  output {
-    padding: 8px 12px;
-  }
-  output {
-    font-size: 12px;
-  }
-  h2 {
-    font-size: 19px;
-  }
-  .field-note {
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    padding: 10px;
-  }
-  .save-bar {
-    font-size: 11px;
-  }
-  button,
-  .button {
-    padding: 7px;
-  }
+/* Nine-slice pixel frames share the buildings' oak and shaded trim. */
+.farm-title,
+output,
+.farm-tools,
+.field-note,
+dialog,
+.control-detail {
+  border: 12px solid transparent;
+  border-image: url("/art/hud-frame.svg") 12 / 12px / 0 stretch;
+  background-color: #f7e6b8;
+  background-clip: padding-box;
+  box-shadow: 0 4px 0 -2px #49342080;
+  image-rendering: pixelated;
 }
-#farm {
-  position: relative;
-}
-.plot-hit {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: transparent;
-}
-.plot-hit:hover {
-  background: #ffedaf55;
-}
-.plot-hit:focus-visible {
-  background: #ffedaf99;
-  outline: none;
+.farm-title {
+  padding: 4px 12px 6px;
 }
 .farm-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  padding: 18px;
-  border: 2px solid var(--wood);
-  background: var(--paper);
-  margin-top: 12px;
+  padding: 8px 12px;
 }
-#crop-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
+.field-note {
+  padding: 4px 10px;
 }
-#crop-options button {
-  display: grid;
-  gap: 4px;
-  text-align: left;
+button:not(.plot-hit) {
+  border: 6px solid transparent;
+  border-image: url("/art/hud-button.svg") 6 / 6px / 0 stretch;
+  background-clip: padding-box;
+  border-radius: 0;
+  box-shadow: 0 2px #65442c;
+  image-rendering: pixelated;
 }
-#crop-options span {
-  font: 12px/1.5 system-ui;
+button:not(.plot-hit):active {
+  box-shadow: none;
 }
 #crop-options [aria-pressed="true"] {
-  background: #e0e7ad;
-  border-color: #397244;
+  box-shadow:
+    inset 0 0 0 2px #52783d,
+    0 2px #65442c;
 }
-.work-tools {
-  flex: 1;
-  align-self: center;
+#grow {
+  background-color: #527343;
+  color: #fff3c8;
 }
-.work-tools button {
-  margin: 4px;
-}
-.work-tools p,
-.work-tools small {
-  font: 12px/1.5 system-ui;
+#grow:disabled {
+  background-color: #d2d1a4;
+  color: #555b3b;
 }
 button:disabled {
-  opacity: 0.55;
-  cursor: default;
+  box-shadow: none;
+}
+.upgrades {
+  grid-template-columns: repeat(2, 96px);
+}
+#crop-options button {
+  width: 104px;
+}
+#grow {
+  min-height: 118px;
+}
+.control-detail {
+  padding: 8px;
+  width: 240px;
+}
+.menu-heading button {
+  font-family: monospace;
+}
+@media (max-width: 700px) {
+  .farm-tools {
+    gap: 10px;
+    padding: 10px;
+  }
+  .upgrades {
+    padding-left: 10px;
+    grid-template-columns: repeat(2, 68px);
+  }
+  #crop-options button {
+    width: 76px;
+  }
+  #grow {
+    min-width: 76px;
+  }
 }
 @media (max-width: 600px) {
+  main {
+    padding: 0;
+  }
+  .farm-card {
+    height: 100svh;
+    min-height: 680px;
+  }
+  .hud-top {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .farm-title {
+    flex: 1;
+    padding: 6px 12px;
+  }
+  h1 {
+    font-size: 28px;
+  }
+  #season {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    padding: 6px 12px;
+    font-size: 16px;
+  }
+  .calendar {
+    border: 0;
+  }
+  .hud-bottom {
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 5px;
+  }
+  .field-note {
+    padding: 6px 10px;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .field-note strong {
+    font-size: 16px;
+  }
   .farm-tools {
-    padding: 12px;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    width: 100%;
+    padding: 8px;
   }
-  .field-note p {
-    font-size: 11px;
+  .seed-shop {
+    grid-column: 1;
+  }
+  #crop-options {
+    gap: 4px;
+  }
+  #crop-options button {
+    flex: 1;
+    width: 66px;
+    min-width: 0;
+    padding: 6px 3px;
+  }
+  #crop-options strong {
+    font-size: 16px;
+  }
+  .pixel-icon {
+    width: 40px;
+    height: 40px;
+  }
+  #grow {
+    min-width: 64px;
+    font-size: 16px;
+    min-height: 98px;
+    padding: 6px;
+  }
+  .work-tools {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .upgrades {
+    grid-column: 1 / -1;
+    display: flex;
+    border-left: 0;
+    border-top: 1px solid #bf9d67;
+    padding: 6px 0 0;
+    gap: 6px;
+  }
+  .upgrades .eyebrow {
+    display: none;
+  }
+  .upgrades button {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 4px;
+    font-size: 16px;
+  }
+  .upgrades .pixel-icon {
+    width: 30px;
+    height: 30px;
+  }
+  .upgrades .tool-price .pixel-icon {
+    width: 16px;
+    height: 16px;
+  }
+  .control-detail {
+    width: 190px;
+    left: 0;
+    transform: none;
+  }
+  #grow .control-detail,
+  #crop-options button:last-child .control-detail {
+    left: auto;
+    right: 0;
   }
 }
-.farm-tools {
-  margin: 0 0 12px;
+
+#work {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font:
+    500 16px "Farm Pixel",
+    monospace;
 }
-button[hidden] {
+#work .pixel-icon {
+  width: 24px;
+  height: 24px;
+}
+#work[hidden] {
   display: none;
 }
+@media (max-width: 360px) {
+  .farm-title {
+    padding: 4px 6px;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  .farm-tools {
+    grid-template-columns: minmax(0, 1fr) 56px;
+  }
+  #crop-options button {
+    width: 54px;
+    padding: 6px 0;
+  }
+  #crop-options strong {
+    font-size: 14px;
+  }
+  #grow {
+    min-width: 56px;
+    padding: 4px 0;
+  }
+  .upgrades button {
+    min-width: 0;
+    gap: 3px;
+    padding: 4px 0;
+    font-size: 14px;
+  }
+  .upgrades .pixel-icon {
+    width: 24px;
+    height: 24px;
+  }
+  .upgrades .tool-price {
+    gap: 0;
+    font-size: 14px;
+  }
+  dialog {
+    padding: 16px;
+  }
+  h2 {
+    font-size: 28px;
+  }
+}
+
 #farm {
   overflow: auto;
   cursor: grab;
@@ -335,6 +746,12 @@ button[hidden] {
 }
 #farm-world {
   position: relative;
+}
+#farm-renderer {
+  position: sticky;
+  top: 0;
+  left: 0;
+  pointer-events: none;
 }
 #placement-preview {
   position: absolute;
@@ -348,63 +765,493 @@ button[hidden] {
 #placement-preview[hidden] {
   display: none;
 }
-.plot-hit {
-  cursor: pointer;
+.estate-tools {
+  position: absolute;
+  z-index: 5;
+  top: 130px;
+  left: 20px;
+  width: 190px;
+  display: grid;
+  gap: 5px;
 }
-.farm-heading,
-.field-note {
-  pointer-events: none;
+.estate-tools > button,
+.estate-tools summary {
+  font-size: 14px;
 }
-.farm-heading {
-  z-index: 4;
-}
-.field-note {
-  z-index: 4;
-  padding: 8px 14px;
-}
-.field-note p {
-  display: none;
-}
-#build-shop {
-  border: 2px solid var(--wood);
+.estate-tools details {
   background: var(--paper);
-  padding: 12px 18px;
-  margin-bottom: 12px;
-  font: 13px/1.5 system-ui;
+  padding: 8px;
+  border: 2px solid var(--wood);
 }
-#build-shop summary {
+.estate-tools summary {
   cursor: pointer;
-  font-weight: 700;
+}
+.estate-tools details[open] {
+  width: min(420px, calc(100vw - 60px));
+  max-height: 42svh;
+  overflow: auto;
 }
 #build-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 8px;
-  margin: 12px 0;
 }
 #build-options button {
+  font-size: 14px;
   text-align: left;
 }
-.farm-card {
-  height: 64svh;
-  min-height: 460px;
+#placement-hint {
+  font-size: 14px;
+  padding: 8px;
+  background: var(--paper);
+  margin: 0;
 }
-
-#farm-renderer {
-  position: sticky;
-  top: 0;
-  left: 0;
-  pointer-events: none;
+#land-tools input {
+  width: 60px;
 }
-.work-tools input[type="number"] {
-  width: 64px;
-  font: inherit;
+@media (max-width: 600px) {
+  .estate-tools {
+    top: 200px;
+    left: 12px;
+    width: 140px;
+  }
+  .estate-tools > button,
+  .estate-tools summary {
+    min-height: 32px;
+    padding: 3px;
+  }
+  #placement-hint {
+    display: none;
+  }
+}
+/* Detailed raster materials, authored against the building atlas. */
+.pixel-icon {
+  display: inline-block;
+  background-image: url("/art/hud-icons-detailed.png");
+  background-size: 400% 400%;
+  background-repeat: no-repeat;
+  image-rendering: auto;
+  filter: drop-shadow(0 2px 1px #49362130);
+}
+.farm-title,
+output,
+.farm-tools,
+.field-note,
+dialog,
+.control-detail,
+.estate-tools details {
+  border: 18px solid transparent;
+  border-image: url("/art/hud-frame-detailed.png") 150 fill / 18px / 0 stretch;
+  background: none;
+  image-rendering: auto;
+  box-shadow: 2px 4px 2px #30251750;
+}
+button:not(.plot-hit) {
+  border: 8px solid transparent;
+  border-image: url("/art/hud-frame-detailed.png") 150 fill / 8px / 0 stretch;
+  background: none;
+  image-rendering: auto;
+}
+button:not(.plot-hit):hover {
+  filter: brightness(1.08);
+}
+button:not(.plot-hit):disabled {
+  filter: saturate(0.4);
+  color: #655a42;
+}
+#crop-options [aria-pressed="true"] {
+  outline: 3px solid #42643a;
+  outline-offset: -5px;
+  box-shadow: none;
+}
+#grow,
+#grow:disabled {
+  background: none;
+  color: var(--ink);
+}
+#crop-options .pixel-icon,
+#grow > .pixel-icon,
+.upgrades > button > .pixel-icon {
+  width: 56px;
+  height: 56px;
+}
+#crop-options .seed-price .pixel-icon,
+.upgrades .tool-price .pixel-icon {
+  width: 20px;
+  height: 20px;
+}
+.estate-tools details {
   padding: 5px;
 }
-.work-tools label {
-  display: inline-block;
-  margin: 4px;
-  font: 12px system-ui;
+.hud-bottom,
+.hud-top {
+  z-index: 4;
+}
+.field-note {
+  pointer-events: none;
+}
+@media (max-width: 600px) {
+  .farm-title,
+  output,
+  .farm-tools,
+  .field-note,
+  dialog,
+  .control-detail,
+  .estate-tools details {
+    border-width: 12px;
+    border-image-width: 12px;
+  }
+  #crop-options .pixel-icon,
+  #grow > .pixel-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .upgrades > button > .pixel-icon {
+    width: 28px;
+    height: 28px;
+  }
+  #crop-options .seed-price .pixel-icon,
+  .upgrades .tool-price .pixel-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+#estate-toggle {
+  display: none;
+}
+#farm-mode,
+#home-view {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+.estate-tools > button .pixel-icon {
+  width: 28px;
+  height: 28px;
+}
+@media (max-width: 600px) {
+  #estate-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .estate-tools:not(.is-open) > :not(#estate-toggle) {
+    display: none;
+  }
+  .estate-tools.is-open {
+    max-height: 38svh;
+    overflow-y: auto;
+    width: 180px;
+  }
+}
+/* A compact activity dock: one contextual tray above a persistent mode bar. */
+.farm-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: min(760px, 100%);
+  padding: 8px 10px;
+  border-width: 12px;
+  border-image-width: 12px;
+}
+#tool-panels[hidden],
+#tool-panels > .tool-panel[hidden] {
+  display: none;
+}
+.tool-panel {
+  min-width: 0;
+}
+#crop-options {
+  margin: 0;
+  gap: 8px;
+}
+#crop-options button {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px auto;
+  justify-content: center;
+  justify-items: start;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 0;
+  padding: 5px 12px;
+}
+#crop-options button > .pixel-icon {
+  width: 28px;
+  height: 28px;
+  grid-row: 1 / 3;
+}
+#crop-options strong {
+  font-size: 16px;
+}
+#crop-options .seed-price {
+  grid-column: 2;
+  font-size: 14px;
+}
+#crop-options .seed-price .pixel-icon {
+  width: 16px;
+  height: 16px;
+}
+#crop-options [aria-pressed="true"]::after {
+  top: 1px;
+  right: 3px;
+  font-size: 12px;
+}
+.mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #bc945c;
+  padding-top: 8px;
+  min-width: 0;
+}
+#tool-panels[hidden] + .mode-bar {
+  border-top: 0;
+  padding-top: 0;
+}
+.mode-switch {
+  display: flex;
+  gap: 4px;
+}
+.mode-switch button,
+#grow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 3px 8px;
+  font-size: 16px;
+}
+.mode-switch .pixel-icon,
+#grow > .pixel-icon {
+  width: 24px;
+  height: 24px;
+}
+.mode-switch [aria-pressed="true"] {
+  outline: 2px solid #42643a;
+  outline-offset: -4px;
+}
+#active-tool {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: right;
+  max-width: 160px;
+}
+#collapse-tools {
+  width: 44px;
+  padding: 0;
+  font: 22px monospace;
+  flex-shrink: 0;
+}
+.build-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+#expand,
+#improve {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: 16px;
+}
+#expand > .pixel-icon,
+#improve > .pixel-icon {
+  width: 28px;
+  height: 28px;
+}
+#expand .tool-price,
+#improve .tool-price {
+  font-size: 14px;
+}
+#expand .tool-price .pixel-icon,
+#improve .tool-price .pixel-icon {
+  width: 16px;
+  height: 16px;
+}
+#progression {
+  font-size: 14px;
+  margin: 6px 0;
+  color: var(--muted);
+}
+#build-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: min(220px, 32svh);
+  overflow-y: auto;
+  gap: 5px;
+  padding: 2px;
+}
+#build-options button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 16px;
+}
+#build-options > button > .pixel-icon {
+  width: 28px;
+  height: 28px;
+}
+#build-options small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+#build-options .tool-price {
+  margin-left: auto;
+  font-size: 14px;
+}
+#build-options .tool-price .pixel-icon {
+  width: 16px;
+  height: 16px;
+}
+#panel-upgrade {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.building-inspector {
+  flex: 1;
+  padding-left: 16px;
+  border-left: 1px solid #bc945c;
+}
+#selected-building {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+.building-inspector button {
+  font-size: 14px;
+  padding: 5px 8px;
+}
+.upgrade-soil {
+  flex-shrink: 0;
+}
+.field-note {
+  border-width: 10px;
+  border-image-width: 10px;
+}
+@media (max-width: 600px) {
+  .farm-tools {
+    display: flex;
+    padding: 6px;
+    gap: 6px;
+  }
+  #crop-options {
+    gap: 5px;
+  }
+  #crop-options button {
+    display: grid;
+    grid-template-columns: 24px auto;
+    justify-items: center;
+    padding: 5px 2px;
+    column-gap: 3px;
+  }
+  #crop-options button > .pixel-icon {
+    width: 24px;
+    height: 24px;
+    grid-row: 1;
+  }
+  #crop-options strong {
+    font-size: 14px;
+  }
+  #crop-options .seed-price {
+    grid-column: 1 / -1;
+  }
+  .mode-bar {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 6px;
+  }
+  .mode-switch {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .mode-switch button {
+    padding: 3px;
+    font-size: 16px;
+  }
+  .mode-switch .pixel-icon {
+    width: 20px;
+    height: 20px;
+  }
+  #active-tool {
+    grid-row: 2;
+    margin-left: 0;
+    max-width: none;
+    text-align: left;
+  }
+  #grow {
+    grid-row: 2;
+    min-height: 44px;
+  }
+  #collapse-tools {
+    grid-row: 2;
+  }
+  #work {
+    grid-column: 1 / -1;
+  }
+  #build-options {
+    grid-template-columns: 1fr;
+    max-height: 25svh;
+  }
+  #panel-upgrade {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .building-inspector {
+    border-left: 0;
+    border-top: 1px solid #bc945c;
+    padding: 6px 0 0;
+  }
+  #selected-building {
+    font-size: 14px;
+  }
+  .building-inspector > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+@media (max-width: 360px) {
+  #crop-options button {
+    grid-template-columns: 1fr;
+  }
+  #crop-options button > .pixel-icon {
+    grid-row: auto;
+  }
+  #crop-options .seed-price {
+    grid-column: 1;
+  }
+  .mode-switch button {
+    gap: 2px;
+    font-size: 14px;
+  }
+}
+
+.dock-chevron {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: rotate(45deg);
+  margin: -4px auto 0;
+}
+#collapse-tools[data-collapsed="true"] .dock-chevron {
+  transform: rotate(225deg);
+  margin-top: 4px;
 }
 .zoom-controls {
   display: inline-flex;
@@ -419,4 +1266,82 @@ button[hidden] {
   min-width: 48px;
   text-align: center;
   font: 600 12px system-ui;
+}
+/* Recovery actions must fit even when the delivery button appears. */
+.farm-card {
+  min-height: 0;
+}
+.farm-tools,
+#tool-panels {
+  min-width: 0;
+}
+.mode-bar {
+  flex-wrap: wrap;
+}
+#active-tool {
+  flex: 1;
+  min-width: 60px;
+}
+.tool-panel:not(#panel-plant) {
+  max-height: max(100px, calc(100svh - 420px));
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+/* Estate navigation and the activity tray share space without stacking over one another. */
+#estate-toggle {
+  display: grid;
+  place-items: center;
+  padding: 5px;
+}
+#estate-toggle .pixel-icon {
+  width: 32px;
+  height: 32px;
+}
+.estate-tools:not(.is-open) {
+  display: none;
+}
+.estate-tools.is-open {
+  display: grid;
+  width: min(280px, calc(100% - 40px));
+  max-height: max(100px, calc(100svh - 470px));
+  overflow: auto;
+}
+.estate-tools:not(.is-open) > :not(#estate-toggle) {
+  display: revert;
+}
+.hud-bottom {
+  z-index: 6;
+}
+@media (max-width: 600px) {
+  .farm-title {
+    min-width: 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  .estate-tools.is-open {
+    width: min(280px, calc(100% - 24px));
+  }
+}
+@media (max-width: 800px) {
+  .hud-top {
+    flex-wrap: wrap;
+  }
+  .farm-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .hud-top h1 {
+    font-size: 24px;
+  }
+  #estate-toggle,
+  #open-menu {
+    flex-shrink: 0;
+  }
+  #season {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
 }

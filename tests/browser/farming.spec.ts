@@ -61,12 +61,19 @@ test("plant, grow, harvest, replant, reinvest and persist through actual farm pl
       .click();
     await expect(page.locator("#season")).toContainText(`${balance} coins`);
   }
+  await page.locator("#mode-build").click();
   await page.getByRole("button", { name: /Open a plot/ }).click();
   await page.getByRole("button", { name: "Land 16,18", exact: true }).click();
+  if (
+    (await page.locator("#estate-toggle").getAttribute("aria-expanded")) !==
+    "true"
+  )
+    await page.locator("#estate-toggle").click();
   await page
     .getByRole("button", { name: "Farm tool / cancel build", exact: true })
     .click();
   await expect(page.locator("#farm-summary")).toContainText("10 plots");
+  await page.locator("#mode-upgrade").click();
   await page.getByRole("button", { name: /Improve soil/ }).click();
   await expect(page.locator("#farm-summary")).toContainText("Soil level 1/3");
   await expect(page.locator("#season")).toContainText("28 coins");
@@ -104,6 +111,7 @@ test("presets cover every farming stage and preserve the calendar", async ({
   await expect(page.locator("#season")).toContainText(
     "Year 1 · spring · 250 coins",
   );
+  await page.locator("#mode-upgrade").click();
   await expect(
     page.getByRole("button", { name: /Improve soil/ }),
   ).toBeEnabled();
