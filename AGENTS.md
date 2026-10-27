@@ -2,11 +2,17 @@
 
 ## Project Overview
 
-**What We Sow** is a single-player, browser-based farming game combining the accessible, addictive gameplay of classic FarmVille with a morally consequential narrative spanning approximately 40 in-game years.
+**What We Sow** is a single-player, browser-based farming game combining the accessible, addictive gameplay of classic FarmVille with a morally consequential narrative spanning approximately 40 in-game years, as a lone farm grows into a small farming community.
 
 Players build and expand a farm through simple, satisfying farming mechanics while making difficult choices that shape their family, community, environment, and legacy.
 
 **Core premise:** You reap what you sow. The farm you build reflects the choices you make.
+
+### Context
+
+- Built for a hackathon whose challenge is to build something that advances the case for free enterprise.
+- The game's purpose is to help players understand individual rights and why they matter to their own flourishing, by living through the consequences rather than being told.
+- Intended players include business leaders and others whose views people take seriously.
 
 ## Game Design Principles
 
@@ -14,10 +20,10 @@ Players build and expand a farm through simple, satisfying farming mechanics whi
 2. **FarmVille, not Stardew Valley.** Gameplay centers on managing a farm from a fixed isometric perspective, not walking a character around an RPG world. Players click to plant, harvest, build, arrange, and expand.
 3. **Simple to learn, rewarding to optimize.** Keep individual actions intuitive while allowing increasingly interesting decisions about crops, land, resources, and investments.
 4. **Choices have consequences.** Moral decisions must meaningfully affect gameplay, relationships, the environment, and future events—not merely change dialogue or abstract morality scores.
-5. **No obvious moral answers.** Present credible tradeoffs between prosperity, family, community, sustainability, and ambition. Avoid simplistic good-versus-evil choices.
+5. **Make the case through consequences, not lectures.** The game has a point of view: individual rights to your land, your labor, and the fruits of your work are what let people and communities flourish. Express it only through how the world responds to choices. Collectivist options must be genuinely tempting, often paying off in the moment; their costs emerge over years. Avoid simplistic good-versus-evil choices.
 6. **A lifetime of consequences.** Decisions should compound across decades. The world, characters, and farm evolve visibly over time.
 7. **Accessible and approachable.** Favor broad appeal, intuitive controls, short feedback loops, and minimal friction over complicated simulation mechanics.
-8. **Show, don't tell.** Let changing landscapes, buildings, relationships, and farm productivity communicate the consequences of decisions.
+8. **Show, don't tell.** Let changing landscapes, buildings, relationships, farm productivity, and the community's fortunes communicate the consequences of decisions.
 
 ## Core Gameplay
 
@@ -41,15 +47,25 @@ Interactions should be immediate, visually satisfying, and rewarding. Avoid unne
 - Major narrative events occur at predefined or conditionally triggered points throughout the timeline.
 - The experience should have a deliberate beginning, middle, and end, culminating in the player's legacy.
 
+### From One Farm to a Community
+
+- The player starts as a solo farmer.
+- Over time, other farmers settle nearby and a small community forms.
+- As it grows, conflicts arise between individualist and collectivist farmers.
+- The game raises problems for the community to solve; the player's responses shape how it develops.
+- The community's prosperity and character should be visible in the world, not just reported in numbers.
+
 ## Narrative Design
 
 The narrative unfolds primarily through **mandatory character dialogues** at important moments in the player's life.
 
 - Present consequential decisions through conversations with family members, neighbors, workers, businesses, and other characters.
 - Choices should influence future dialogue, relationships, opportunities, and farming mechanics.
-- Explore themes of ambition, responsibility, greed, generosity, environmental stewardship, family, and legacy.
+- The central theme is individual rights versus collective control: owning your land and harvest, trading freely, and choosing whom to work with, versus pooling, sharing, or handing decisions to the group.
+- Supporting themes: ambition, responsibility, greed, generosity, environmental stewardship, family, and legacy.
 - Allow decisions made early in life to create unexpected consequences decades later.
-- Avoid preaching, explicit moral judgments, or a single objectively correct path.
+- Characters never state the game's moral, and the game never judges the player. Give each side its strongest case in its own voice; collectivist characters are sincere and sympathetic, not villains.
+- The player is free to choose either way. Let outcomes, not speeches, show which choices let people flourish.
 - Support branching consequences without requiring entirely separate storylines for every choice.
 - Integrate narrative decisions into the farming systems wherever possible.
 
@@ -84,6 +100,7 @@ Build a lightweight, entirely client-side web application.
 ### Architecture Principles
 
 - No backend, authentication, multiplayer, or external database required.
+- No AI in the live game. All dialogue, events, and simulation are authored content and rules shipped as static files.
 - Keep infrastructure costs effectively zero beyond domain registration.
 - Separate game simulation, narrative logic, rendering, and UI.
 - Model game rules and narrative events as configurable, data-driven systems.
@@ -99,9 +116,11 @@ Build incrementally, prioritizing a playable game over architectural complexity.
 1. **Playable farming prototype:** Farm grid, planting, crop growth, harvesting, currency, and reinvestment.
 2. **Progression:** Seasons, years, farm expansion, buildings, upgrades, and economic balancing.
 3. **Narrative framework:** Character dialogue, branching choices, persistent consequences, and conditional events.
-4. **Integrated vertical slice:** Several playable years demonstrating how narrative choices alter farming mechanics and future events.
+4. **Integrated vertical slice:** Several playable years demonstrating how narrative choices alter farming mechanics and future events, including other farmers arriving and the first conflicts between individualist and collectivist farmers.
 5. **Full game:** Approximately 40 years of progression, evolving characters, meaningful decisions, and multiple possible legacies.
 6. **Polish:** Visual effects, audio, balancing, usability, and performance.
+
+**Hackathon target:** a polished vertical slice (step 4). Steps 5 and 6 come after the hackathon; never trade away a working slice to start them.
 
 ## Instructions for Development Agents
 
