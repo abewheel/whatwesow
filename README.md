@@ -17,3 +17,5 @@ Plant, harvest, and build a farm of your own across 40 in-game years.
 A single-player farming game for your browser.
 
 **What will you leave behind?**
+
+[Local development & deployment](docs/development.md)
