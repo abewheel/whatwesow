@@ -167,7 +167,15 @@ export function actOnFarm(
     if (policy.blockedBuildings?.includes(action.kind))
       throw new Error("This building is restricted by the current policy.");
     if (!canBuild(state, action.kind))
-      throw new Error(opportunities[action.kind as Opportunity].need);
+      throw new Error(
+        opportunities[action.kind as Opportunity]?.need ??
+          "Complete your farmhouse first.",
+      );
+    if (
+      action.kind === "home" &&
+      state.structures.some((s) => s.kind === "home")
+    )
+      throw new Error("You already have a farmhouse planned or built.");
     const limit = policy.buildingLimits?.[action.kind];
     if (
       limit !== undefined &&

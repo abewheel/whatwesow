@@ -1,5 +1,5 @@
-import { initialMicroState } from "../../src/micro/state";
-import { test, expect } from "@playwright/test";
+import { homesteadMicroState as initialMicroState } from "../../src/micro/state";
+import { test, expect } from "./fixtures";
 test("playtest state persists, invalid state is rejected, and instances are isolated", async ({
   page,
 }) => {

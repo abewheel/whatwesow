@@ -1,6 +1,6 @@
 import { visitBuilding, endTurn, clickCamera } from "./helpers";
-import { test, expect } from "@playwright/test";
-import { initialMicroState } from "../../src/micro/state";
+import { test, expect } from "./fixtures";
+import { homesteadMicroState as initialMicroState } from "../../src/micro/state";
 
 test("farmer stands adjacent to actual plots, follows relocated plots, and keeps alignment when zoomed", async ({
   page,

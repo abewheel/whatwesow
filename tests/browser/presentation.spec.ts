@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { clickCamera } from "./helpers";
 
 test("building hover follows its complete footprint across cells and zoom", async ({

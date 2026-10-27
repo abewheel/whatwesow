@@ -8,6 +8,7 @@ import { initialPlotCells, seasonalIncome } from "../micro/world";
 import { seasons, nextSeason, turnNumber } from "../macro/state";
 import {
   initialMicroState,
+  homesteadMicroState,
   parseMicroState,
   type MicroState,
 } from "../micro/state";
@@ -25,6 +26,11 @@ export const initialState = (): GameState => ({
   ...initialMicroState(),
   ...initialMacroState(),
 });
+export const homesteadState = (): GameState => ({
+  version: 3,
+  ...initialMacroState(),
+  ...homesteadMicroState(),
+});
 export function parseState(value: unknown): GameState {
   if (!value || typeof value !== "object")
     throw new Error("State must be an object.");
@@ -32,7 +38,7 @@ export function parseState(value: unknown): GameState {
   if (saved.version === 1) {
     return {
       version: 3,
-      ...initialMicroState(),
+      ...homesteadMicroState(),
       coins: parseLegacyCoins(saved.coins),
       ...parseMacroState(saved),
     };
@@ -52,7 +58,7 @@ export function parseState(value: unknown): GameState {
         plotIds: Array.from({ length: saved.plots.length }, (_, i) => i + 1),
         nextPlotId: saved.plots.length + 1,
         nextStructureId: 2,
-        structures: initialMicroState().structures,
+        structures: homesteadMicroState().structures,
       }),
       ...parseMacroState(saved),
     };

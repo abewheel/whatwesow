@@ -5,8 +5,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#263e31" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="description" content="What We Sow. Grow a farm. Shape a lifetime." />
+    <meta
+      name="description"
+      content="What We Sow. Grow a farm. Shape a lifetime."
+    />
     <title>What We Sow</title>
+    <link
+      rel="preload"
+      href="/fonts/pixelify-sans.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #263e31;
+      }
+      #startup {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        color: #fff0ca;
+        background: #263e31;
+        font-family: "Farm Pixel", monospace;
+        text-align: center;
+      }
+      .startup-landscape {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+      }
+      #startup::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse at center,
+          #162b20a6 0%,
+          #162b2033 55%,
+          transparent 85%
+        );
+        pointer-events: none;
+      }
+      #startup[hidden] {
+        display: none;
+      }
+      #startup .arrival {
+        position: relative;
+        z-index: 1;
+        max-width: 460px;
+        visibility: hidden;
+      }
+      #startup.fonts-ready .arrival {
+        visibility: visible;
+      }
+      #startup h1 {
+        position: relative;
+        isolation: isolate;
+        font-size: clamp(36px, 8vw, 64px);
+        margin: 18px 0;
+        font-weight: 400;
+        text-shadow: none;
+      }
+      #startup h1::before {
+        content: "";
+        position: absolute;
+        inset: -12px -64px;
+        z-index: -1;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          #14281fe6 32px,
+          #14281fe6 calc(100% - 32px),
+          transparent
+        );
+        filter: blur(12px);
+        pointer-events: none;
+      }
+      #startup p {
+        line-height: 1.6;
+      }
+      #startup progress {
+        width: 220px;
+        accent-color: #dfbf86;
+      }
+      #startup button {
+        margin-top: 16px;
+      }
+      body:has(#startup:not([hidden])) #app {
+        visibility: hidden;
+      }
+    </style>
   </head>
-  <body><div id="app"></div><script type="module" src="/src/main.ts"></script></body>
+  <body>
+    <section id="startup" aria-labelledby="startup-title">
+      <img
+        class="startup-landscape"
+        src="/art/starter-landscape.jpg"
+        alt=""
+        fetchpriority="high"
+      />
+      <div class="arrival">
+        <h1 id="startup-title">What We Sow</h1>
+        <p id="startup-copy" role="status">Preparing your land…</p>
+        <progress
+          id="loading-progress"
+          max="1"
+          value="0"
+          aria-label="Loading farm"
+        ></progress
+        ><button id="begin-farm" hidden>Inherit your farm</button>
+      </div>
+    </section>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

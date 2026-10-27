@@ -1,5 +1,5 @@
 import { visitBuilding, endTurn, clickCamera, setCameraCell } from "./helpers";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 test("zoom controls preserve a centered land cell and clamp at their limits", async ({
   page,
 }) => {

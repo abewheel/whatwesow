@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  initialMicroState,
+  homesteadMicroState as initialMicroState,
   parseMicroState,
   harvestValue,
   seedCost,
@@ -29,6 +29,14 @@ describe("estate construction", () => {
         coins: 1000000,
         structures: [],
       };
+      if (kind === "oak")
+        state.structures.push({
+          id: state.nextStructureId++,
+          kind: "home",
+          row: 40,
+          col: 40,
+          level: 1,
+        });
       const item = buildings[kind];
       const original = state;
       state = actOnFarm(
@@ -36,11 +44,11 @@ describe("estate construction", () => {
         { type: "build", kind, cell: { row: 0, col: 0 } },
         1,
       ).state;
-      expect(original.structures).toHaveLength(0);
+      expect(original.structures).toHaveLength(kind === "oak" ? 1 : 0);
       expect(state.coins).toBe(1000000 - item.cost);
-      expect(state.structures[0].pendingConstruction).toBe(true);
+      expect(state.structures.at(-1)!.pendingConstruction).toBe(true);
       state = completeUpgrades(state);
-      const id = state.structures[0].id;
+      const id = state.structures.at(-1)!.id;
       for (let level = 1; level < item.levels; level++) {
         expect(() => actOnFarm(state, { type: "upgrade", id }, 159)).toThrow(
           /Harvest/,

@@ -1,6 +1,6 @@
 import { visitBuilding, endTurn } from "./helpers";
-import { initialMicroState } from "../../src/micro/state";
-import { test, expect, type Page } from "@playwright/test";
+import { homesteadMicroState as initialMicroState } from "../../src/micro/state";
+import { test, expect, type Page } from "./fixtures";
 async function preset(page: Page, id: string) {
   await page.getByLabel("Work on").selectOption("micro");
   await page.getByLabel("Starting point").selectOption(id);

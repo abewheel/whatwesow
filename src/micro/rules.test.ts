@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { actOnFarm, growCrops, completeUpgrades } from "./rules";
 import {
   crops,
-  initialMicroState,
+  homesteadMicroState as initialMicroState,
   parseMicroState,
   type CropId,
 } from "./state";

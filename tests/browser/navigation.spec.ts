@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { clickCamera } from "./helpers";
 
 test("the HUD stays compact and clicks walk to ground and building entrances", async ({

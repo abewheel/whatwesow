@@ -105,11 +105,16 @@ export class FarmScene extends Phaser.Scene {
       ? `farm-${this.season}`
       : "farm-spring";
   }
+  onLoadError?: () => void;
+  onReady?: () => void;
+  onProgress?: (value: number) => void;
   onLayout?: (targets: PlotTarget[]) => void;
   constructor() {
     super("farm");
   }
   preload() {
+    this.load.on("loaderror", () => this.onLoadError?.());
+    this.load.on("progress", (value: number) => this.onProgress?.(value));
     this.load.image("tree-apple", "/art/apple-stages.png");
     this.load.image("tree-oak", "/art/oak-stages.png");
     this.load.image("tree-products", "/art/tree-products.png");
@@ -207,6 +212,7 @@ export class FarmScene extends Phaser.Scene {
     this.farmer = new Farmer(this);
     this.farmer.setWorld(this.farm, this.policy);
     this.draw();
+    this.onReady?.();
   }
   update(_time: number, delta: number) {
     this.farmer?.update(delta, projectCell);
@@ -526,6 +532,57 @@ export class FarmScene extends Phaser.Scene {
           height: 32,
         });
       if (!visible(point.x, point.y)) continue;
+      if (service.tent) {
+        const tent = this.add.graphics().setDepth(point.y + 24);
+        tent.fillStyle(0x59452f).fillEllipse(point.x, point.y + 18, 105, 34);
+        tent
+          .fillStyle(0xe9c58a)
+          .fillTriangle(
+            point.x - 48,
+            point.y + 18,
+            point.x,
+            point.y - 52,
+            point.x + 48,
+            point.y + 18,
+          );
+        tent
+          .fillStyle(0xb88850)
+          .fillTriangle(
+            point.x,
+            point.y - 52,
+            point.x + 48,
+            point.y + 18,
+            point.x + 13,
+            point.y + 8,
+          );
+        tent
+          .fillStyle(0x403e2a)
+          .fillTriangle(
+            point.x - 16,
+            point.y + 18,
+            point.x,
+            point.y - 24,
+            point.x + 16,
+            point.y + 18,
+          );
+        tent
+          .lineStyle(3, 0x785534)
+          .lineBetween(point.x, point.y - 58, point.x, point.y - 45);
+        scenery.add(tent);
+        scenery.add(
+          this.add
+            .text(point.x, point.y + 28, service.name, {
+              fontFamily: "Farm Pixel",
+              fontSize: "14px",
+              color: "#493621",
+              backgroundColor: "#fff0ca",
+              padding: { x: 7, y: 4 },
+            })
+            .setOrigin(0.5, 0)
+            .setDepth(WORLD_HEIGHT + point.y),
+        );
+        continue;
+      }
       const base = renderFootprint({
         row: service.row - 0.5,
         col: service.col - 0.5,

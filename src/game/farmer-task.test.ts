@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { initialMicroState } from "../micro/state";
+import { homesteadMicroState as initialMicroState } from "../micro/state";
 import { actOnFarm, growCrops } from "../micro/rules";
 import { farmerTaskForAction } from "./farmer-task";
 it("waters the crop that grew rather than an excluded immature crop", () => {

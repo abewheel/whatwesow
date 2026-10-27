@@ -1,5 +1,8 @@
 import { expect, it } from "vitest";
-import { initialMicroState, parseMicroState } from "./state";
+import {
+  homesteadMicroState as initialMicroState,
+  parseMicroState,
+} from "./state";
 import { completeUpgrades, actOnFarm } from "./rules";
 import { seasonTrees } from "./world";
 it.each([

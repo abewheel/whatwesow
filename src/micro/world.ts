@@ -127,7 +127,7 @@ export type Structure = Cell & {
   age?: number;
   product?: boolean;
 };
-// Permanent village services remain available on every farm, including imported saves.
+// The first camp provides services until the farmhouse is complete.
 export const services = [
   {
     id: "home",
@@ -166,7 +166,11 @@ export const services = [
     frame: 4,
   },
 ] as const;
-export type Layout = { plotCells: Cell[]; structures: Structure[] };
+export type Layout = {
+  selfBuilt?: true;
+  plotCells: Cell[];
+  structures: Structure[];
+};
 /** Keep village lots clear of existing farms when loading an older layout. */
 export function serviceLocations(layout: Layout) {
   const used = new Set(
@@ -177,14 +181,15 @@ export function serviceLocations(layout: Layout) {
       ),
     ].map(cellKey),
   );
+  const settled = layout.structures.some(
+    (s) => s.kind === "home" && !s.pendingConstruction,
+  );
   return services
-    .filter(
-      (service) =>
-        service.id !== "home" ||
-        !layout.structures.some((s) => s.kind === "home"),
-    )
+    .filter((s) => !layout.selfBuilt || (!settled && s.id === "home"))
+    .filter((service) => service.id !== "home" || !settled)
     .map((service) => {
       const candidates = [
+        ...(!settled && layout.selfBuilt ? [{ row: 11, col: 14 }] : []),
         service,
         ...Array.from({ length: WORLD_SIZE * WORLD_SIZE }, (_, i) => ({
           row: Math.floor(i / WORLD_SIZE),
@@ -201,7 +206,12 @@ export function serviceLocations(layout: Layout) {
       };
       for (const p of footprint(cell, service.width, service.height))
         used.add(cellKey(p));
-      return { ...service, ...cell };
+      return {
+        ...service,
+        ...cell,
+        name: layout.selfBuilt && !settled ? "Your tent" : service.name,
+        tent: !!layout.selfBuilt && !settled,
+      };
     });
 }
 export const upgradeCost = (structure: Structure) =>

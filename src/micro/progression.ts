@@ -69,7 +69,10 @@ export const totalHarvests = (s: MicroState) =>
 export const hasOpportunity = (s: MicroState, id: Opportunity) =>
   s.opportunities.includes(id);
 export const canBuild = (s: MicroState, kind: BuildingKind) =>
-  kind === "home" || kind === "oak" || hasOpportunity(s, kind);
+  kind === "home" ||
+  (kind === "oak" &&
+    s.structures.some((b) => b.kind === "home" && !b.pendingConstruction)) ||
+  (kind !== "oak" && hasOpportunity(s, kind));
 export const canPlant = (s: MicroState, crop: CropId) =>
   crop !== "corn" || hasOpportunity(s, "corn");
 export const upgradeHarvests = (s: MicroState, b: Pick<Structure, "kind">) =>

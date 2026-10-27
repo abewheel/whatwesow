@@ -1,5 +1,8 @@
 import { expect, it } from "vitest";
-import { initialMicroState, parseMicroState } from "./state";
+import {
+  homesteadMicroState as initialMicroState,
+  parseMicroState,
+} from "./state";
 it("accepts arbitrary farming balances and rejects unsafe money", () => {
   expect(parseMicroState({ ...initialMicroState(), coins: 5000 })).toEqual({
     ...initialMicroState(),

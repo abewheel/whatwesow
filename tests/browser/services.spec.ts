@@ -1,6 +1,6 @@
 import { visitBuilding, endTurn } from "./helpers";
-import { test, expect } from "@playwright/test";
-import { initialState } from "../../src/game/state";
+import { test, expect } from "./fixtures";
+import { homesteadState as initialState } from "../../src/game/state";
 
 test("buildings own their actions and selecting seeds returns to field work", async ({
   page,
@@ -76,10 +76,16 @@ test("outlying older saves remain exportable and cannot be overwritten by farmin
   }, original);
   await page.reload();
   await expect(page.locator("#save-status")).toContainText("64 × 64");
-  await page.locator("[data-plot='0']").click();
+  await visitBuilding(page, "home");
+  await page
+    .getByRole("button", { name: "Prepare fields", exact: true })
+    .click();
+  await page.locator("#expand").click();
+  await page.locator('[data-cell="16,16"]').click();
   await expect(page.locator("#farm-message")).toContainText(
     "Export your original save",
   );
+  await page.locator("#farm-mode").click();
   const download = page.waitForEvent("download");
   await page.locator("#open-menu").click();
   await page.locator("#export").click();

@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import {
-  initialMicroState,
+  homesteadMicroState as initialMicroState,
   parseMicroState,
   seedCost,
   harvestValue,

@@ -68,7 +68,7 @@ app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Click a building to visit, or an empty plot to plant.</strong><span id="farm-summary" class="sr-only"></span><div id="farm-stats" aria-hidden="true"></div></div>
 <section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><span id="seed-selection"></span><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
 <div id="service-controls" hidden><div class="seed-shop"><div id="crop-options"></div><p id="crop-opportunity"></p></div><button id="next-season">End turn</button><p id="progression"></p><button id="work" hidden>Unload a seed delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><button id="move-plot">Move a plot</button><details id="build-shop"><summary>Building plans</summary><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></details><p id="selected-building"></p><button id="upgrade-building" hidden></button><button id="move-building" hidden></button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">100%</button></span><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="63" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="63" value="16"></label><button id="go-to-cell">Go to land</button></div>
-<dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><p class="menu-note">A little care, season after season.</p><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><p class="menu-help">Visit the nursery for seeds. End a season at the farmhouse to grow crops and complete construction.</p><button id="resume">Back to the farm</button></dialog>
+<dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><p class="menu-note">A little care, season after season.</p><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><p class="menu-help">Visit your tent or farmhouse for building plans, fields, and seeds. End a season there to grow crops and complete construction.</p><button id="resume">Back to the farm</button></dialog>
 </section></main>`;
 const menu = document.querySelector<HTMLDialogElement>("#farm-menu")!;
 document
@@ -142,6 +142,23 @@ function closeService() {
   if (!servicePanel.hidden) viewport.focus({ preventScroll: true });
   servicePanel.hidden = true;
 }
+const campActions = document.createElement("div");
+campActions.className = "camp-actions";
+for (const [service, label] of [
+  ["builder", "Build your house"],
+  ["fields", "Prepare fields"],
+  ["seeds", "Choose seeds"],
+] as const) {
+  const button = document.createElement("button");
+  button.textContent = label;
+  button.addEventListener("click", () => openService(service));
+  campActions.append(button);
+}
+document.querySelector("#home-actions")!.prepend(campActions);
+const backToCamp = document.createElement("button");
+backToCamp.textContent = "Back to your tent";
+backToCamp.addEventListener("click", () => openService("home"));
+servicePanel.append(backToCamp);
 let activeService: ServiceId | null = null;
 function openService(service: ServiceId) {
   activeService = service;
@@ -157,10 +174,7 @@ function openService(service: ServiceId) {
   render();
   servicePanel.hidden = false;
   servicePanel.scrollTop = 0;
-  const menu = serviceMenus[service];
-  document.querySelector("#service-title")!.textContent = menu.name;
-  document.querySelector("#service-description")!.textContent =
-    menu.description;
+  updateServiceDetails(service);
   for (const [id, entry] of Object.entries(serviceMenus))
     document.getElementById(entry.container)!.hidden = id !== service;
   document
@@ -169,6 +183,34 @@ function openService(service: ServiceId) {
   if (service === "builder")
     document.querySelector<HTMLDetailsElement>("#build-shop")!.open = true;
 }
+function updateServiceDetails(service: ServiceId) {
+  const menu = serviceMenus[service];
+  const camping = !state.structures.some(
+    (s) => s.kind === "home" && !s.pendingConstruction,
+  );
+  campActions.hidden = !camping && !state.selfBuilt;
+  const homePlan = campActions.querySelector<HTMLButtonElement>("button")!;
+  const buildingHome = state.structures.some(
+    (s) => s.kind === "home" && s.pendingConstruction,
+  );
+  homePlan.textContent = buildingHome
+    ? "House ready next season"
+    : camping
+      ? "Build your house"
+      : "Building plans";
+  homePlan.disabled = buildingHome;
+  backToCamp.hidden = (!camping && !state.selfBuilt) || service === "home";
+  backToCamp.textContent = camping
+    ? "Back to your tent"
+    : "Back to the farmhouse";
+  document.querySelector("#service-title")!.textContent =
+    camping && service === "home" ? "Your tent" : menu.name;
+  document.querySelector("#service-description")!.textContent =
+    camping && service === "home"
+      ? "Your first shelter on this land. Prepare fields, plant your first crop, and commission a house. Construction takes one season. Rest here to end the turn."
+      : menu.description;
+}
+
 function visit(
   service: ServiceId,
   destination: Cell & { width: number; height: number },
@@ -207,6 +249,47 @@ document.addEventListener("keydown", (event) => {
 });
 const status = document.querySelector<HTMLElement>("#save-status")!;
 const scene = new FarmScene();
+const startup = document.querySelector<HTMLElement>("#startup")!;
+const startupFontReady = document.fonts
+  .load(
+    '400 64px "Farm Pixel"',
+    "What We Sow Inherit your farm Preparing your land… Reload farm",
+  )
+  .catch(() => [])
+  .then(() => startup.classList.add("fonts-ready"));
+const startupCopy = document.querySelector<HTMLElement>("#startup-copy")!;
+const beginFarm = document.querySelector<HTMLButtonElement>("#begin-farm")!;
+const loadingProgress =
+  document.querySelector<HTMLProgressElement>("#loading-progress")!;
+const sceneReady = new Promise<void>((resolve) => {
+  scene.onReady = resolve;
+});
+scene.onProgress = (value) => {
+  loadingProgress.value = value;
+};
+let artworkFailed = false;
+function showArtworkError() {
+  loadingProgress.hidden = true;
+  startupCopy.hidden = false;
+  startupCopy.textContent =
+    "Some farm artwork could not load. Reload to try again.";
+  beginFarm.textContent = "Reload farm";
+  beginFarm.hidden = false;
+}
+scene.onLoadError = () => {
+  artworkFailed = true;
+  showArtworkError();
+};
+function enterFarm() {
+  startup.hidden = true;
+  document.querySelector<HTMLElement>("main")!.inert = false;
+  viewport.focus({ preventScroll: true });
+}
+beginFarm.addEventListener("click", () => {
+  if (artworkFailed) location.reload();
+  else enterFarm();
+});
+document.querySelector<HTMLElement>("main")!.inert = true;
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: "farm-renderer",
@@ -871,6 +954,7 @@ const instance = import.meta.env.DEV
 const namespace = import.meta.env.DEV ? `dev-${instance}` : "player";
 let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
 function render() {
+  if (activeService) updateServiceDetails(activeService);
   if (!cropUnlocked(state, selected)) selected = "turnip";
   document.querySelector("#season")!.innerHTML =
     `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span></span>`;
@@ -913,10 +997,11 @@ function render() {
     const available = canBuild(state, kind),
       cost = policyCost(item.cost, policy),
       limit = policy.buildingLimits?.[kind];
-    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${!available ? opportunities[kind as Opportunity].need : `${count} built`} · ${item.benefit} · ready next season`;
+    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${!available ? (opportunities[kind as Opportunity]?.need ?? "Complete your farmhouse") : `${count} built`} · ${item.benefit} · ready next season`;
     button.setAttribute("aria-label", label);
     button.title = label;
-    button.innerHTML = `${icon(kind === "oak" || kind === "apple" ? "spring" : "home")}<span>${item.name}<small>${!available ? opportunities[kind as Opportunity].need : `${item.width} × ${item.height} · ${count} built`}</small></span><span class="tool-price">${icon("coin")}${cost.toLocaleString()}</span>`;
+    button.innerHTML = `${icon(kind === "oak" || kind === "apple" ? "spring" : "home")}<span>${item.name}<small>${!available ? (opportunities[kind as Opportunity]?.need ?? "Complete your farmhouse") : `${item.width} × ${item.height} · ${count} built`}</small></span><span class="tool-price">${icon("coin")}${cost.toLocaleString()}</span>`;
+    button.hidden = !available || (kind === "home" && count > 0);
     button.disabled =
       turn === 160 ||
       !available ||
@@ -1090,9 +1175,19 @@ async function apply(
     saving = false;
   }
 }
+let newFarm = false;
 try {
   store = await openSaveStore(namespace);
-  state = (await store.load()) ?? initialState();
+  const saved = await store.load();
+  newFarm =
+    saved === undefined ||
+    (saved.selfBuilt === true &&
+      saved.year === 1 &&
+      saved.season === "spring" &&
+      saved.coins === 240 &&
+      saved.structures.length === 0 &&
+      saved.plots.length === 0);
+  state = saved ?? initialState();
   await store.save(state);
   status.textContent = "Saved on this browser";
 } catch (error) {
@@ -1134,3 +1229,27 @@ if (import.meta.env.DEV) {
     (next) => apply(next, true, true),
   );
 }
+
+await Promise.all([
+  sceneReady,
+  startupFontReady,
+  document.fonts.ready,
+  document
+    .querySelector<HTMLImageElement>(".startup-landscape")!
+    .decode()
+    .catch(() => {}),
+]);
+render();
+await new Promise<void>((resolve) =>
+  requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+);
+if (artworkFailed) {
+  showArtworkError();
+} else if (newFarm && !loadFailed) {
+  loadingProgress.hidden = true;
+  startupCopy.hidden = true;
+  beginFarm.hidden = false;
+  beginFarm.focus();
+  message.textContent =
+    "Welcome to your land. Visit your tent to build a home and prepare your first fields.";
+} else enterFarm();

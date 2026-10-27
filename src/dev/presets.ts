@@ -1,7 +1,12 @@
+import { initialState as newFarmState } from "../game/state";
 import { canBuild } from "../micro/progression";
 import { parseState } from "../game/state";
 import { type BuildingKind } from "../micro/world";
-import { initialState, applyMacroChange, type GameState } from "../game/state";
+import {
+  homesteadState as initialState,
+  applyMacroChange,
+  type GameState,
+} from "../game/state";
 import { crops, type CropId } from "../micro/state";
 export const farmPresets = [
   "planting",
@@ -10,6 +15,7 @@ export const farmPresets = [
   "reinvesting",
 ] as const;
 export function presetState(id: string): GameState {
+  if (id === "new") return newFarmState();
   if (id === "expanse") {
     const state = initialState();
     state.year = 40;

@@ -1,0 +1,7 @@
+# Starter landscape
+
+`starter-landscape.jpg` is the full-screen starter-page background. It uses `object-fit: cover` with a centered crop; a CSS radial shade keeps the title readable. Startup waits for image decoding before revealing the entry button, with the solid green background as a fallback.
+
+Generated with the built-in image generation tool, then encoded as JPEG at quality 88 for delivery. The illustration contains no buildings because a new farm begins on bare land.
+
+Prompt: Use case: stylized-concept. Asset type: landscape title-screen background for What We Sow, a warm pixel-art farming game. Create a beautiful, polished 16:9 pixel-art illustration of unbuilt farmland at sunrise: rolling sage-green meadows, distant blue-green hills, warm golden light, a winding stream, wildflowers and tall grass framing the lower corners, leafy trees framing the far edges. Charming deliberate square pixel clusters and restrained dithering, crisp retro game artwork, rich natural greens and warm amber highlights. Wide atmospheric composition with layers of distance. Keep the central 40 percent visually quiet, with dark soft meadow and shadowed woodland tones where ivory title and a button will sit, and brighter scenic detail around the edges. The center should feel like a calm clearing. No buildings, no characters, no planted crop fields: this is land waiting to be inherited. No text, lettering, logos, interface, borders, or watermarks. Full-bleed landscape image.

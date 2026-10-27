@@ -2,6 +2,8 @@
 
 The estate is a 64 × 64 grid with 4,096 cells. Plots, buildings, and trees all occupy cells; multi-cell footprints cannot overlap or cross its edge. Every building type can be repeated. There are no one-per-type caps. Money, footprint space, authored unlocks, and any macro policy determine what the player can build.
 
+New farms start with a tent, no fields or buildings, and 240 coins. Click the tent for house plans, fields, seeds, and End turn. A house costs 120 coins and takes one season to complete. The tent stays until then, and its services move into the finished farmhouse. Other construction unlocks through farming.
+
 Click a building and the farmer walks to its entrance before its menu opens. The farmhouse ends the season and shows income; the seed shop and nursery supplies crop seeds and trees; the field shed handles plots, soil, plot movement and tree care; the builder handles structures, upgrades and movement. A farmhouse office appears if a saved farm has no home. Dense imported farms use roadside service entrances without moving saved objects.
 
 Choose a plan, then choose land. The menu closes while the placement tool stays active, and the footprint preview marks permitted placements. **Cancel placement** or Escape returns to farming. Click a structure to walk over and inspect it. Click a ripe tree to harvest on arrival; use the field shed's tree selector for care or movement. **Move a plot** moves its growing crop too. Drag, scroll or use arrow keys to explore; folded **View controls** holds zoom, pan, **Center farm**, and coordinate navigation (0–63). The canvas stays viewport-sized and renders nearby terrain.
@@ -14,7 +16,7 @@ Definitions live in `src/micro/world.ts`. Costs are prototype tuning values, wit
 
 | Build | Milestone | Base cost | Footprint | Effect per level |
 | --- | --- | --- | --- | --- |
-| Farmhouse | Available at start | 120, first home provided | 3 × 2 | Home and decoration |
+| Farmhouse | Available at start | 120 | 3 × 2 | Home, calendar, and farm services |
 | Seed storehouse | 3 harvests | 60 | 2 × 2 | Seeds cost 1 less, minimum 1 before policy |
 | Oak tree | Available at start | 15 | 1 × 1 | Acorns each fall after ten years |
 | Apple tree | 6 harvests | 60 | 1 × 1 | 24 coins per level per fall harvest after three years |

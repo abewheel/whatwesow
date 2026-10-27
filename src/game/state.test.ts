@@ -1,6 +1,11 @@
-import { initialMicroState } from "../micro/state";
+import { homesteadMicroState as initialMicroState } from "../micro/state";
 import { describe, expect, it } from "vitest";
-import { initialState, parseState, readDomain, replaceDomain } from "./state";
+import {
+  homesteadState as initialState,
+  parseState,
+  readDomain,
+  replaceDomain,
+} from "./state";
 describe("save boundary", () => {
   it("round trips the initial state", () =>
     expect(parseState(JSON.parse(JSON.stringify(initialState())))).toEqual(

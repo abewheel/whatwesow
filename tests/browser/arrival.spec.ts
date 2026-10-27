@@ -1,5 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
-import { initialState } from "../../src/game/state";
+import { test, expect, type Page } from "./fixtures";
+import { homesteadState as initialState } from "../../src/game/state";
 
 async function farPlot(page: Page, ripe = false) {
   await page.goto("/?instance=validation-arrival");

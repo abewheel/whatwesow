@@ -1,6 +1,6 @@
 import { visitBuilding, endTurn } from "./helpers";
-import { test, expect, type Page } from "@playwright/test";
-import { initialMicroState } from "../../src/micro/state";
+import { test, expect, type Page } from "./fixtures";
+import { homesteadMicroState as initialMicroState } from "../../src/micro/state";
 async function applyFarm(page: Page, farm: unknown) {
   await page.getByLabel("Work on").selectOption("micro");
   await page.getByLabel("Game state JSON").fill(JSON.stringify(farm));

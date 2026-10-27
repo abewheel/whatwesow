@@ -1,5 +1,5 @@
 import { visitBuilding, endTurn, clickCamera } from "./helpers";
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 async function load(page: Page, id: string) {
   await page.getByLabel("Work on").selectOption("full");
   await page.getByLabel("Starting point").selectOption(id);

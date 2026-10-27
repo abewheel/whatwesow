@@ -1,5 +1,5 @@
 import { visitBuilding, setCameraCell } from "./helpers";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 test("uses the far corner of a 64-square farm with a viewport-sized canvas", async ({
   page,
 }) => {

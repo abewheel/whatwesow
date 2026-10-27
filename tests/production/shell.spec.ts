@@ -9,6 +9,7 @@ test("production excludes tools and ignores playtest instance parameters", async
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
+  await page.getByRole("button", { name: "Inherit your farm" }).click();
   await expect(page.locator("canvas")).toBeVisible();
   await expect(page.getByText("Playtest tools")).toHaveCount(0);
   await page.locator("#import").setInputFiles({

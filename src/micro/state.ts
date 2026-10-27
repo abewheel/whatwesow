@@ -45,6 +45,7 @@ export const crops = {
 export type CropId = keyof typeof crops;
 export type Plot = { crop: CropId; growth: number } | null;
 export type MicroState = {
+  selfBuilt?: true;
   harvests: Record<CropId, number>;
   opportunities: Opportunity[];
   coins: number;
@@ -57,7 +58,7 @@ export type MicroState = {
   plotIds: number[];
   nextPlotId: number;
 };
-export const initialMicroState = (): MicroState => ({
+export const homesteadMicroState = (): MicroState => ({
   harvests: { turnip: 0, carrot: 0, corn: 0 },
   opportunities: [],
   coins: 100,
@@ -68,6 +69,17 @@ export const initialMicroState = (): MicroState => ({
   nextPlotId: 10,
   nextStructureId: 2,
   structures: [{ id: 1, kind: "home", row: 11, col: 14, level: 1 }],
+});
+export const initialMicroState = (): MicroState => ({
+  ...homesteadMicroState(),
+  selfBuilt: true,
+  coins: 240,
+  plots: [],
+  plotCells: [],
+  plotIds: [],
+  nextPlotId: 1,
+  structures: [],
+  nextStructureId: 1,
 });
 export function parseMicroState(value: unknown): MicroState {
   if (!value || typeof value !== "object")
@@ -258,7 +270,10 @@ export function parseMicroState(value: unknown): MicroState {
       ))
   )
     throw new Error("Invalid farm opportunities.");
+  if (s.selfBuilt !== undefined && s.selfBuilt !== true)
+    throw new Error("Invalid founding farm flag.");
   const result: MicroState = {
+    ...(s.selfBuilt === true ? { selfBuilt: true as const } : {}),
     harvests,
     opportunities: [
       ...new Set(

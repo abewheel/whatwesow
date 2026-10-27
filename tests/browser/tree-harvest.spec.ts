@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { initialMicroState } from "../../src/micro/state";
+import { expect, test, type Page } from "./fixtures";
+import { homesteadMicroState as initialMicroState } from "../../src/micro/state";
 async function orchard(page: Page) {
   await page.goto("/?instance=validation-tree-harvest-test");
   await expect(page.locator("#save-status")).toHaveText(
