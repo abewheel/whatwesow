@@ -56,6 +56,10 @@ export class FarmScene extends Phaser.Scene {
   }
   preload() {
     this.load.image("woodland", "/art/woodland-seasons.png");
+    this.load.image(
+      "woodland-variation",
+      "/art/woodland-variation-seasons.png",
+    );
     this.load.image("hedgerow", "/art/hedgerow-seasons.png");
     this.load.spritesheet("farmer", "/art/farmer-sprites.png", {
       frameWidth: 181,
@@ -79,17 +83,19 @@ export class FarmScene extends Phaser.Scene {
           source.height / 2,
         );
     }
-    const forest = this.textures.get("woodland"),
-      source = forest.getSourceImage();
-    for (let i = 0; i < 4; i++)
-      forest.add(
-        i,
-        0,
-        ((i % 2) * source.width) / 2,
-        (Math.floor(i / 2) * source.height) / 2,
-        source.width / 2,
-        source.height / 2,
-      );
+    for (const key of ["woodland", "woodland-variation"]) {
+      const forest = this.textures.get(key),
+        source = forest.getSourceImage();
+      for (let i = 0; i < 4; i++)
+        forest.add(
+          i,
+          0,
+          ((i % 2) * source.width) / 2,
+          (Math.floor(i / 2) * source.height) / 2,
+          source.width / 2,
+          source.height / 2,
+        );
+    }
     // Explicit atlas rectangles keep complete wall ends and exclude row bleed.
     const hedges = this.textures.get("hedgerow");
     for (const [i, frame] of [

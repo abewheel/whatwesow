@@ -112,58 +112,169 @@ export function drawBoundary(
       winter ? 0xf6f5e9 : 0xd8d6b7,
     );
   };
-  // Northeast: a continuous stream, with uneven layered banks and shallow water.
-  band(-0.5, -3.5, WORLD_SIZE + 1, -0.55, p.bank);
-  for (let i = -2; i < WORLD_SIZE * 4 + 4; i++) {
-    const col = i / 4,
-      next = (i + 1) / 4;
-    const r = -2.1 + Math.sin(col * 0.48) * 0.2,
-      rn = -2.1 + Math.sin(next * 0.48) * 0.2;
+  // Continue each exterior biome to the visible window, rather than ending at a thin strip.
+  const origin = at(0, 0),
+    colAxis = at(1, 0),
+    rowAxis = at(0, 1);
+  const ax = colAxis.x - origin.x,
+    ay = colAxis.y - origin.y,
+    bx = rowAxis.x - origin.x,
+    by = rowAxis.y - origin.y;
+  const determinant = ax * by - ay * bx;
+  const unproject = (x: number, y: number) => ({
+    col: ((x - origin.x) * by - (y - origin.y) * bx) / determinant,
+    row: (ax * (y - origin.y) - ay * (x - origin.x)) / determinant,
+  });
+  const viewWidth = view.width / (view.zoom ?? 1),
+    viewHeight = view.height / (view.zoom ?? 1);
+  const bounds = [
+    unproject(view.x - 300, view.y - 300),
+    unproject(view.x + viewWidth + 300, view.y - 300),
+    unproject(view.x - 300, view.y + viewHeight + 300),
+    unproject(view.x + viewWidth + 300, view.y + viewHeight + 300),
+  ];
+  const minCol = Math.floor(Math.min(...bounds.map((p) => p.col))) - 4,
+    maxCol = Math.ceil(Math.max(...bounds.map((p) => p.col))) + 4;
+  const minRow = Math.floor(Math.min(...bounds.map((p) => p.row))) - 4,
+    maxRow = Math.ceil(Math.max(...bounds.map((p) => p.row))) + 4;
+  const forestFloor = winter
+    ? 0xa8bfb5
+    : season === "fall"
+      ? 0x8c824c
+      : 0x60834d;
+  band(minCol - 6, -0.5, -0.55, WORLD_SIZE + 0.5, forestFloor);
+  band(minCol - 6, minRow - 6, maxCol + 6, -0.55, p.bank);
+  band(
+    WORLD_SIZE + 2.4,
+    minRow - 6,
+    maxCol + 6,
+    maxRow + 6,
+    winter ? 0xc3d2c5 : season === "fall" ? 0xaca16c : 0x8ba35e,
+  );
+  // Stable, world-anchored flecks and meadow flowers break up the exterior ground.
+  for (
+    let y = Math.floor((view.y - 40) / 22) * 22;
+    y < view.y + viewHeight + 40;
+    y += 22
+  )
+    for (
+      let x = Math.floor((view.x - 40) / 24) * 24;
+      x < view.x + viewWidth + 40;
+      x += 24
+    ) {
+      const seed = x * 13 + y * 29,
+        jx = x + noise(seed) * 19,
+        jy = y + noise(seed + 1) * 17,
+        cell = unproject(jx, jy);
+      if (
+        cell.row > WORLD_SIZE - 0.5 ||
+        (cell.col >= -0.5 && cell.col < WORLD_SIZE - 0.5 && cell.row >= -0.5)
+      )
+        continue;
+      const forest = cell.col < -0.5 && cell.row >= -0.5;
+      rect(jx, jy, 3, 1, winter ? 0xe5eadd : forest ? 0x446c40 : 0xa9b779);
+      if (noise(seed + 3) > 0.78) {
+        rect(jx, jy - 4, 1, 5, winter ? 0x95a999 : 0x66834d);
+        rect(
+          jx - 2,
+          jy - 6,
+          4,
+          3,
+          winter
+            ? 0xe9ede1
+            : season === "fall"
+              ? 0xcb9b55
+              : noise(seed + 6) > 0.5
+                ? 0xf0d19b
+                : 0xe3b9c7,
+        );
+      }
+      if (noise(seed + 7) > 0.985) stone(jx, jy, 0.8 + noise(seed) * 0.7);
+    }
+  // Southwest / bottom-left: water continues beyond the bank to the end of the window.
+  const shore = (col: number) =>
+    WORLD_SIZE +
+    0.65 +
+    Math.sin(col * 0.39) * 0.25 +
+    Math.sin(col * 0.91) * 0.1;
+  const shoreline: Point[] = [];
+  for (let col = minCol - 4; col <= maxCol + 4; col += 0.5)
+    shoreline.push(at(col, shore(col)));
+  const farRow = Math.max(WORLD_SIZE + 14, maxRow + 8);
+  polygon(
+    [...shoreline, at(maxCol + 4, farRow), at(minCol - 4, farRow)],
+    p.water,
+  );
+  for (let col = minCol - 4; col < maxCol + 4; col += 0.5) {
+    const next = col + 0.5,
+      r = shore(col),
+      rn = shore(next);
     polygon(
       [
-        at(col, r - 1.05),
-        at(next, rn - 1.05),
-        at(next, rn + 1.05),
-        at(col, r + 1.05),
+        at(col, WORLD_SIZE - 0.45),
+        at(next, WORLD_SIZE - 0.45),
+        at(next, r),
+        at(col, r),
       ],
+      p.bank,
+    );
+    polygon(
+      [at(col, r), at(next, rn), at(next, rn + 1), at(col, r + 1)],
       p.shallow,
     );
-    polygon(
-      [
-        at(col, r - 0.8),
-        at(next, rn - 0.8),
-        at(next, rn + 0.8),
-        at(col, r + 0.8),
-      ],
-      p.water,
-    );
-    if (i % 3 === 0) line(at(col, r - 0.3), at(col + 0.32, r - 0.3), p.foam, 1);
-    if (i % 7 === 0)
-      line(at(col + 0.1, r + 0.25), at(col + 0.55, r + 0.25), p.shallow, 2);
-    if (i % 5 === 0) {
-      const s = at(col, -0.68 - noise(i) * 0.12);
-      stone(s.x, s.y, 0.7 + noise(i) * 0.6);
+    if (Math.round(col * 2) % 3 === 0) {
+      const pos = at(col, WORLD_SIZE + 0.15);
+      stone(pos.x, pos.y, 0.7 + noise(col) * 1.3);
     }
-    if (i % 9 === 0) {
-      const reed = at(col, -0.82);
-      for (let j = 0; j < 3; j++) {
+    if (Math.round(col * 2) % 7 === 0) {
+      const reed = at(col, WORLD_SIZE + 0.42);
+      for (let j = 0; j < 4; j++) {
         rect(
           reed.x + j * 3,
-          reed.y - 10 - (j % 2) * 4,
+          reed.y - 10 - (j % 2) * 5,
           1,
-          11,
-          winter ? 0x8f9f8d : 0x6e8550,
+          12,
+          winter ? 0x91a495 : 0x69854a,
         );
         rect(
           reed.x + j * 3 - 1,
-          reed.y - 12 - (j % 2) * 4,
+          reed.y - 13 - (j % 2) * 5,
           3,
           5,
-          winter ? 0xdbe3d5 : 0xa38b50,
+          winter ? 0xdbe3d5 : 0xad9557,
         );
       }
     }
   }
+  for (
+    let y = Math.floor(view.y / 38) * 38;
+    y < view.y + viewHeight + 38;
+    y += 38
+  )
+    for (
+      let x = Math.floor(view.x / 66) * 66;
+      x < view.x + viewWidth + 66;
+      x += 66
+    ) {
+      const seed = x * 7 + y * 31,
+        cell = unproject(x, y);
+      if (cell.row < shore(cell.col) + 0.4) continue;
+      const start = at(cell.col + noise(seed) * 0.3, cell.row),
+        end = at(cell.col + 0.12 + noise(seed + 1) * 0.3, cell.row);
+      line(
+        start,
+        end,
+        noise(seed + 2) > 0.6 ? p.foam : p.shallow,
+        winter ? 2 : 1,
+      );
+      if (winter && noise(seed + 3) > 0.7)
+        line(
+          at(cell.col + 0.5, cell.row + 0.4),
+          at(cell.col + 0.65, cell.row + 0.4),
+          p.foam,
+          2,
+        );
+    }
   // Southeast: a worn gravel lane, wheel tracks, scattered stones, and split rails.
   band(WORLD_SIZE - 0.42, -1, WORLD_SIZE + 2.4, WORLD_SIZE + 1, p.bank);
   band(WORLD_SIZE + 0.05, -1, WORLD_SIZE + 2.05, WORLD_SIZE + 1, p.road);
@@ -204,41 +315,37 @@ export function drawBoundary(
     rect(a.x - 2, a.y - 19, 5, 21, 0x886c4e);
     rect(a.x - 2, a.y - 19, 3, 18, winter ? 0xe6e9db : 0xd6c493);
   }
-  // Timber footbridge carries the lane across the river at the far corner.
-  band(WORLD_SIZE - 0.25, -3.1, WORLD_SIZE + 1.9, -0.6, 0x73553d);
-  for (let row = -3; row < -0.6; row += 0.17)
+  // The country lane crosses the bottom-left river and continues out of the window.
+  const bridgeStart = WORLD_SIZE + 0.25,
+    bridgeEnd = Math.max(WORLD_SIZE + 12, maxRow + 6);
+  band(WORLD_SIZE + 0.05, bridgeStart, WORLD_SIZE + 2.05, bridgeEnd, 0x73553d);
+  for (let row = bridgeStart; row < bridgeEnd; row += 0.22)
     line(
-      at(WORLD_SIZE - 0.25, row),
-      at(WORLD_SIZE + 1.9, row),
+      at(WORLD_SIZE + 0.05, row),
+      at(WORLD_SIZE + 2.05, row),
       winter ? 0xdde3d5 : 0xc09b66,
       4,
     );
-  for (const col of [WORLD_SIZE - 0.25, WORLD_SIZE + 1.9]) {
-    const a = at(col, -3.1),
-      b = at(col, -0.6);
+  for (const col of [WORLD_SIZE + 0.05, WORLD_SIZE + 2.05]) {
+    const a = at(col, bridgeStart),
+      b = at(col, bridgeEnd);
     line(
       { x: a.x, y: a.y - 12 },
       { x: b.x, y: b.y - 12 },
       winter ? 0xe2e7db : 0x9a7950,
       3,
     );
-    for (const row of [-3.1, -1.85, -0.6]) {
+    for (let row = bridgeStart; row < bridgeEnd; row += 1.3) {
       const post = at(col, row);
       rect(post.x - 2, post.y - 17, 4, 19, 0x7f6447);
       rect(post.x - 2, post.y - 18, 4, 2, winter ? 0xf5f4e9 : 0xd4b581);
     }
   }
-  // Southwest: a low dry-stone wall and an irregular cottage hedgerow.
-  band(-0.5, WORLD_SIZE - 0.42, WORLD_SIZE + 0.5, WORLD_SIZE + 1.8, p.bank);
-  for (let col = 0; col < WORLD_SIZE; col += 0.42) {
-    const s = at(col, WORLD_SIZE - 0.33);
-    stone(s.x, s.y, 1.05);
-    stone(s.x + 2, s.y - 5, 0.85);
-  }
+  // Northeast: the low cottage wall now opens onto a textured wildflower meadow.
   const frame = { spring: 0, summer: 1, fall: 2, winter: 3 }[season];
   const hedgeFrame = scene.textures.get("hedgerow").get(frame);
   for (let col = 0.5; col < WORLD_SIZE; col += 1.3) {
-    const pos = at(col, WORLD_SIZE + 1.3);
+    const pos = at(col, -0.9);
     if (!visible([pos], 130)) continue;
     scenery.add(
       scene.add
@@ -257,31 +364,73 @@ export function drawBoundary(
     rect(pos.x, pos.y - 39, 1, 8, 0xffedaf);
     rect(pos.x - 6, pos.y - 43, 13, 3, winter ? 0xecefe0 : 0x7a7455);
   }
-  // Northwest: dense woodland with its feet safely outside the property grid.
-  band(-3.3, -0.5, -0.55, WORLD_SIZE + 0.5, p.bank);
-  // A staggered rear row gives the woodland depth instead of a single hedge of trees.
-  for (let row = 4; row < WORLD_SIZE - 1; row += 3.25) {
-    const pos = at(-4.6 - noise(row) * 0.35, row);
-    const size = 134 + noise(row + 7) * 18;
-    if (!visible([pos], 180)) continue;
+  // Northwest: irregular, depth-sorted groves fill the forest side of the window.
+  const trees: {
+    x: number;
+    y: number;
+    size: number;
+    variation: boolean;
+    tint: number;
+  }[] = [];
+  const tree = (col: number, row: number, seed: number, baseSize: number) => {
+    const pos = at(col, row),
+      size = baseSize * (0.78 + noise(seed + 17) * 0.5);
+    if (!visible([pos], size)) return;
+    const tints = winter
+      ? [0xffffff, 0xe8eff1, 0xd7e3e5]
+      : [0xffffff, 0xe6edd6, 0xd1dfc8, 0xf0ead3];
+    trees.push({
+      ...pos,
+      size,
+      variation: noise(seed + 31) > 0.47,
+      tint: tints[Math.floor(noise(seed + 8) * tints.length)],
+    });
+  };
+  // Deeper woodland uses larger, looser stands; the edge has smaller saplings and gaps.
+  for (let gx = Math.floor(minCol / 5.7) - 1; gx <= -2; gx++)
+    for (
+      let gy = Math.max(0, Math.floor(minRow / 4.3) - 1);
+      gy <= Math.min(Math.ceil(WORLD_SIZE / 4.3), Math.ceil(maxRow / 4.3) + 1);
+      gy++
+    ) {
+      const seed = gx * 953 + gy * 127;
+      if (noise(seed) > 0.9) continue;
+      tree(
+        gx * 5.7 - 1 + noise(seed + 1) * 2.8,
+        gy * 4.3 + noise(seed + 2) * 2.8,
+        seed,
+        244,
+      );
+    }
+  for (let band = 0; band < 3; band++)
+    for (
+      let gy = Math.max(0, Math.floor(minRow / 2.5) - 1);
+      gy < Math.min(Math.ceil(WORLD_SIZE / 2.5), Math.ceil(maxRow / 2.5) + 1);
+      gy++
+    ) {
+      const seed = band * 547 + gy * 193;
+      if (noise(seed) > 0.86) continue;
+      const row = 0.8 + gy * 2.5 + noise(seed + 2) * 1.5;
+      if (row > WORLD_SIZE - 0.2) continue;
+      tree(
+        -3.1 - band * 3.2 + noise(seed + 1) * 1.1,
+        row,
+        seed,
+        band === 0 ? 132 : 174,
+      );
+    }
+  trees.sort((a, b) => a.y - b.y || a.x - b.x);
+  for (const tree of trees)
     scenery.add(
       scene.add
-        .image(pos.x, pos.y, "woodland", frame)
+        .image(
+          tree.x,
+          tree.y,
+          tree.variation ? "woodland-variation" : "woodland",
+          frame,
+        )
         .setOrigin(0.5, 0.96)
-        .setDisplaySize(size, size)
-        .setTint(0xe2ebd8),
+        .setDisplaySize(tree.size, tree.size)
+        .setTint(tree.tint),
     );
-  }
-  for (let row = 1; row < WORLD_SIZE; row += 2) {
-    const pos = at(-2.7, row);
-    if (!visible([pos], 180)) continue;
-    scenery.add(
-      scene.add
-        .image(pos.x, pos.y, "woodland", frame)
-        .setOrigin(0.5, 0.96)
-        .setDisplaySize(142, 142),
-    );
-    const root = at(-0.82, row + 0.6);
-    stone(root.x, root.y, 0.7);
-  }
 }
