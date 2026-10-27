@@ -28,7 +28,7 @@ Keep the field at the center with buildings, trees, paths, and water around it. 
 
 Render on a small logical canvas at whole pixel scales, without smoothing. Use stepped silhouettes, flat color clusters, a dark lower edge, and a lighter upper face. Keep procedural scenery deterministic. Buildings use cream walls, timber trim, terracotta roofs, and green doors. Future crops need distinct silhouettes at each growth stage; animals need readable shapes before extra detail.
 
-The current scene is an initial procedural interpretation. Replace these shapes with authored sprites over time while preserving projection, palette, and scale. Do not use the concept sheet itself as a game background.
+The scene combines a detailed sprite atlas with deterministic terrain textures. Buildings have tiled roofs, timber joints, stonework, flower boxes, and garden tools; tree canopies use layered leaf and blossom clusters. Keep all buildings at the same isometric angle. Preserve open, readable plots between the denser cottage borders. See [art assets](art-assets.md) for the atlas layout and generation brief. Do not use the concept sheet itself as a game background.
 
 ## Interface
 

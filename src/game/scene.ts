@@ -3,47 +3,64 @@ import type { MacroState } from "../macro/state";
 
 const seasons = {
   spring: {
-    grass: 0x83ad65,
-    light: 0x97bb73,
-    leaf: 0x4e8547,
-    crown: 0x6eaa51,
-    soil: 0x96623f,
-    flower: 0xf3c3b9,
+    grass: 0x7ea75a,
+    light: 0xa5c66d,
+    shade: 0x648b46,
+    soil: 0x9c663d,
+    tint: 0xffffff,
   },
   summer: {
-    grass: 0x83a957,
-    light: 0x98b964,
-    leaf: 0x397244,
-    crown: 0x609547,
-    soil: 0x94603b,
-    flower: 0xf6d270,
+    grass: 0x7b9e45,
+    light: 0xb0c66b,
+    shade: 0x587c3b,
+    soil: 0x996139,
+    tint: 0xf6efce,
   },
   fall: {
-    grass: 0xb5a16a,
-    light: 0xc5b178,
-    leaf: 0xa75b36,
-    crown: 0xd08c43,
-    soil: 0x8d5a3e,
-    flower: 0xf1c66d,
+    grass: 0xad9a55,
+    light: 0xd0b971,
+    shade: 0x8b8248,
+    soil: 0x8e5b37,
+    tint: 0xffffff,
   },
   winter: {
-    grass: 0xc3d7ce,
-    light: 0xd4e3d9,
-    leaf: 0x53756b,
-    crown: 0xe5eee2,
-    soil: 0x877c69,
-    flower: 0xf4f2df,
+    grass: 0xc6d9cd,
+    light: 0xe7eee0,
+    shade: 0xa4bfb5,
+    soil: 0x8d8070,
+    tint: 0xffffff,
   },
 };
 
 export class FarmScene extends Phaser.Scene {
   private ground?: Phaser.GameObjects.Graphics;
+  private scenery?: Phaser.GameObjects.Container;
   private season: MacroState["season"] = "spring";
   constructor() {
     super("farm");
   }
+  preload() {
+    this.load.image("farm-spring", "/art/farm-atlas.png");
+    this.load.image("farm-fall", "/art/farm-atlas-fall.png");
+    this.load.image("farm-winter", "/art/farm-atlas-winter.png");
+  }
   create() {
+    for (const key of ["farm-spring", "farm-fall", "farm-winter"]) {
+      const texture = this.textures.get(key);
+      const source = texture.getSourceImage();
+      for (let i = 0; i < 6; i++) {
+        texture.add(
+          i,
+          0,
+          ((i % 3) * source.width) / 3,
+          (Math.floor(i / 3) * source.height) / 2,
+          source.width / 3,
+          source.height / 2,
+        );
+      }
+    }
     this.ground = this.add.graphics();
+    this.scenery = this.add.container();
     this.draw();
     this.scale.on("resize", this.draw, this);
   }
@@ -52,22 +69,20 @@ export class FarmScene extends Phaser.Scene {
     if (this.ground) this.draw();
   }
   private draw() {
-    const g = this.ground!;
+    const g = this.ground!,
+      scenery = this.scenery!;
     g.clear();
-    const p = seasons[this.season];
+    scenery.removeAll(true);
+    const p = seasons[this.season],
+      winter = this.season === "winter";
     this.cameras.main.setBackgroundColor(p.grass);
-    const width = this.scale.width,
-      height = this.scale.height;
-    // Draw on a small logical canvas, then scale in whole pixels for crisp edges.
-    const scale = Math.max(
-      1,
-      Math.min(3, Math.floor(Math.min(width / 420, height / 230))),
-    );
+    const scale = Math.min(this.scale.width / 680, this.scale.height / 440);
     g.setScale(scale);
-    const w = width / scale,
-      h = height / scale;
+    scenery.setScale(scale);
+    const w = this.scale.width / scale,
+      h = this.scale.height / scale;
     const cx = Math.round(w / 2),
-      cy = Math.round(h / 2 + 8);
+      cy = Math.round(h / 2 + 10);
     const rect = (
       x: number,
       y: number,
@@ -76,7 +91,7 @@ export class FarmScene extends Phaser.Scene {
       color: number,
     ) => {
       g.fillStyle(color);
-      g.fillRect(Math.round(x), Math.round(y), rw, rh);
+      g.fillRect(Math.round(x), Math.round(y), Math.ceil(rw), Math.ceil(rh));
     };
     const diamond = (
       x: number,
@@ -88,117 +103,149 @@ export class FarmScene extends Phaser.Scene {
       g.fillStyle(color);
       g.fillPoints(
         [
-          { x, y: y - th / 2 },
-          { x: x + tw / 2, y },
-          { x, y: y + th / 2 },
-          { x: x - tw / 2, y },
-        ].map(({ x, y }) => new Phaser.Math.Vector2(x, y)),
+          new Phaser.Math.Vector2(x, y - th / 2),
+          new Phaser.Math.Vector2(x + tw / 2, y),
+          new Phaser.Math.Vector2(x, y + th / 2),
+          new Phaser.Math.Vector2(x - tw / 2, y),
+        ],
         true,
       );
     };
-    // Fixed arithmetic keeps scenery stable across reloads and seasonal changes.
-    for (let i = 0; i < 1600; i++) {
-      const x = (i * 73 + 19) % Math.ceil(w),
-        y = (i * 47 + Math.floor(i / 7) * 13) % Math.ceil(h);
-      rect(x, y, i % 4 === 0 ? 3 : 1, 1, i % 3 ? p.light : p.leaf);
-    }
-    // Winding water and stepping-stone banks.
-    for (let y = -10; y < h + 10; y += 4) {
-      const x = w * 0.88 + Math.sin(y / 45) * 16;
-      rect(x - 5, y, 39, 4, 0x719a82);
-      rect(x, y, 30, 4, this.season === "winter" ? 0xa9d3d4 : 0x68aeb9);
-      if (y % 16 === 0) rect(x + 5, y, 14, 1, 0xc0e2d5);
-    }
-    // A footpath leads through the farm, without suggesting character movement.
-    for (let i = -Math.ceil(w / 2); i < Math.ceil(w / 2); i += 5) {
-      const x = cx + i,
-        y = cy - 44 + i * 0.48;
-      diamond(x, y, 20, 10, 0xc7b585);
-      if (i % 15 === 0) rect(x, y, 3, 1, 0xe1cf9e);
-    }
-    const tree = (x: number, y: number, size = 1) => {
-      diamond(x + 2, y + 3, 27 * size, 12 * size, 0x688451);
-      rect(x - 3, y - 22 * size, 6, 25 * size, 0x775333);
-      rect(x + 1, y - 21 * size, 2, 22 * size, 0xa37a45);
-      rect(x - 15 * size, y - 39 * size, 30 * size, 21 * size, p.leaf);
-      rect(x - 11 * size, y - 48 * size, 23 * size, 31 * size, p.leaf);
-      rect(x - 17 * size, y - 35 * size, 34 * size, 12 * size, p.leaf);
-      rect(x - 12 * size, y - 40 * size, 24 * size, 16 * size, p.crown);
-      rect(x - 8 * size, y - 46 * size, 14 * size, 25 * size, p.crown);
-      rect(x - 10 * size, y - 38 * size, 5, 4, p.light);
-      rect(x + 5 * size, y - 29 * size, 4, 3, p.light);
+    // Stable texture, independent of save data and redraw count.
+    const noise = (i: number, salt = 0) => {
+      const n = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+      return n - Math.floor(n);
     };
-    for (let i = 0; i < Math.ceil(w / 35); i++) {
-      tree(i * 37 - 8, 65 + (i % 3) * 11, 1 + (i % 2) * 0.2);
-      if (i % 3 !== 1) tree(i * 39 + 4, h - 8 + (i % 2) * 12);
+    for (let i = 0; i < 6500; i++) {
+      const x = noise(i, 1) * w,
+        y = noise(i, 2) * h;
+      rect(x, y, 1 + noise(i, 3) * 2, 1, i % 4 === 0 ? p.shade : p.light);
+      if (i % 13 === 0) {
+        rect(x, y - 2, 1, 3, p.shade);
+        rect(x + 2, y - 1, 1, 2, p.light);
+      }
     }
-    // Farmhouse: cream plaster, terracotta roof, deep green door.
-    const hx = cx - 80,
-      hy = cy - 57;
-    diamond(hx + 7, hy + 5, 90, 36, 0x688451);
-    rect(hx - 30, hy - 39, 59, 43, 0x805331);
-    rect(hx - 27, hy - 37, 53, 38, 0xf2dcaa);
-    rect(hx + 26, hy - 37, 12, 36, 0xd0ac76);
-    g.fillStyle(0x82432d);
-    g.fillTriangle(hx - 36, hy - 36, hx, hy - 68, hx + 36, hy - 36);
-    g.fillStyle(0xc6653c);
-    g.fillTriangle(hx - 32, hy - 38, hx, hy - 65, hx + 32, hy - 38);
-    for (let i = 0; i < 4; i++)
-      rect(hx - 22 + i * 6, hy - 42 - i * 5, 43 - i * 11, 2, 0xe08a50);
-    rect(hx + 17, hy - 64, 7, 21, 0x896c52);
-    rect(hx + 16, hy - 65, 9, 3, 0xc8b797);
-    rect(hx - 6, hy - 21, 13, 23, 0x805331);
-    rect(hx - 4, hy - 19, 9, 20, 0x3c6d53);
-    rect(hx + 2, hy - 10, 2, 2, 0xf4ce74);
-    for (const x of [hx - 21, hx + 13]) {
-      rect(x, hy - 28, 11, 13, 0x805331);
-      rect(x + 2, hy - 26, 7, 9, 0x85bdc1);
-      rect(x + 5, hy - 26, 1, 9, 0xf9e4b2);
-      rect(x + 2, hy - 22, 7, 1, 0xf9e4b2);
-      rect(x - 2, hy - 13, 15, 4, 0x805331);
-      rect(x, hy - 15, 3, 3, p.flower);
-      rect(x + 6, hy - 15, 3, 3, p.flower);
+    // Stream: dark banks, shallow edges, and broken reflected light.
+    const riverX = (y: number) => cx + 267 + Math.sin(y / 58) * 13;
+    for (let y = 0; y < h; y += 2) {
+      const x = riverX(y);
+      rect(x - 5, y, 49, 2, p.shade);
+      rect(x - 2, y, 43, 2, 0xb2b68a);
+      rect(x + 1, y, 37, 2, winter ? 0xa3cbd0 : 0x4d9299);
+      rect(x + 5, y, 29, 2, winter ? 0xc1dee0 : 0x6bb3b0);
+      if (y % 8 === 0)
+        rect(x + 7 + noise(y) * 10, y, 8 + noise(y, 2) * 8, 1, 0xb9d9c4);
+      if (y % 17 === 0) {
+        rect(x - 4, y, 4, 3, 0x8b967e);
+        rect(x - 3, y, 3, 1, 0xd1d1ac);
+      }
     }
-    rect(hx - 12, hy + 2, 25, 4, 0xb28b58);
-    rect(hx - 16, hy + 6, 33, 3, 0xd4b37b);
-    // The first acre remains empty until the farming systems are added.
-    const tileW = Math.min(34, (w - 30) / 8),
-      tileH = tileW / 2;
+    // Stone walkway, with individually shaded uneven pavers.
+    for (let i = -Math.ceil(w / 10); i < Math.ceil(w / 10); i++) {
+      const x = cx + i * 10,
+        y = cy - 83 + i * 5;
+      diamond(x, y, 34, 18, 0x9a9874);
+      for (let j = 0; j < 3; j++) {
+        const sx = x + j * 7 - 8,
+          sy = y + j * 3 - 5;
+        rect(sx, sy, 8, 4, 0xaaa88b);
+        rect(sx, sy, 7, 2, 0xd4d0ac);
+        rect(sx + 1, sy + 4, 5, 1, 0x898d71);
+      }
+    }
+    const atlasKey =
+      this.season === "fall" || winter ? `farm-${this.season}` : "farm-spring";
+    const sprite = (
+      frame: number,
+      x: number,
+      y: number,
+      size: number,
+      tint = p.tint,
+    ) => {
+      const image = this.add
+        .image(x, y, atlasKey, frame)
+        .setDisplaySize(size, size)
+        .setTint(tint);
+      scenery.add(image);
+      return image;
+    };
+    // Back row: varied canopies and two buildings with the same projection.
+    for (let i = 0; i < Math.ceil(w / 61) + 1; i++)
+      sprite(
+        i % 4 === 1 ? 5 : 2,
+        i * 64 - 12,
+        48 + (i % 3) * 8,
+        115 + (i % 2) * 20,
+      );
+    sprite(1, cx + 100, cy - 120, 190);
+    sprite(0, cx - 109, cy - 121, 216);
+    sprite(4, cx - 258, cy - 55, 137);
+    // The playable acre stays unobstructed. Fine furrows follow the tile axes.
+    const tw = 34,
+      th = 17;
     for (let row = 0; row < 7; row++)
       for (let col = 0; col < 7; col++) {
-        const x = cx + ((col - row) * tileW) / 2,
-          y = cy + ((col + row - 4) * tileH) / 2;
-        diamond(x, y + 3, tileW - 1, tileH - 1, 0x6c492f);
-        diamond(
-          x,
-          y,
-          tileW - 2,
-          tileH - 2,
-          (row + col) % 2 ? p.soil : 0xa87349,
-        );
-        for (let line = 0; line < 3; line++) {
-          rect(x - 5 + line * 4, y - 2 + line * 2, 5, 1, 0x805333);
+        const x = cx + ((col - row) * tw) / 2,
+          y = cy + ((col + row - 4) * th) / 2;
+        diamond(x, y + 3, tw - 1, th - 1, 0x64472e);
+        diamond(x, y, tw - 2, th - 2, p.soil);
+        for (let line = 0; line < 5; line++) {
+          const fx = x - 10 + line * 4,
+            fy = y - 3 + line * 2;
+          rect(fx, fy, 7, 1, 0x794c2f);
+          rect(fx, fy + 1, 5, 1, winter ? 0xa49780 : 0xba8751);
         }
+        for (let dot = 0; dot < 7; dot++)
+          rect(
+            x - 8 + noise(row * 49 + col * 7 + dot) * 16,
+            y - 2 + noise(dot, col + row) * 4,
+            1,
+            1,
+            0xceb07b,
+          );
       }
-    // Fence and small flowers frame the field, keeping plot silhouettes clear.
+    // Picket fencing follows the near edge of the isometric field.
     for (let i = 0; i < 9; i++) {
-      const x = cx - 136 + i * 18,
+      const x = cx - 137 + i * 18,
         y = cy + 12 + i * 9;
-      rect(x, y - 10, 3, 16, 0x805331);
-      rect(x, y - 11, 3, 3, 0xf2dfb6);
-      if (i < 8) {
-        g.lineStyle(2, 0xe4c592);
-        g.lineBetween(x + 2, y - 5, x + 19, y + 4);
-        g.lineBetween(x + 2, y + 1, x + 19, y + 10);
-      }
+      if (i < 8)
+        for (const dy of [-6, 0]) {
+          g.lineStyle(3, 0x78583d);
+          g.lineBetween(x + 2, y + dy + 2, x + 20, y + dy + 11);
+          g.lineStyle(2, 0xf1dfb1);
+          g.lineBetween(x + 2, y + dy, x + 20, y + dy + 9);
+        }
+      rect(x - 1, y - 13, 5, 19, 0x98764c);
+      rect(x - 1, y - 13, 3, 17, 0xf2e3b9);
+      rect(x, y - 15, 2, 2, 0xffefcb);
     }
-    for (let i = 0; i < 28; i++) {
-      const x = cx + 126 + ((i * 17) % 42),
-        y = cy - 24 + ((i * 23) % 100);
-      rect(x, y, 2, 5, p.leaf);
-      rect(x - 1, y - 1, 4, 3, i % 3 ? p.flower : 0xffe3a1);
+    const flower = (x: number, y: number, color: number) => {
+      rect(x, y - 3, 1, 5, 0x447345);
+      rect(x - 2, y - 1, 2, 1, 0x5a8e43);
+      rect(x - 2, y - 6, 5, 3, color);
+      rect(x - 1, y - 7, 3, 5, color);
+      rect(x, y - 5, 1, 1, 0xffdf8b);
+    };
+    // Dense cottage borders: flower clusters rather than evenly spaced dots.
+    for (let i = 0; i < 105; i++) {
+      const x = cx + 133 + noise(i, 5) * 65,
+        y = cy - 23 + noise(i, 6) * 112;
+      if (i % 4 === 0) diamond(x, y + 2, 10, 5, p.shade);
+      flower(
+        x,
+        y,
+        winter ? 0xe7eee0 : [0xf2b3bd, 0xe7d0ec, 0xffedba, 0xd98aa1][i % 4],
+      );
     }
-    tree(cx + 135, cy - 57, 1.2);
-    tree(cx - 155, cy + 19);
+    sprite(3, cx + 225, cy + 28, 119);
+    sprite(2, cx + 220, cy - 101, 142);
+    sprite(5, cx - 238, cy + 33, 149);
+    // Foreground details sit outside the central farm and HUD safe areas.
+    for (let i = 0; i < Math.ceil(w / 100); i++)
+      sprite(i % 3 === 0 ? 5 : 2, i * 107 + 22, h - 29 + (i % 2) * 13, 132);
+    if (winter) {
+      for (let i = 0; i < 120; i++)
+        rect(noise(i, 8) * w, noise(i, 9) * h, 2, 1, 0xf4f6e9);
+    }
   }
 }
