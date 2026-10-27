@@ -41,7 +41,7 @@ import {
 } from "./micro/state";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
-app.innerHTML = `<header><div><span class="eyebrow">A farm. A lifetime.</span><h1>What We Sow</h1></div><p>Grow a little. Leave something good.</p><span class="build-tag">Early preview</span></header><main><section class="farm-card" aria-label="Farm overview"><div class="farm-heading"><div><span class="eyebrow">Home, for now</span><h2>Your growing farm</h2></div><output id="season"></output></div><div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div><div class="field-note"><span class="note-icon" aria-hidden="true">✦</span><div><strong id="farm-message" role="status">Choose seeds, then click an empty plot.</strong><p>Plant → advance growth → harvest → reinvest. No real-time waiting.</p></div></div></section><section class="farm-tools" aria-label="Farming tools"><div class="seed-shop"><span class="eyebrow">Seed basket</span><div id="crop-options"></div></div><div class="work-tools"><button id="grow">Advance growth</button><button id="work" hidden>Help with a delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><p id="farm-summary"></p><button id="next-season">Next season</button><button id="farm-mode">Farm tool / cancel build</button><button id="move-plot">Move a plot</button><button id="home-view">Center farm</button><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="127" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="127" value="16"></label><button id="go-to-cell">Go to land</button><p id="placement-hint">Drag the field or use arrow keys to explore 16,384 cells.</p></div></section><details id="build-shop"><summary>Build & progression</summary><p id="progression"></p><div id="build-options"></div><p id="selected-building">Click a placed structure to inspect, upgrade, or move it.</p><button id="upgrade-building" hidden>Upgrade selected building</button><button id="move-building" hidden>Move selected building</button></details><aside class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><label class="button" for="import">Import save</label><input id="import" type="file" accept="application/json,.json" hidden /></div></aside></main>`;
+app.innerHTML = `<header><div><span class="eyebrow">A farm. A lifetime.</span><h1>What We Sow</h1></div><p>Grow a little. Leave something good.</p><span class="build-tag">Early preview</span></header><main><section class="farm-card" aria-label="Farm overview"><div class="farm-heading"><div><span class="eyebrow">Home, for now</span><h2>Your growing farm</h2></div><output id="season"></output></div><div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div><div class="field-note"><span class="note-icon" aria-hidden="true">✦</span><div><strong id="farm-message" role="status">Choose seeds, then click an empty plot.</strong><p>Plant → advance growth → harvest → reinvest. No real-time waiting.</p></div></div></section><section class="farm-tools" aria-label="Farming tools"><div class="seed-shop"><span class="eyebrow">Seed basket</span><div id="crop-options"></div></div><div class="work-tools"><button id="grow">Advance growth</button><button id="work" hidden>Help with a delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><p id="farm-summary"></p><button id="next-season">Next season</button><button id="farm-mode">Farm tool / cancel build</button><button id="move-plot">Move a plot</button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level" aria-live="polite">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">100%</button></span><button id="pan-left" aria-label="Pan left">←</button><button id="pan-right" aria-label="Pan right">→</button><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="127" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="127" value="16"></label><button id="go-to-cell">Go to land</button><p id="placement-hint">Drag the field or use arrow keys to explore 16,384 cells.</p></div></section><details id="build-shop"><summary>Build & progression</summary><p id="progression"></p><div id="build-options"></div><p id="selected-building">Click a placed structure to inspect, upgrade, or move it.</p><button id="upgrade-building" hidden>Upgrade selected building</button><button id="move-building" hidden>Move selected building</button></details><aside class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><label class="button" for="import">Import save</label><input id="import" type="file" accept="application/json,.json" hidden /></div></aside></main>`;
 const tools = document.querySelector(".farm-tools")!;
 document.querySelector("main")!.prepend(document.querySelector("#build-shop")!);
 document.querySelector("main")!.prepend(tools);
@@ -65,6 +65,9 @@ let movingPlotId: number | null = null;
 let pickingPlot = false;
 let inspectedId: number | null = null;
 let centered = false;
+const zoomLevels = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+let zoomIndex = 3;
+let zoom = zoomLevels[zoomIndex];
 const viewport = document.querySelector<HTMLElement>("#farm")!;
 const world = document.querySelector<HTMLElement>("#farm-world")!;
 world.style.width = `${WORLD_WIDTH}px`;
@@ -79,13 +82,60 @@ function updateViewport() {
   renderer.style.height = `${height}px`;
   if (game.scale.width !== width || game.scale.height !== height)
     game.scale.resize(width, height);
-  scene.setViewport(viewport.scrollLeft, viewport.scrollTop, width, height);
+  scene.setViewport(
+    viewport.scrollLeft / zoom,
+    viewport.scrollTop / zoom,
+    width,
+    height,
+    zoom,
+  );
 }
 viewport.addEventListener("scroll", () => {
   if (!viewportFrame) viewportFrame = requestAnimationFrame(updateViewport);
 });
 new ResizeObserver(updateViewport).observe(viewport);
 const cellButtons = new Map<string, HTMLButtonElement>();
+function setZoom(index: number) {
+  const nextIndex = Math.max(0, Math.min(zoomLevels.length - 1, index));
+  if (nextIndex === zoomIndex) return;
+  const center = {
+    x: (viewport.scrollLeft + viewport.clientWidth / 2) / zoom,
+    y: (viewport.scrollTop + viewport.clientHeight / 2) / zoom,
+  };
+  zoomIndex = nextIndex;
+  zoom = zoomLevels[zoomIndex];
+  drag = null;
+  world.style.width = `${WORLD_WIDTH * zoom}px`;
+  world.style.height = `${WORLD_HEIGHT * zoom}px`;
+  for (const [key, button] of cellButtons) {
+    const [row, col] = key.split(",").map(Number),
+      p = projectCell({ row, col });
+    Object.assign(button.style, {
+      left: `${p.x * zoom}px`,
+      top: `${p.y * zoom}px`,
+      width: `${64 * zoom}px`,
+      height: `${32 * zoom}px`,
+    });
+  }
+  viewport.scrollLeft = center.x * zoom - viewport.clientWidth / 2;
+  viewport.scrollTop = center.y * zoom - viewport.clientHeight / 2;
+  document.querySelector("#zoom-level")!.textContent = `${zoom * 100}%`;
+  document.querySelector<HTMLButtonElement>("#zoom-out")!.disabled =
+    zoomIndex === 0;
+  document.querySelector<HTMLButtonElement>("#zoom-in")!.disabled =
+    zoomIndex === zoomLevels.length - 1;
+  if (hoveredCell) showPreview(hoveredCell);
+  updateViewport();
+}
+document
+  .querySelector("#zoom-out")!
+  .addEventListener("click", () => setZoom(zoomIndex - 1));
+document
+  .querySelector("#zoom-in")!
+  .addEventListener("click", () => setZoom(zoomIndex + 1));
+document
+  .querySelector("#zoom-reset")!
+  .addEventListener("click", () => setZoom(3));
 let hoveredCell: Cell | null = null;
 const preview = document.createElement("div");
 preview.id = "placement-preview";
@@ -109,13 +159,13 @@ document.querySelector("#go-to-cell")!.addEventListener("click", () => {
     return;
   }
   const p = projectCell({ row, col });
-  viewport.scrollLeft = p.x - viewport.clientWidth / 2;
-  viewport.scrollTop = p.y - viewport.clientHeight / 2;
+  viewport.scrollLeft = p.x * zoom - viewport.clientWidth / 2;
+  viewport.scrollTop = p.y * zoom - viewport.clientHeight / 2;
 });
 function centerFarm() {
   const p = projectCell({ row: 16, col: 16 });
-  viewport.scrollLeft = p.x - viewport.clientWidth / 2;
-  viewport.scrollTop = p.y - viewport.clientHeight / 2;
+  viewport.scrollLeft = p.x * zoom - viewport.clientWidth / 2;
+  viewport.scrollTop = p.y * zoom - viewport.clientHeight / 2;
 }
 document.querySelector("#home-view")!.addEventListener("click", centerFarm);
 document.querySelector("#pan-left")!.addEventListener("click", () => {
@@ -131,6 +181,19 @@ viewport.addEventListener("keydown", (event) => {
     ArrowUp: [0, -100],
     ArrowDown: [0, 100],
   };
+  if (
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    (event.key === "+" ||
+      event.key === "=" ||
+      event.key === "-" ||
+      event.key === "0")
+  ) {
+    event.preventDefault();
+    setZoom(event.key === "0" ? 3 : zoomIndex + (event.key === "-" ? -1 : 1));
+    return;
+  }
   if (delta[event.key]) {
     event.preventDefault();
     viewport.scrollLeft += delta[event.key][0];
@@ -331,10 +394,10 @@ scene.onLayout = (targets) => {
       button.addEventListener("pointerenter", () => showPreview(target));
       button.addEventListener("focus", () => showPreview(target));
       Object.assign(button.style, {
-        left: `${target.x}px`,
-        top: `${target.y}px`,
-        width: "64px",
-        height: "32px",
+        left: `${target.x * zoom}px`,
+        top: `${target.y * zoom}px`,
+        width: `${64 * zoom}px`,
+        height: `${32 * zoom}px`,
       });
       world.append(button);
       cellButtons.set(key, button);
@@ -402,10 +465,10 @@ function showPreview(cell: Cell) {
   preview.dataset.valid = String(fits);
   const total = item.width + item.height;
   Object.assign(preview.style, {
-    left: `${pos.x - item.height * 32}px`,
-    top: `${pos.y - 16}px`,
-    width: `${total * 32}px`,
-    height: `${total * 16}px`,
+    left: `${(pos.x - item.height * 32) * zoom}px`,
+    top: `${(pos.y - 16) * zoom}px`,
+    width: `${total * 32 * zoom}px`,
+    height: `${total * 16 * zoom}px`,
     clipPath: `polygon(${(item.height / total) * 100}% 0,100% ${(item.width / total) * 100}%,${(item.width / total) * 100}% 100%,0 ${(item.height / total) * 100}%)`,
   });
 }

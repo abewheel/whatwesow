@@ -2,7 +2,7 @@
 
 The estate is a 128 × 128 grid with 16,384 cells. Plots, buildings, and trees all occupy cells; multi-cell footprints cannot overlap or cross its edge. Every building type can be repeated. There are no one-per-type caps. Money, footprint space, authored unlocks, and any macro policy determine what the player can build.
 
-Open **Build & progression**, choose an item, then choose land. The footprint preview marks permitted placements. **Farm tool / cancel build** returns to planting and harvesting. Click a structure to inspect, upgrade, or move it for free. **Move a plot** moves its growing crop too. Drag the field, scroll, use arrow keys, or use the pan buttons to explore; **Center farm** returns to the starting fields. Enter row and column 0–127 in **Go to land** to jump across the estate. The canvas stays viewport-sized and renders nearby terrain.
+Open **Build & progression**, choose an item, then choose land. The footprint preview marks permitted placements. **Farm tool / cancel build** returns to planting and harvesting. Click a structure to inspect, upgrade, or move it for free. **Move a plot** moves its growing crop too. Drag the field, scroll, use arrow keys, or use the pan buttons to explore; **Center farm** returns to the starting fields. Enter row and column 0–127 in **Go to land** to jump across the estate. Use **Zoom out** and **Zoom in** for 25%–200% views, or **100%** to reset. With the farm focused, `+`, `−`, and `0` do the same. Zoom preserves the view center where map edges allow it, scales click targets and placement previews together, and resets on reload without changing the save. The canvas stays viewport-sized and renders nearby terrain.
 
 ## Authored track
 

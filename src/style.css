@@ -406,3 +406,17 @@ button[hidden] {
   margin: 4px;
   font: 12px system-ui;
 }
+.zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+#zoom-level {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 4px;
+  min-width: 48px;
+  text-align: center;
+  font: 600 12px system-ui;
+}

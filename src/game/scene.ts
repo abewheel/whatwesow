@@ -37,9 +37,9 @@ export class FarmScene extends Phaser.Scene {
   private farm = initialMicroState();
   private season: MacroState["season"] = "spring";
   private policy: MacroState["farmPolicy"];
-  private view = { x: 0, y: 0, width: 800, height: 600 };
-  setViewport(x: number, y: number, width: number, height: number) {
-    this.view = { x, y, width, height };
+  private view = { x: 0, y: 0, width: 800, height: 600, zoom: 1 };
+  setViewport(x: number, y: number, width: number, height: number, zoom = 1) {
+    this.view = { x, y, width, height, zoom };
     if (this.ground) {
       this.cameras.main.setScroll(x, y);
       this.draw(false);
@@ -84,10 +84,13 @@ export class FarmScene extends Phaser.Scene {
       p = palette[this.season];
     const visible = (x: number, y: number, padding = 200) =>
       x >= this.view.x - padding &&
-      x <= this.view.x + this.view.width + padding &&
+      x <= this.view.x + this.view.width / this.view.zoom + padding &&
       y >= this.view.y - padding &&
-      y <= this.view.y + this.view.height + padding;
-    this.cameras.main.setScroll(this.view.x, this.view.y);
+      y <= this.view.y + this.view.height / this.view.zoom + padding;
+    this.cameras.main
+      .setOrigin(0, 0)
+      .setZoom(this.view.zoom)
+      .setScroll(this.view.x, this.view.y);
     g.clear();
     scenery.removeAll(true);
     this.cameras.main.setBackgroundColor(p.grass);
