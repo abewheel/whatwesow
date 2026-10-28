@@ -17,7 +17,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        id: pnpm-cli
+        with:
+          path: ~/setup-pnpm
+          key: pnpm-cli-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package.json') }}
       - uses: pnpm/action-setup@v4
+        if: steps.pnpm-cli.outputs.cache-hit != 'true'
+        with:
+          dest: ~/setup-pnpm
+      - name: Add cached pnpm to PATH
+        run: echo "$HOME/setup-pnpm/node_modules/.bin" >> "$GITHUB_PATH"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -49,7 +59,17 @@ jobs:
       PLAYWRIGHT_WORKERS: 2
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        id: pnpm-cli
+        with:
+          path: ~/setup-pnpm
+          key: pnpm-cli-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package.json') }}
       - uses: pnpm/action-setup@v4
+        if: steps.pnpm-cli.outputs.cache-hit != 'true'
+        with:
+          dest: ~/setup-pnpm
+      - name: Add cached pnpm to PATH
+        run: echo "$HOME/setup-pnpm/node_modules/.bin" >> "$GITHUB_PATH"
       - uses: actions/setup-node@v4
         with:
           node-version: 22

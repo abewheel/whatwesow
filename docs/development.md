@@ -91,7 +91,9 @@ the production checks to pass. No test is omitted and automatic retries are off.
 The build already checks types, so CI does not run a second standalone typecheck.
 
 Pull requests run once per update; pushes to `main` and manual runs also validate.
-New commits cancel obsolete runs for the same event and ref. Browser downloads
+New commits cancel obsolete runs for the same event and ref. The pnpm CLI itself
+is cached by OS, architecture, and package manifest so each runner avoids a fresh
+registry download of pnpm. Browser downloads
 are cached by OS, architecture, and lockfile; the pinned Ubuntu 24.04 hosted image already
 provides Chromium’s system libraries, so jobs avoid a redundant apt update and
 installation. A missing library fails browser launch rather than hiding it. Failed jobs retain screenshots, traces, and browser
