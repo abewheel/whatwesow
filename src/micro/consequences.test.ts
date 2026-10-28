@@ -153,3 +153,49 @@ it("relocates planted plots by stable ID without losing crop growth", () => {
   expect(moved.plotIds).toEqual(state.plotIds);
   expect(moved.coins).toBe(state.coins);
 });
+it("drops the crop history of removed plots and refuses taken cells", () => {
+  let state = actOnFarm(establishedFarm(), {
+    type: "plant",
+    plot: 0,
+    crop: "turnip",
+  }).state;
+  state = actOnFarm(state, { type: "plant", plot: 1, crop: "turnip" }).state;
+  expect(state.lastCrops).toEqual({ "1": "turnip", "2": "turnip" });
+  const removed = applyFarmConsequences(state, { removePlotIds: [1] }).state;
+  expect(removed.lastCrops).toEqual({ "2": "turnip" });
+  const taken = { takenCells: [state.plotCells[1], { row: 0, col: 0 }] };
+  expect(applyFarmConsequences(state, {}, taken).losses.plots).toEqual([2]);
+  expect(() =>
+    actOnFarm(state, { type: "harvest", plot: 1 }, { turn: 1, policy: taken }),
+  ).toThrow(/outside/);
+  expect(() =>
+    actOnFarm(
+      state,
+      { type: "expand", cell: { row: 0, col: 0 } },
+      { turn: 1, policy: taken },
+    ),
+  ).toThrow(/unoccupied/);
+  expect(growCrops(state, taken).plots[1]).toEqual(state.plots[1]);
+});
+it("clears crops by stable ID while keeping their plots", () => {
+  const state = {
+    ...establishedFarm(),
+    plots: [
+      { crop: "corn" as const, growth: 1 },
+      { crop: "turnip" as const, growth: 1 },
+      ...establishedFarm().plots.slice(2),
+    ],
+  };
+  const result = applyFarmConsequences(state, {
+    clearPlotIds: [state.plotIds[0], 99],
+  });
+  expect(result.state.plots.slice(0, 2)).toEqual([
+    null,
+    { crop: "turnip", growth: 1 },
+  ]);
+  expect(result.state.plotIds).toEqual(state.plotIds);
+  expect(result.losses).toEqual({ structures: [], plots: [] });
+  expect(() => applyFarmConsequences(state, { clearPlotIds: [0] })).toThrow(
+    /valid IDs/,
+  );
+});

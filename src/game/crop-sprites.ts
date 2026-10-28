@@ -33,6 +33,21 @@ export const seasonalCropFrames = [
   { x: 809, y: 420, width: 436, height: 371 },
 ] as const;
 const seasonalCrops = new Set<CropId>(["radish", "tomato", "pumpkin"]);
+/**
+ * Drought marks on the crop images: dry crops turn yellow-brown; withered ones dark brown
+ * and shrink. A two-tone tint maps the art's light parts to `tint` and its dark parts to
+ * `shade`, so green leaves can turn straw-coloured, which a multiply tint cannot do.
+ */
+export function cropCondition(plot: { dry?: true; withered?: true }): {
+  tint?: number;
+  shade?: number;
+  scale: number;
+} {
+  if (plot.withered) return { tint: 0x7a4c28, shade: 0x24140a, scale: 0.7 };
+  return plot.dry
+    ? { tint: 0xffc060, shade: 0x4a3010, scale: 1 }
+    : { scale: 1 };
+}
 export function cropArtwork(crop: CropId, growth: number) {
   const frame = cropStages[crop][growth];
   if (!seasonalCrops.has(crop))

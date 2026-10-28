@@ -4,6 +4,7 @@ import {
   type Opportunity,
 } from "./progression";
 import { WORLD_CELLS } from "../contracts/world";
+import type { FarmPolicy } from "../contracts/farm-policy";
 import {
   buildings,
   isTree,
@@ -23,6 +24,7 @@ export const crops = {
     sale: 9,
     steps: 1,
     plantingSeasons: ["spring", "summer"],
+    thirsty: false,
     color: 0xf4d5b6,
   },
   carrot: {
@@ -31,6 +33,7 @@ export const crops = {
     sale: 18,
     steps: 2,
     plantingSeasons: ["spring"],
+    thirsty: false,
     color: 0xec8c39,
   },
   corn: {
@@ -39,6 +42,7 @@ export const crops = {
     sale: 34,
     steps: 2,
     plantingSeasons: ["spring"],
+    thirsty: true,
     color: 0xf1ce55,
   },
   radish: {
@@ -47,6 +51,7 @@ export const crops = {
     sale: 7,
     steps: 1,
     plantingSeasons: ["spring"],
+    thirsty: false,
     color: 0xd54d68,
   },
   tomato: {
@@ -55,6 +60,7 @@ export const crops = {
     sale: 21,
     steps: 1,
     plantingSeasons: ["summer"],
+    thirsty: true,
     color: 0xd94b38,
   },
   pumpkin: {
@@ -63,16 +69,41 @@ export const crops = {
     sale: 32,
     steps: 1,
     plantingSeasons: ["summer"],
+    thirsty: true,
     color: 0xe79832,
   },
 } as const;
 export type CropId = keyof typeof crops;
-export type Plot = { crop: CropId; growth: number } | null;
+export type Plot = {
+  crop: CropId;
+  growth: number;
+  /** Half yield at harvest. */
+  dry?: true;
+  /** Dead: harvesting clears it for nothing. */
+  withered?: true;
+  premium?: "good" | "bad";
+} | null;
 export type MicroState = {
   selfBuilt?: true;
   harvests: Record<CropId, number>;
   opportunities: Opportunity[];
   coins: number;
+  /** Seasonal charges the coins could not cover; income pays it first. */
+  owed?: number;
+  /** Sale money held back until the next season. */
+  held?: number;
+  /** Turns with a planting permit, ascending, at most two. */
+  permits?: number[];
+  /** Plot ID → the last crop planted there. */
+  lastCrops?: Record<string, CropId>;
+  /** Sales counted toward this season's quota. */
+  seasonSales?: { turn: number; count: number };
+  /** This season's drought water trade; bought water reaches only these plot IDs. */
+  water?:
+    | { turn: number; choice: "bought"; plots: number[] }
+    | { turn: number; choice: "sold" };
+  /** Forward price contract, turns inclusive. */
+  contract?: { from: number; until: number; mult: number };
   plots: Plot[];
   soilLevel: number;
   pendingSoilUpgrade?: true;
@@ -141,7 +172,19 @@ export function parseMicroState(value: unknown): MicroState {
       Number(p.growth) > (crop === "corn" ? 3 : crops[crop].steps)
     )
       throw new Error("Crop growth is outside its grow steps.");
-    return { crop, growth: Math.min(p.growth as number, crops[crop].steps) };
+    if (
+      (p.dry !== undefined && p.dry !== true) ||
+      (p.withered !== undefined && p.withered !== true) ||
+      (p.premium !== undefined && p.premium !== "good" && p.premium !== "bad")
+    )
+      throw new Error("Invalid crop condition.");
+    return {
+      crop,
+      growth: Math.min(p.growth as number, crops[crop].steps),
+      ...(p.dry ? { dry: true as const } : {}),
+      ...(p.withered ? { withered: true as const } : {}),
+      ...(p.premium ? { premium: p.premium as "good" | "bad" } : {}),
+    };
   });
   if (
     !Array.isArray(s.plotCells) ||
@@ -206,7 +249,16 @@ export function parseMicroState(value: unknown): MicroState {
         Number(b.harvestsAtLevel) < 0)
     )
       throw new Error("Invalid upgrade harvest baseline.");
+    if (
+      b.wait !== undefined &&
+      (!Number.isInteger(b.wait) ||
+        Number(b.wait) < 1 ||
+        Number(b.wait) > 4 ||
+        (b.pendingConstruction !== true && b.pendingUpgrade !== true))
+    )
+      throw new Error("Invalid permit delay.");
     return {
+      ...(b.wait === undefined ? {} : { wait: b.wait as number }),
       ...(b.harvestsAtLevel === undefined
         ? {}
         : { harvestsAtLevel: b.harvestsAtLevel as number }),
@@ -307,8 +359,15 @@ export function parseMicroState(value: unknown): MicroState {
     throw new Error("Invalid farm opportunities.");
   if (s.selfBuilt !== undefined && s.selfBuilt !== true)
     throw new Error("Invalid founding farm flag.");
+  const plotIds = s.plotIds as number[];
+  const council = parseCouncilFields(
+    s,
+    plotIds,
+    thirstyPlots({ plots } as MicroState).map((i) => plotIds[i]),
+  );
   const result: MicroState = {
     ...(s.selfBuilt === true ? { selfBuilt: true as const } : {}),
+    ...council,
     harvests,
     opportunities: [
       ...new Set(
@@ -321,7 +380,7 @@ export function parseMicroState(value: unknown): MicroState {
       : {}),
     nextStructureId: s.nextStructureId as number,
     nextPlotId: s.nextPlotId as number,
-    plotIds: [...s.plotIds] as number[],
+    plotIds: [...plotIds],
     coins: s.coins as number,
     plots,
     soilLevel: s.soilLevel as number,
@@ -331,31 +390,160 @@ export function parseMicroState(value: unknown): MicroState {
   result.opportunities = earnOpportunities(result);
   return result;
 }
+const isTurn = (value: unknown) =>
+  Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 160;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === "object" && !Array.isArray(value);
+/** Money, permits and sales the council's rules keep between actions. */
+function parseCouncilFields(
+  s: Record<string, unknown>,
+  plotIds: number[],
+  thirstyIds: number[],
+): Partial<MicroState> {
+  const fields: Partial<MicroState> = {};
+  for (const key of ["owed", "held"] as const)
+    if (s[key] !== undefined) {
+      if (!Number.isSafeInteger(s[key]) || Number(s[key]) < 1)
+        throw new Error("Use a positive whole coin amount.");
+      fields[key] = s[key] as number;
+    }
+  if (s.permits !== undefined) {
+    const permits = s.permits;
+    if (
+      !Array.isArray(permits) ||
+      permits.length > 2 ||
+      permits.some((t, i) => !isTurn(t) || (i > 0 && t <= permits[i - 1]))
+    )
+      throw new Error("Keep up to two ascending permit turns.");
+    if (permits.length) fields.permits = [...permits];
+  }
+  if (s.lastCrops !== undefined) {
+    if (
+      !isRecord(s.lastCrops) ||
+      Object.values(s.lastCrops).some(
+        (crop) => typeof crop !== "string" || !Object.hasOwn(crops, crop),
+      )
+    )
+      throw new Error("Crop history must name known crops.");
+    // History of removed plots is dropped; plot IDs are never reused.
+    const entries = Object.entries(s.lastCrops).filter(([id]) =>
+      plotIds.some((plotId) => String(plotId) === id),
+    );
+    if (entries.length)
+      fields.lastCrops = Object.fromEntries(entries) as Record<string, CropId>;
+  }
+  if (s.seasonSales !== undefined) {
+    const sales = s.seasonSales;
+    if (
+      !isRecord(sales) ||
+      !isTurn(sales.turn) ||
+      !Number.isSafeInteger(sales.count) ||
+      Number(sales.count) < 0
+    )
+      throw new Error("Invalid season sales.");
+    fields.seasonSales = {
+      turn: sales.turn as number,
+      count: sales.count as number,
+    };
+  }
+  if (s.water !== undefined) {
+    const water = s.water;
+    if (
+      !isRecord(water) ||
+      !isTurn(water.turn) ||
+      (water.choice !== "bought" && water.choice !== "sold") ||
+      (water.plots !== undefined &&
+        (water.choice === "sold" ||
+          !Array.isArray(water.plots) ||
+          water.plots.some((id) => !Number.isSafeInteger(id) || id < 1) ||
+          new Set(water.plots).size !== water.plots.length))
+    )
+      throw new Error("Invalid water trade.");
+    const turn = water.turn as number;
+    // Water bought before it was counted per plot reached the thirsty crops growing now.
+    fields.water =
+      water.choice === "sold"
+        ? { turn, choice: "sold" }
+        : {
+            turn,
+            choice: "bought",
+            plots: Array.isArray(water.plots)
+              ? water.plots.filter((id) => plotIds.includes(id as number))
+              : thirstyIds,
+          };
+  }
+  if (s.contract !== undefined) {
+    const c = s.contract;
+    if (
+      !isRecord(c) ||
+      !isTurn(c.from) ||
+      !isTurn(c.until) ||
+      Number(c.until) < Number(c.from) ||
+      typeof c.mult !== "number" ||
+      !Number.isFinite(c.mult) ||
+      c.mult < 0 ||
+      c.mult > 10
+    )
+      throw new Error("Invalid price contract.");
+    fields.contract = {
+      from: c.from as number,
+      until: c.until as number,
+      mult: c.mult,
+    };
+  }
+  return fields;
+}
 export const expansionCost = (state: MicroState) =>
   30 + Math.max(0, state.plots.length - 9) * 5;
 export const soilCost = (state: MicroState) => 80 * (state.soilLevel + 1);
-export const harvestValue = (state: MicroState, crop: CropId) =>
+/** Sealed building kinds add nothing to the sale. */
+export const harvestValue = (
+  state: MicroState,
+  crop: CropId,
+  policy: FarmPolicy = {},
+) =>
   crops[crop].sale +
   state.soilLevel * 3 +
   state.structures.reduce(
     (sum, b) =>
-      sum + (b.pendingConstruction ? 0 : buildings[b.kind].bonus * b.level),
+      sum +
+      (b.pendingConstruction || policy.sealedBuildings?.includes(b.kind)
+        ? 0
+        : buildings[b.kind].bonus * b.level),
     0,
   ) +
-  (crop === "corn" ? buildingLevel(state, "mill") * 15 : 0);
-export const seedCost = (state: MicroState, crop: CropId) =>
-  Math.max(1, crops[crop].seed - buildingLevel(state, "shed"));
+  (crop === "corn" ? buildingLevel(state, "mill", policy) * 15 : 0);
+export const seedCost = (
+  state: MicroState,
+  crop: CropId,
+  policy: FarmPolicy = {},
+) => Math.max(1, crops[crop].seed - buildingLevel(state, "shed", policy));
 
 /** Growth uses today's irrigation before paid work completes for later seasons. */
-export function growthSeasons(state: MicroState, crop: CropId): number {
-  const first = 1 + buildingLevel(state, "well");
-  const later =
-    1 +
-    state.structures
-      .filter((s) => s.kind === "well")
-      .reduce((sum, s) => sum + s.level + (s.pendingUpgrade ? 1 : 0), 0);
+export function growthSeasons(
+  state: MicroState,
+  crop: CropId,
+  policy: FarmPolicy = {},
+): number {
+  const first = 1 + buildingLevel(state, "well", policy);
+  const later = policy.sealedBuildings?.includes("well")
+    ? 1
+    : 1 +
+      state.structures
+        .filter((s) => s.kind === "well")
+        .reduce((sum, s) => sum + s.level + (s.pendingUpgrade ? 1 : 0), 0);
   return 1 + Math.ceil(Math.max(0, crops[crop].steps - first) / later);
 }
+/** Living plots of a crop; withered plots no longer count as planted. */
+export const plantedPlots = (state: MicroState, crop: CropId) =>
+  state.plots.filter((p) => p?.crop === crop && !p.withered).length;
+/** Plot indices of thirsty crops that still need water this season. */
+export const thirstyPlots = (state: MicroState) =>
+  state.plots.flatMap((p, i) =>
+    p && crops[p.crop].thirsty && !p.withered && p.growth < crops[p.crop].steps
+      ? [i]
+      : [],
+  );
 
 export function canPlant(crop: CropId, turn: number): boolean {
   return (crops[crop].plantingSeasons as readonly string[]).includes(

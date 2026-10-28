@@ -9,7 +9,7 @@ pnpm install
 pnpm dev
 ```
 
-Open the printed URL. Vite reloads changes immediately. The page contains a playable Phaser farm and HTML controls. See [the farming loop](micro-game.md) for crops, reinvestment, rules, and stage presets. See [construction](construction.md) for building types and farming milestones, and [macro integration](macro-farm-contract.md) for policies and loss effects. Farming opportunities include short character notes; branching narrative events are still to come.
+Open the printed URL. Vite reloads changes immediately. The page contains a playable Phaser farm and HTML controls. See [the farming loop](micro-game.md) for crops, reinvestment, rules, and stage presets. See [construction](construction.md) for building types and farming milestones, and [macro integration](macro-farm-contract.md) for policies and loss effects. Farming opportunities include short character notes, and [council crises](crises.md) put policy decisions to the player; other branching narrative events are still to come.
 
 ## Choose your work
 
@@ -45,9 +45,12 @@ Validation runs formatting, lint, types, unit/integration tests, a production bu
 ## Structure
 
 - `src/micro/`: farming state, validation, pure actions, construction, and loss reconciliation.
-- `src/macro/`: calendar and farm-policy state and validation; authored narrative is still future work.
+- `src/macro/`: calendar, farm-policy and crisis-record state and validation; other authored narrative is still future work.
 - `src/contracts/`: shared world dimensions and farm-policy types and validation.
 - `src/game/state.ts`: save composition and domain integration.
+- `src/game/crisis.ts`, `crisis-rules.ts`: when crises fire, council answers, and the farm rules they impose.
+- `src/crisis/`: crisis engine loading, the council meeting, and the farmhouse's Council rules.
+- `crisis-layer/`: crisis content, engine and tests, loaded as data; see [its contract](../crisis-layer/INTEGRATION.md).
 - `src/game/scene.ts`, `layout.ts`, `boundary.ts`: Phaser rendering, projection, and seasonal scenery. No economic rules here.
 - `src/game/farmer*.ts`: presentation tasks, adjacent-cell routing, and farmer animation.
 - `src/storage/save.ts`: IndexedDB boundary.

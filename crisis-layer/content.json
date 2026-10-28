@@ -65,13 +65,15 @@
         {
           "pos": 80,
           "name": "Water rights you can buy and sell",
-          "immediate": "None",
+          "immediate": "You can buy and sell water. In a drought, buying it costs 12 coins for each thirsty crop, and selling yours earns 6.",
           "drag": "None",
           "modifier": "unlockedActions: [tradeWaterRights]",
           "effects": [
             {
               "type": "unlockAction",
               "action": "tradeWaterRights",
+              "buy": 12,
+              "sell": 6,
               "duration": "standing"
             }
           ],
@@ -82,13 +84,18 @@
         {
           "pos": 40,
           "name": "Every farm pumps for itself, no price limits",
-          "immediate": "None",
+          "immediate": "You can drill your own well, and in a drought it waters your thirsty crops. Every farm pumping hard drains the valley's water, so the next drought lasts two seasons.",
           "drag": "None",
           "modifier": "unlockedActions: [drillWell]",
           "effects": [
             {
               "type": "unlockAction",
               "action": "drillWell",
+              "duration": "standing"
+            },
+            {
+              "type": "aquiferDrain",
+              "droughtSeasons": 2,
               "duration": "standing"
             }
           ],
@@ -99,18 +106,33 @@
         {
           "pos": 0,
           "name": "Public water company",
-          "immediate": "You get water at cost this season.",
-          "drag": "You pay a water bill from now on.",
-          "modifier": "feePerTick: small",
+          "immediate": "A public water company now pumps for the whole valley, so any well on your farm is sealed. It sells you water at cost while this drought lasts.",
+          "drag": "You pay a water bill from now on. Any well on your farm stays sealed, you can't build a new one, and you can't buy or sell water.",
+          "modifier": "waterAtCost: this drought; feePerTick: small; sealedBuildings: [well]; lockedActions: [drillWell, tradeWater]",
           "effects": [
             {
               "type": "waterAtCost",
-              "duration": "season"
+              "duration": "crisis"
             },
             {
               "type": "fee",
               "per": "tick",
               "amount": "small",
+              "duration": "standing"
+            },
+            {
+              "type": "sealBuilding",
+              "building": "well",
+              "duration": "standing"
+            },
+            {
+              "type": "lockAction",
+              "action": "drillWell",
+              "duration": "standing"
+            },
+            {
+              "type": "lockAction",
+              "action": "tradeWater",
               "duration": "standing"
             }
           ],
@@ -121,9 +143,9 @@
         {
           "pos": -40,
           "name": "Water board with a rising pumping tax",
-          "immediate": "The water board taxes every gallon you pump, and the more you pump, the higher the rate. You can afford to water about 60% of your thirsty crops. The rest dry up and die.",
-          "drag": "The pumping tax stays, so watering more than that never pays.",
-          "modifier": "waterTax: rises per unit pumped; effective irrigationCap ≈ 0.6 × planted",
+          "immediate": "The water board now does all the pumping, so any well on your farm is sealed. It taxes every gallon it pumps for you, and the more you use, the higher the rate. You can afford to water about 60% of your thirsty crops. The rest dry up and die.",
+          "drag": "The pumping tax stays, so watering more than that never pays. Any well on your farm stays sealed, you can't build a new one, and you can't buy or sell water.",
+          "modifier": "waterTax: rises per unit pumped; effective irrigationCap ≈ 0.6 × planted; sealedBuildings: [well]; lockedActions: [tradeWater, drillWell]",
           "effects": [
             {
               "type": "waterTax",
@@ -134,6 +156,21 @@
               "type": "irrigationCap",
               "fraction": 0.6,
               "duration": "standing"
+            },
+            {
+              "type": "sealBuilding",
+              "building": "well",
+              "duration": "standing"
+            },
+            {
+              "type": "lockAction",
+              "action": "drillWell",
+              "duration": "standing"
+            },
+            {
+              "type": "lockAction",
+              "action": "tradeWater",
+              "duration": "standing"
             }
           ],
           "tilesLost": 4,
@@ -143,8 +180,8 @@
         {
           "pos": -80,
           "name": "Water handed out by need",
-          "immediate": "Big farms get less water than small ones. Whatever you can't water dies.",
-          "drag": "The limit stays, and you're not allowed to buy or sell water.",
+          "immediate": "Big farms get less water than small ones. Whatever you can't water dies. Your well is sealed.",
+          "drag": "The limit stays, your well stays sealed, and you're not allowed to buy or sell water.",
           "modifier": "irrigationCap: 0.4 × planted; lockedActions: [tradeWater, drillWell]",
           "effects": [
             {
@@ -160,6 +197,11 @@
             {
               "type": "lockAction",
               "action": "drillWell",
+              "duration": "standing"
+            },
+            {
+              "type": "sealBuilding",
+              "building": "well",
               "duration": "standing"
             }
           ],
@@ -179,13 +221,16 @@
         {
           "pos": 80,
           "name": "Buy seed from anyone, at your own risk",
-          "immediate": "None",
+          "immediate": "You can buy premium seed: it costs half again as much and yields 30% more, but about one planting in eight carries disease and dies.",
           "drag": "None",
           "modifier": "unlockedActions: [premiumSeed]",
           "effects": [
             {
               "type": "unlockAction",
               "action": "premiumSeed",
+              "seedMult": 1.5,
+              "yieldMult": 1.3,
+              "failOneIn": 8,
               "duration": "standing"
             }
           ],
@@ -196,20 +241,26 @@
         {
           "pos": 40,
           "name": "Optional 'checked safe' label from seed sellers",
-          "immediate": "None",
-          "drag": "None",
-          "modifier": "—",
-          "effects": [],
+          "immediate": "Seed sellers race to earn the 'checked safe' label. Buyers pay extra for labeled seed, so soon nearly all seed carries the label and costs more.",
+          "drag": "Seed costs about a quarter more from now on.",
+          "modifier": "seedCostMult: 1.25",
+          "effects": [
+            {
+              "type": "seedCostMult",
+              "mult": 1.25,
+              "duration": "standing"
+            }
+          ],
           "tilesLost": 0,
           "offer": false,
           "offerTiles": 0
         },
         {
           "pos": 0,
-          "name": "Optional county seed check, for a fee",
-          "immediate": "You can get your seed checked, so it's safe to replant sooner. Your crop grows back in one season instead of two.",
-          "drag": "You pay a fee every time you plant.",
-          "modifier": "recoverySeasons: 1; feePerPlanting",
+          "name": "County seed checks, for a fee",
+          "immediate": "The county now checks your seed, so it's safe to replant sooner. Your blighted crop misses one planting season instead of two.",
+          "drag": "You pay a fee every time you plant, and checked seed costs about a quarter more. It's treated against the disease, so your crops yield 10% less. To keep the disease out of the soil, you can't plant the same crop twice in a row in one plot. Breaking that rule costs a fine.",
+          "modifier": "recoverySeasons: 1; feePerPlanting; seedCostMult: 1.25; cropRotation; yieldMult: 0.9",
           "effects": [
             {
               "type": "recoverySeasons",
@@ -219,6 +270,25 @@
             {
               "type": "fee",
               "per": "planting",
+              "duration": "standing"
+            },
+            {
+              "type": "seedCostMult",
+              "mult": 1.25,
+              "duration": "standing"
+            },
+            {
+              "type": "cropRotation",
+              "duration": "standing"
+            },
+            {
+              "type": "yieldMult",
+              "mult": 0.9,
+              "duration": "standing"
+            },
+            {
+              "type": "fine",
+              "perPlanting": 3,
               "duration": "standing"
             }
           ],
@@ -230,8 +300,8 @@
           "pos": -40,
           "name": "Required seed checks and planting permits",
           "immediate": "Every farm's seed is checked, so nothing can reinfect your fields. You can replant right away.",
-          "drag": "You have to wait for a permit every time you plant.",
-          "modifier": "recoverySeasons: 0; permitDelayTicks on plant",
+          "drag": "You pay a fee every time you plant. Checked seed costs about a quarter more, and it's treated against the disease, so your crops yield 10% less. Before you plant, you file for a permit at the council office, and it's good from the next season. You can't plant the same crop twice in a row in one plot. Breaking either rule costs a fine.",
+          "modifier": "recoverySeasons: 0; feePerPlanting; permitDelayTicks on plant; cropRotation; seedCostMult: 1.25; yieldMult: 0.9",
           "effects": [
             {
               "type": "recoverySeasons",
@@ -239,8 +309,32 @@
               "duration": "once"
             },
             {
+              "type": "fee",
+              "per": "planting",
+              "duration": "standing"
+            },
+            {
               "type": "permitDelay",
               "on": "plant",
+              "duration": "standing"
+            },
+            {
+              "type": "cropRotation",
+              "duration": "standing"
+            },
+            {
+              "type": "seedCostMult",
+              "mult": 1.25,
+              "duration": "standing"
+            },
+            {
+              "type": "yieldMult",
+              "mult": 0.9,
+              "duration": "standing"
+            },
+            {
+              "type": "fine",
+              "perPlanting": 3,
               "duration": "standing"
             }
           ],
@@ -251,8 +345,8 @@
         {
           "pos": -80,
           "name": "A valley seed board controls all seed and picks your crops",
-          "immediate": "You get new seed for free.",
-          "drag": "The state decides what you grow from now on.",
+          "immediate": "You get new seed for free. The board now hands out one approved seed through the seed shop.",
+          "drag": "The state decides what you grow, and its seed yields 20% less. Planting anything else costs a fine.",
           "modifier": "cropChoiceLocked: true; freeSeed: true",
           "effects": [
             {
@@ -261,6 +355,16 @@
             },
             {
               "type": "cropChoiceLocked",
+              "duration": "standing"
+            },
+            {
+              "type": "yieldMult",
+              "mult": 0.8,
+              "duration": "standing"
+            },
+            {
+              "type": "fine",
+              "perPlanting": 3,
               "duration": "standing"
             }
           ],
@@ -291,13 +395,15 @@
         {
           "pos": 40,
           "name": "Let farmers lock in next year's price now",
-          "immediate": "None",
+          "immediate": "While prices are down, you can lock in 85% of the normal price for the next four seasons. If prices come back sooner, you're still held to 85%.",
           "drag": "None",
           "modifier": "unlockedActions: [forwardContract]",
           "effects": [
             {
               "type": "unlockAction",
               "action": "forwardContract",
+              "mult": 0.85,
+              "seasons": 4,
               "duration": "standing"
             }
           ],
@@ -349,7 +455,7 @@
           "pos": -80,
           "name": "The state buys all crops at set prices",
           "immediate": "Prices stay where they were before the crash.",
-          "drag": "You have to sell to the state, only as much as they allow, at a price that never goes up.",
+          "drag": "You have to sell to the state, only as much as they allow, at a price that never goes up. The allowance changes every season, sales over it earn nothing and don't count toward upgrades, and seed costs half again as much.",
           "modifier": "priceFixed: preCrash; sellViaBoard: true; quota",
           "effects": [
             {
@@ -363,6 +469,13 @@
             },
             {
               "type": "quota",
+              "varies": true,
+              "progress": false,
+              "duration": "standing"
+            },
+            {
+              "type": "seedCostMult",
+              "mult": 1.5,
               "duration": "standing"
             }
           ],
@@ -431,10 +544,10 @@
         },
         {
           "pos": -40,
-          "name": "Take the land, pay a \"fair\" price",
-          "immediate": "The county takes a wider strip: 6 tiles, some with crops still on them, and pays you half what they're worth.",
-          "drag": "None",
-          "modifier": "removeTiles: {count: 6, selection: random, cashPerTile: 0.5×}",
+          "name": "Take the land, pay a set price",
+          "immediate": "The county takes 6 tiles across your farm and pays you half what they're worth. Your fields drain into the new reservoir, so to keep its water clean, the county now plans what you build and plant. From now on the county hands out the seed through the seed shop.",
+          "drag": "New buildings and upgrades need county approval, so they take a season longer. Before you plant, you file for a permit at the council office, and it's good from the next season. Each season the county names the one crop you may plant and gives you its seed free. Planting anything else, or without a permit, costs a fine.",
+          "modifier": "removeTiles: {count: 6, selection: random, cashPerTile: 0.5×}; permitDelayTicks on plant; cropChoiceLocked: true; freeSeed: true",
           "effects": [
             {
               "type": "removeTiles",
@@ -442,6 +555,29 @@
               "selection": "random",
               "cashPerTile": 0.5,
               "duration": "once"
+            },
+            {
+              "type": "buildDelay",
+              "seasons": 1,
+              "duration": "standing"
+            },
+            {
+              "type": "permitDelay",
+              "on": "plant",
+              "duration": "standing"
+            },
+            {
+              "type": "freeSeed",
+              "duration": "standing"
+            },
+            {
+              "type": "cropChoiceLocked",
+              "duration": "standing"
+            },
+            {
+              "type": "fine",
+              "perPlanting": 3,
+              "duration": "standing"
             }
           ],
           "tilesLost": 6,
@@ -451,9 +587,9 @@
         {
           "pos": -80,
           "name": "Take the best land for the common good, pay nothing",
-          "immediate": "The county takes whatever route it likes best: your 8 best tiles, and pays nothing.",
-          "drag": "None",
-          "modifier": "removeTiles: {count: 8, selection: mostProductive, cashPerTile: 0}",
+          "immediate": "The county takes whatever route it likes best: your 8 best tiles, and pays nothing. The rest of your land drains into the reservoir, so the county now plans what you plant on it. From now on the county hands out the seed through the seed shop.",
+          "drag": "The county zones your farm: you can't put up more buildings than you have now. Before you plant, you file for a permit at the council office, and it's good from the next season. Each season the county names the one crop you may plant and gives you its seed free. Planting anything else, or without a permit, costs a fine.",
+          "modifier": "removeTiles: {count: 8, selection: mostProductive, cashPerTile: 0}; permitDelayTicks on plant; cropChoiceLocked: true; freeSeed: true",
           "effects": [
             {
               "type": "removeTiles",
@@ -461,6 +597,28 @@
               "selection": "mostProductive",
               "cashPerTile": 0,
               "duration": "once"
+            },
+            {
+              "type": "buildingCap",
+              "duration": "standing"
+            },
+            {
+              "type": "permitDelay",
+              "on": "plant",
+              "duration": "standing"
+            },
+            {
+              "type": "freeSeed",
+              "duration": "standing"
+            },
+            {
+              "type": "cropChoiceLocked",
+              "duration": "standing"
+            },
+            {
+              "type": "fine",
+              "perPlanting": 3,
+              "duration": "standing"
             }
           ],
           "tilesLost": 8,
@@ -541,9 +699,9 @@
         {
           "pos": -40,
           "name": "Limits on how much you can plant",
-          "immediate": "Your top crop gets plowed under past 5 tiles.",
-          "drag": "You can't grow more than 5 tiles of your top crop.",
-          "modifier": "destroyCrop: {crop: top, aboveTiles: 5}; maxTilesPerCrop: {top: 5}",
+          "immediate": "Your top crop gets plowed under past 5 tiles. The county farm office now limits how much each farm sells, so every farm gets its turn. Once the glut passes, it holds every crop at today's normal price.",
+          "drag": "You can't grow more than 5 tiles of your top crop, and one plot in five must rest empty each season. Breaking either rule costs a fine. Each season you can make about one sale for every two plots you have. Sales over that earn nothing and don't count toward upgrades. Crop prices never go up, even when you improve your farm.",
+          "modifier": "destroyCrop: {crop: top, aboveTiles: 5}; maxTilesPerCrop: {top: 5}; fallow: 0.2; quota (steady); priceFixed: current",
           "effects": [
             {
               "type": "destroyCrop",
@@ -556,6 +714,27 @@
               "crop": "top",
               "tiles": 5,
               "duration": "standing"
+            },
+            {
+              "type": "fallow",
+              "share": 0.2,
+              "duration": "standing"
+            },
+            {
+              "type": "fine",
+              "perPlanting": 3,
+              "duration": "standing"
+            },
+            {
+              "type": "quota",
+              "varies": false,
+              "progress": false,
+              "duration": "standing"
+            },
+            {
+              "type": "priceFixed",
+              "level": "current",
+              "duration": "standing"
             }
           ],
           "tilesLost": 5,
@@ -566,8 +745,8 @@
           "pos": -80,
           "name": "Ban the crop and even things out",
           "immediate": "Your top crop is banned, and every tile of it is destroyed.",
-          "drag": "Anything you grow above the valley average gets taken at every harvest.",
-          "modifier": "destroyCrop: {crop: top, aboveTiles: 0}; banCrops: [top]; confiscateAboveAvg: 1.0",
+          "drag": "Anything you grow above the valley average gets taken at every harvest, crop prices never go up, and your buildings can't be upgraded. Each season the council lets you make only a set number of sales, and the number changes. Sales over it earn nothing and don't count toward upgrades. Planting the banned crop costs a fine.",
+          "modifier": "destroyCrop: {crop: top, aboveTiles: 0}; banCrops: [top]; confiscateAboveAvg: 1.0; quota; priceFixed: current",
           "effects": [
             {
               "type": "destroyCrop",
@@ -583,6 +762,26 @@
             {
               "type": "confiscateAboveAverage",
               "fraction": 1,
+              "duration": "standing"
+            },
+            {
+              "type": "freezeUpgrades",
+              "duration": "standing"
+            },
+            {
+              "type": "fine",
+              "perPlanting": 3,
+              "duration": "standing"
+            },
+            {
+              "type": "quota",
+              "varies": true,
+              "progress": false,
+              "duration": "standing"
+            },
+            {
+              "type": "priceFixed",
+              "level": "current",
               "duration": "standing"
             }
           ],
@@ -602,7 +801,7 @@
       "key": "OBJ",
       "cardType": "Moral — rights",
       "premiseType": "moral_rights",
-      "argument": "Water sitting underground is worth nothing to anyone. It's just wet rock until somebody drills a well and pumps it up. Whoever does that work turned it into something useful, and that's what makes it theirs. Needing water doesn't give your neighbor a claim on it, and the council never drilled a thing. If someone wants your water, they can offer you a deal.",
+      "argument": "Water underground does nobody any good until someone drills a well and pumps it up. Whoever does that work has made it useful, and that's what makes it theirs. So let every farm own the water it pumps, as property it can buy and sell. Then the water you bring up is yours to use, save, or trade, and a neighbor who needs more can make you an offer.",
       "explicitShift": 10,
       "conclusionPos": 80
     },
@@ -613,7 +812,7 @@
       "key": "LIB-P",
       "cardType": "Practical — efficiency (silent on standard)",
       "premiseType": "practical",
-      "argument": "No water board can keep track of what every farm needs. A price can. When water costs more, every farmer switches to crops that need less and stops wasting a drop. It happens on its own, and it happens fast. So let every farm pump for itself and sell water at whatever price it can get. No board, no price limits.",
+      "argument": "A price tells every farmer how scarce water is. When water costs more, farmers switch to crops that need less and make every drop count. Farms with water to spare sell it to farms that need it, so the water ends up wherever it grows the most food. It happens on its own, and it happens fast. So let every farm pump for itself and sell water at whatever price it can get.",
       "explicitShift": 0,
       "conclusionPos": 40,
       "personaLabel": "Practical libertarian"
@@ -625,7 +824,7 @@
       "key": "LIB-M",
       "cardType": "Moral — common good (explicit)",
       "premiseType": "moral_common_good",
-      "argument": "If you care about the families who'd be hurt worst, a free market is still the answer. A board hands water to whoever has friends on the board. In a free market any farm, big or small, can buy the water it needs and sell what it doesn't. That's what's best for everyone, and for the poorest most of all.",
+      "argument": "This drought will hit the poorest families hardest. With no price limits, any farm, big or small, can buy extra water when it's short and sell what it doesn't use. A small farm about to lose a field can buy enough to save it, fewer farms go under, and more food reaches the table. That's what's best for everyone, and for the poorest most of all.",
       "explicitShift": -6,
       "conclusionPos": 40,
       "personaLabel": "Bleeding-heart libertarian"
@@ -637,7 +836,7 @@
       "key": "PRO-P",
       "cardType": "Practical — expertise",
       "premiseType": "practical",
-      "argument": "Every well pulls from the same underground water. When one farm pumps more, the farm next door gets less. The scientists have the numbers. Let the water board decide how much each farm can take.",
+      "argument": "Every well pulls from the same underground water. The scientists know how much the valley can safely pump. A water board with a rising pumping tax can hold us to that, so the water lasts through the drought.",
       "explicitShift": 0,
       "conclusionPos": -40
     },
@@ -648,7 +847,7 @@
       "key": "PRO-M",
       "cardType": "Moral — positive right",
       "premiseType": "moral_positive_right",
-      "argument": "It's unfair that some people should suffer because they aren't wealthy. Prices are fine, but a price alone sends water to whoever has the most money. So let the water board put a tax on pumping that climbs the more you pump. Small farms barely feel it. The big pumpers pay for the water they're taking from everyone else.",
+      "argument": "Every family in this valley has a right to enough water to keep its farm alive, rich or poor. So let the water board put a tax on pumping that climbs the more you pump. The first gallons every farm needs stay cheap, small farms barely feel it, and the farms that pump the most pay the most, so the water stretches to reach everyone.",
       "explicitShift": -7,
       "conclusionPos": -40
     },
@@ -659,7 +858,7 @@
       "key": "SOC",
       "cardType": "Moral — collective justice",
       "premiseType": "moral_collective",
-      "argument": "The water under this valley belongs to all of us, not to whoever drills the deepest well. Prices have no place in a drought. A valley water board should work out what each farm needs and hand that out, with no buying or selling. Nobody goes without, and nobody gets extra.",
+      "argument": "The water under this valley belongs to all of us, so in a drought we share it. A valley water board should work out what each farm needs and hand that out, with no buying or selling. Every family has an equal claim, no farm goes without, and we all get through this dry season together.",
       "explicitShift": -10,
       "conclusionPos": -80
     },
@@ -670,7 +869,7 @@
       "key": "OBJ",
       "cardType": "Moral — rights",
       "premiseType": "moral_rights",
-      "argument": "You picked the seed, so the risk is yours. If your seed ruins your neighbor's field, you owe them for it, and that's between you and them. But nobody gets to decide ahead of time what you're allowed to plant. A seller who sells bad seed loses customers. That's all the checking a farm needs.",
+      "argument": "Your farm, your choice of seed. Pick from any seller you trust, and the risk is yours to weigh. If your seed harms your neighbor's field, you owe them for it, and that's between the two of you. Making your own choices and standing behind them is what owning a farm means.",
       "explicitShift": 10,
       "conclusionPos": 80
     },
@@ -681,7 +880,7 @@
       "key": "LIB-P",
       "cardType": "Practical — efficiency (silent on standard)",
       "premiseType": "practical",
-      "argument": "Nobody can check seed faster than the people buying it. Let seed sellers earn a 'checked safe' label, and farmers will pay extra for labeled seed. Sellers of bad seed lose their customers, bad seed stops getting planted, and the disease has nowhere to start. Required permits just hold up every planting for weeks.",
+      "argument": "Farmers have every reason to want clean seed, so put that to work. Let seed sellers earn a 'checked safe' label, and buyers will pay extra for labeled seed. Sellers race to get it, clean seed outsells bad seed, and the disease runs out of fields to spread to.",
       "explicitShift": 0,
       "conclusionPos": 40,
       "personaLabel": "Practical libertarian"
@@ -693,7 +892,7 @@
       "key": "LIB-M",
       "cardType": "Moral — common good (explicit)",
       "premiseType": "moral_common_good",
-      "argument": "Think about the small farms. One more lost harvest and they're gone. A county permit office takes weeks, and the big farms always seem to get their permits first. A 'checked safe' label works for everyone: a small farm can see which seed is safe and plant it the same day. That's what's best for everyone, and for the small farms most of all.",
+      "argument": "Think about the small farms. One more lost harvest and they're gone. A 'checked safe' label works for everyone: any farm, big or small, can see at a glance which seed is safe, buy what it can afford, and plant it the same day. That's what's best for everyone, and for the small farms most of all.",
       "explicitShift": -6,
       "conclusionPos": 40,
       "personaLabel": "Bleeding-heart libertarian"
@@ -705,7 +904,7 @@
       "key": "PRO-P",
       "cardType": "Practical — expertise",
       "premiseType": "practical",
-      "argument": "Crop disease doesn't stop at the fence. One careless farmer can infect the whole valley. The plant experts know which seed is clean. Required checks just put what they know to use before it's too late.",
+      "argument": "Crop disease doesn't stop at the fence. One batch of bad seed can infect the whole valley. The plant experts know how to spot it. Required checks and planting permits let them test every farm's seed before it's planted.",
       "explicitShift": 0,
       "conclusionPos": -40
     },
@@ -716,7 +915,7 @@
       "key": "PRO-M",
       "cardType": "Moral — positive right",
       "premiseType": "moral_positive_right",
-      "argument": "Everyone has a right to a harvest that a neighbor's bad seed can't take away. Buy seed from whoever you like, but the county checks every batch before it goes in the ground, and a permit shows yours passed. One careless farm shouldn't be able to ruin the families around it.",
+      "argument": "Everyone has a right to a harvest that bad seed can't take away. Buy seed from whoever you like, and the county checks every batch before it goes in the ground, with a permit to show yours passed. Every family in the valley gets to plant knowing its harvest is safe.",
       "explicitShift": -7,
       "conclusionPos": -40
     },
@@ -727,7 +926,7 @@
       "key": "SOC",
       "cardType": "Moral — collective justice",
       "premiseType": "moral_collective",
-      "argument": "The valley's harvest belongs to everyone who needs it to eat, so no farm should get to gamble with it. A valley seed board should be the only source of seed. It hands out clean seed to every farm for free and decides who plants what, so one disease can never sweep through the whole valley again.",
+      "argument": "The valley's harvest belongs to everyone who needs it to eat, so we should protect it together. A valley seed board should be the only source of seed. It hands out clean seed to every farm for free and plans who plants what, so every farm starts equal and one disease can never sweep through the whole valley again.",
       "explicitShift": -10,
       "conclusionPos": -80
     },
@@ -738,7 +937,7 @@
       "key": "OBJ",
       "cardType": "Moral — rights",
       "premiseType": "moral_rights",
-      "argument": "A price is whatever someone is willing to pay. Nobody owes you last year's price. Making buyers or taxpayers cover the difference is taking their money by law. You can sell, wait, or switch crops. That's your call.",
+      "argument": "Your crop is yours to sell, at whatever price a buyer freely offers and you accept. Leave prices alone and every choice stays yours: sell now, store it and wait, or switch crops. Every deal is one both sides wanted.",
       "explicitShift": 10,
       "conclusionPos": 80
     },
@@ -749,7 +948,7 @@
       "key": "LIB-P",
       "cardType": "Practical — efficiency (silent on standard)",
       "premiseType": "practical",
-      "argument": "Low prices fix themselves. Some farms switch crops, there's less to sell, and prices climb back up. Let farmers lock in a price for next year's crop before it falls any further, and they can get through this without a cent of tax money.",
+      "argument": "Low prices fix themselves. Some farms switch crops, there's less to sell, and prices climb back up. Let farmers lock in a price for next year's crop now, and each farm knows exactly what it will earn while the market recovers. It can plan, borrow against that price, and get through the dip.",
       "explicitShift": 0,
       "conclusionPos": 40,
       "personaLabel": "Practical libertarian"
@@ -761,7 +960,7 @@
       "key": "LIB-M",
       "cardType": "Moral — common good (explicit)",
       "premiseType": "moral_common_good",
-      "argument": "Propping up prices helps the biggest farms most and makes food cost more for the families in the valley with the least. If you care about them, let prices fall. Cheap food is the best thing that can happen to a poor family, even if some farms close over it.",
+      "argument": "In hard times, cheaper food is one of the best things that can happen to the families in the valley with the least. Let prices settle on their own, and farmers who want a sure thing can agree on next year's price with a buyer now. That's what's best for everyone, and for the poorest most of all.",
       "explicitShift": -6,
       "conclusionPos": 40,
       "personaLabel": "Bleeding-heart libertarian"
@@ -773,7 +972,7 @@
       "key": "PRO-P",
       "cardType": "Practical — expertise",
       "premiseType": "practical",
-      "argument": "Crop prices swing too high and too low. Economists have known this for a hundred years. A guaranteed lowest price evens out the swings, so good farms don't go under after one bad year.",
+      "argument": "Economists have studied crop prices for a hundred years, and they know how to even out price swings. A guaranteed lowest price, paid for with a harvest tax, keeps good farms going through a slump.",
       "explicitShift": 0,
       "conclusionPos": -40
     },
@@ -784,7 +983,7 @@
       "key": "PRO-M",
       "cardType": "Moral — positive right",
       "premiseType": "moral_positive_right",
-      "argument": "Everyone who grows our food has a right to make a living from it. A family shouldn't lose its farm over a bad year it didn't cause. So take a small share of every harvest into a valley relief fund, and use it to guarantee a lowest price. Above that floor, the market can do what it likes.",
+      "argument": "Everyone who grows our food has a right to make a living from it. A family shouldn't lose its farm over a bad year it didn't cause. So take a small share of every harvest into a valley relief fund, and use it to guarantee a lowest price. Above that floor, prices are free to rise and fall.",
       "explicitShift": -7,
       "conclusionPos": -40
     },
@@ -806,7 +1005,7 @@
       "key": "OBJ",
       "cardType": "Moral — rights",
       "premiseType": "moral_rights",
-      "argument": "The county can want a reservoir all it likes. Wanting something doesn't give you a right to it. If the project needs your land, it needs your signature, and the price is whatever you'll agree to.",
+      "argument": "A reservoir is a fine thing for the county to build on land it already owns. Your east fields are yours to farm, keep, or pass on, and a good cause doesn't change that. What happens to them is your call alone.",
       "explicitShift": 10,
       "conclusionPos": 80
     },
@@ -817,7 +1016,7 @@
       "key": "LIB-P",
       "cardType": "Practical — efficiency (silent on standard)",
       "premiseType": "practical",
-      "argument": "Forcing people to sell looks cheap on paper. In real life you get lawsuits, delays, and land bought at a price nobody checked. Buy from people who want to sell, and the reservoir gets built faster.",
+      "argument": "Buying only from people who want to sell gets a project built fast. Willing sellers sign quickly, the price is settled up front, and work starts right away. Draw the route across the land that's on offer, and the towns downstream get their water sooner.",
       "explicitShift": 0,
       "conclusionPos": 40,
       "personaLabel": "Practical libertarian"
@@ -829,7 +1028,7 @@
       "key": "LIB-M",
       "cardType": "Moral — common good (explicit)",
       "premiseType": "moral_common_good",
-      "argument": "When the county can force a sale, it's never the big farms that get bulldozed. It's the small ones that can't afford a lawyer. If you care about them, make the county buy only from willing sellers, at a price the seller agrees to. That's what's best for everyone.",
+      "argument": "A few fields can be a small family's whole living. If the county buys only from owners who choose to sell, at a price they agree to, families who sell come out ahead, families who stay keep farming, and the reservoir still gets built. That's what's best for everyone, and for the small farms most of all.",
       "explicitShift": -6,
       "conclusionPos": 40,
       "personaLabel": "Bleeding-heart libertarian"
@@ -841,7 +1040,7 @@
       "key": "PRO-P",
       "cardType": "Practical — expertise",
       "premiseType": "practical",
-      "argument": "You can't route a reservoir around everyone who says no. The engineers have done the survey. One owner shouldn't add three miles and two years to a project for the whole county. Take the strip, pay the set price, and move on.",
+      "argument": "The engineers have surveyed the whole river and found the best place for the dam. Follow their plan. Take the strip it needs, pay each owner a set price based on the survey, and the work stays on schedule.",
       "explicitShift": 0,
       "conclusionPos": -40
     },
@@ -852,7 +1051,7 @@
       "key": "PRO-M",
       "cardType": "Moral — positive right",
       "premiseType": "moral_positive_right",
-      "argument": "Thousands of families downstream have a right to water all year. One farm's east fields can't come before that. Take the land, but pay the owner fairly. Then everyone gets what they need.",
+      "argument": "Thousands of families downstream have a right to water all year. So build the reservoir, and pay the farm family a fair price for the land it takes. That way everyone gets what they need.",
       "explicitShift": -7,
       "conclusionPos": -40
     },
@@ -863,7 +1062,7 @@
       "key": "SOC",
       "cardType": "Moral — collective justice",
       "premiseType": "moral_collective",
-      "argument": "Nobody made this land. It was here before any of us, and the river that runs through it belongs to every family downstream. So the county should take the land the reservoir needs, even the best land, and pay nothing for what was never really anyone's.",
+      "argument": "This land was here before any of us, and the river that runs through it belongs to every family in the valley. So the county should take the land the reservoir needs, even the best land, and pay nothing for it, because it has always been ours to share. Then every family downstream has water all year, and what the valley was given, the valley shares.",
       "explicitShift": -10,
       "conclusionPos": -80
     },
@@ -874,7 +1073,7 @@
       "key": "OBJ",
       "cardType": "Moral — rights",
       "premiseType": "moral_rights",
-      "argument": "Nobody is owed customers. The other farmers lost sales because buyers chose your crops, and buyers have every right to choose. A council that punishes you for growing more is punishing the whole point of farming.",
+      "argument": "You grew a great crop, and buyers picked it. Every buyer is free to choose what they buy, and every farmer is free to grow all they can and sell it. That freedom is the whole point of farming.",
       "explicitShift": 10,
       "conclusionPos": 80
     },
@@ -885,7 +1084,7 @@
       "key": "LIB-P",
       "cardType": "Practical — efficiency (silent on standard)",
       "premiseType": "practical",
-      "argument": "Planting limits don't fix having too much of a crop. They just lock the problem in place. Prices drop, slower farms switch crops, and in two seasons it sorts itself out. If farmers want to control supply, they can join a group by choice, and nobody has to plow crops under.",
+      "argument": "Too much of a crop sorts itself out. Prices drop, some farms switch to crops that are scarcer, and within two seasons the market balances. Farmers who'd rather not wait can join a group by choice, agree to grow less of the crowded crop, and get a better price for what they sell.",
       "explicitShift": 0,
       "conclusionPos": 40,
       "personaLabel": "Practical libertarian"
@@ -897,7 +1096,7 @@
       "key": "LIB-M",
       "cardType": "Moral — common good (explicit)",
       "premiseType": "moral_common_good",
-      "argument": "Think of the families in the valley with the least. Cheap food is the best thing that can happen to them, and planting limits take it away to protect farms that were already comfortable. If growers want to team up, let them. But don't make the poorest families pay for it.",
+      "argument": "A big harvest means cheap food, and cheap food helps the families in the valley with the least. So keep any deal voluntary. Farmers can team up if they want to, the rest keep growing, and food stays plentiful. That's what's best for everyone, and for the poorest most of all.",
       "explicitShift": -6,
       "conclusionPos": 40,
       "personaLabel": "Bleeding-heart libertarian"
@@ -909,7 +1108,7 @@
       "key": "PRO-P",
       "cardType": "Practical — expertise",
       "premiseType": "practical",
-      "argument": "Farm markets don't fix themselves. They swing too far and take whole farms down with them. The county farm office knows how much can safely be planted. Planting limits keep the price at a level every farm can live on.",
+      "argument": "The county farm office tracks how much of each crop the valley can sell. Planting limits based on its numbers keep supply steady, so prices stay at a level every farm can live on, year after year.",
       "explicitShift": 0,
       "conclusionPos": -40
     },
@@ -920,7 +1119,7 @@
       "key": "PRO-M",
       "cardType": "Moral — positive right",
       "premiseType": "moral_positive_right",
-      "argument": "Every farm family has a right to a fair chance at selling its crops. One farm growing far more than the rest takes that chance away. Planting limits, set by the county farm office, keep the market open to everyone. You can still farm as well as you like, up to the limit.",
+      "argument": "Every farm family has a right to a fair chance at selling its crops. Planting limits, set by the county farm office, keep room in the market for every farm. You can still farm as well as you like up to the limit, and your neighbors get their turn to sell too.",
       "explicitShift": -7,
       "conclusionPos": -40
     },
@@ -931,7 +1130,7 @@
       "key": "SOC",
       "cardType": "Moral — collective justice",
       "premiseType": "moral_collective",
-      "argument": "Nobody should get ahead by pushing their neighbors down. What the big farms grow beyond their fair share belongs to the valley, not to them. The council should ban the crop that's flooding the market and share out the extra, so every farm ends up on the same footing.",
+      "argument": "The valley is strongest when every farm does well. What any farm grows beyond the valley average belongs to everyone. The council should ban the crop that's flooding the market and share out the extra, so all farms stand on equal footing and we all get ahead together.",
       "explicitShift": -10,
       "conclusionPos": -80
     }
@@ -975,15 +1174,15 @@
       "moral_collective": "The group comes first"
     },
     "answer": {
-      "moral_rights": "You stood up for your rights. You said it's yours, and nobody else gets a say. The council heard both sides, and you won the point.",
-      "practical": "You said control wouldn't work. But you never said it was wrong. So nobody pushed back on the idea that control is the right thing to do.",
-      "moral_common_good": "You argued about what's best for everyone. That's the other side's favorite argument, and on that ground, they won.",
-      "moral_positive_right": "You ended up arguing for more control yourself.",
-      "moral_collective": "You ended up arguing for more control yourself."
+      "moral_rights": "You stood up for your rights. You said it's yours to decide. The council heard both sides, and you won the point.",
+      "practical": "You showed your plan would work. But you never said why it was right. So the only moral argument the council heard was the one for more control.",
+      "moral_common_good": "You argued about what's best for everyone. That's the ground the case for more control stands on, and on that ground, it won.",
+      "moral_positive_right": "You argued for more control yourself.",
+      "moral_collective": "You argued for more control yourself."
     },
     "answerPast": {
       "moral_rights": "You stood up for your rights.",
-      "practical": "You said control wouldn't work, but you never said it was wrong.",
+      "practical": "You said your plan would work, but never said why it was right.",
       "moral_common_good": "You argued about what's best for everyone, and lost on that ground.",
       "moral_positive_right": "You argued for more control yourself.",
       "moral_collective": "You argued for more control yourself."

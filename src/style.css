@@ -22,6 +22,8 @@
   color: #493621;
   background: #4b633b;
   font-synthesis: none;
+  /* The pixel font's "fi" ligature reads as "A": "fine" would read "Ane". */
+  font-variant-ligatures: none;
   --paper: #fff0ca;
   --wood: #805331;
   --ink: #493621;
@@ -671,6 +673,9 @@ input[aria-invalid="true"] {
   line-height: 1.35;
   margin-top: 3px;
 }
+.plan-copy .plan-rule {
+  color: #923d28;
+}
 #structure-inspection {
   margin-bottom: 12px;
 }
@@ -786,6 +791,7 @@ dialog::backdrop {
   margin: 12px 0 4px;
 }
 .dev-panel select {
+  max-width: 100%;
   margin-right: 8px;
 }
 .dev-panel textarea {
@@ -1232,4 +1238,231 @@ button.crisis-card {
 }
 .farm-card:has(#service-panel:not([hidden])) #crisis-test {
   display: none;
+}
+
+/* The council meeting during play: a fixed heading over one scrolling body. */
+#crisis {
+  width: min(1180px, calc(100% - 32px));
+  max-height: calc(var(--viewport-height, 100dvh) - 24px);
+  padding: 0;
+  overflow: hidden;
+}
+#crisis[open] {
+  display: flex;
+  flex-direction: column;
+}
+#crisis > .menu-heading {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid #b99a64;
+}
+#crisis h2 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.15;
+}
+#crisis-heading:focus {
+  outline: none;
+}
+#crisis .eyebrow {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+#crisis h3 {
+  font-size: 20px;
+  margin: 20px 0 4px;
+}
+#crisis .crisis-body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px 16px 16px;
+}
+#crisis[aria-busy="true"] .crisis-body {
+  cursor: progress;
+}
+.crisis-error {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 8px 16px;
+  color: #923d28;
+  font-size: 14px;
+}
+.crisis-outcome {
+  padding: 8px 12px;
+  border-left: 3px solid #3f6b35;
+  background: #eef3dc;
+}
+#crisis [data-step="close"] {
+  min-width: min(260px, 100%);
+}
+@media (max-width: 600px), (max-height: 500px) {
+  #crisis {
+    width: calc(100% - 16px);
+    max-height: calc(var(--viewport-height, 100dvh) - 16px);
+  }
+  #crisis h2 {
+    font-size: 20px;
+  }
+  #crisis > .menu-heading {
+    padding: 4px 8px 4px 12px;
+  }
+  #crisis .crisis-body {
+    padding: 4px 12px 12px;
+  }
+  #crisis .crisis-trigger {
+    font-size: 16px;
+  }
+  /* Portrait beside the argument keeps five cards short enough to compare. */
+  #crisis button.crisis-card {
+    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    justify-items: start;
+    column-gap: 10px;
+    row-gap: 2px;
+    padding: 10px;
+  }
+  #crisis .crisis-card .crisis-portrait {
+    grid-row: span 2;
+    width: 56px;
+    height: 56px;
+  }
+  #crisis .crisis-hand {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+@media (max-width: 420px) {
+  /* Five policy names share the meter's width: hyphenate rather than split words. */
+  #crisis .meter-policies {
+    font-size: 11px;
+  }
+  #crisis .meter-policies li {
+    padding: 0 2px;
+    hyphens: auto;
+    overflow-wrap: break-word;
+  }
+}
+
+/* While a crisis waits for an answer, the HUD offers the way back to the council. */
+#council-meeting {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  margin: 0;
+  padding: 4px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #6b2a17;
+}
+@media (max-width: 700px), (max-height: 500px) {
+  /* The farmhouse sheet offers "Answer the council" instead. */
+  .farm-card:has(#service-panel:not([hidden])) #council-meeting {
+    display: none;
+  }
+}
+#owed {
+  margin-left: 6px;
+  color: #923d28;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  /* What is owed sits under the coins, so the season bar keeps its width. */
+  .coin-balance:has(#owed) {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 0;
+  }
+  #owed {
+    flex-basis: 100%;
+    margin-left: 0;
+    font-size: 12px;
+    line-height: 1.1;
+    text-align: right;
+  }
+}
+/* Leads every building menu while the council waits: farm actions wait with it. */
+#council-waiting {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 8px;
+  border-left: 3px solid #923d28;
+  background: #f6e2c4;
+}
+#council-wait {
+  margin: 0;
+  color: #923d28;
+  font-size: 14px;
+  font-weight: 600;
+}
+#council-return {
+  width: 100%;
+}
+#council-rules {
+  padding-top: 10px;
+  border-top: 1px solid #c6a675;
+}
+#council-rules h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+#council-facts,
+#council-standing {
+  margin: 6px 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+#council-facts li + li,
+#council-standing li + li {
+  margin-top: 4px;
+}
+#council-trades {
+  display: grid;
+  gap: 6px;
+}
+#council-trades:not(:has(button:not([hidden]))) {
+  display: none;
+}
+#permit-status {
+  font-size: 14px;
+  line-height: 1.5;
+}
+#file-permit {
+  width: 100%;
+}
+#premium-seed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  border: 1px dashed #b99a64;
+  cursor: pointer;
+}
+#premium-seed input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  flex-shrink: 0;
+}
+#premium-seed small {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+.crop-tag.thirsty {
+  padding: 0 6px;
+  border: 1px solid #5d8fa0;
+  color: #2f5f6e;
+  background: #e2f0ef;
+}
+.crop-rule {
+  flex-basis: 100%;
+  color: #923d28;
 }

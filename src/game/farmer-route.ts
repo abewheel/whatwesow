@@ -12,15 +12,18 @@ import {
 import type { FarmPolicy } from "../contracts/farm-policy";
 export type FarmerWorld = { layout: Layout; policy?: FarmPolicy };
 // Build obstacles once per search rather than once per visited tile.
+// The council office stands, and blocks the way, only while permits are required.
 const blocker = (world: FarmerWorld) => {
   const occupied = new Set(
     [
       ...world.layout.structures.flatMap((s) =>
         footprint(s, buildings[s.kind].width, buildings[s.kind].height),
       ),
-      ...serviceLocations(world.layout).flatMap((s) =>
-        footprint(s, s.width, s.height),
-      ),
+      ...serviceLocations(world.layout, {
+        council: world.policy?.permitsRequired === true,
+      }).flatMap((s) => footprint(s, s.width, s.height)),
+      // Land the county took lies under the reservoir.
+      ...(world.policy?.takenCells ?? []),
     ].map(cellKey),
   );
   return (cell: Cell) => !inBounds(cell) || occupied.has(cellKey(cell));

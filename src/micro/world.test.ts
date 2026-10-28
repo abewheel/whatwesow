@@ -232,7 +232,10 @@ it("keeps services at reachable roadside entrances when dense farms fill every l
   };
   const locations = serviceLocations(dense);
   expect(locations.map((s) => s.id)).toContain("home");
-  for (const service of locations) {
+  expect(
+    serviceLocations(dense, { council: true }).find((s) => s.id === "council"),
+  ).toMatchObject({ row: -2, col: 29 });
+  for (const service of serviceLocations(dense, { council: true })) {
     expect(service.row).toBe(-2);
     expect(
       farmerWorkRoute(
@@ -248,4 +251,53 @@ it("keeps services at reachable roadside entrances when dense farms fill every l
   expect(
     serviceLocations(initialMicroState()).some((s) => s.id === "home"),
   ).toBe(false);
+});
+it("shows the council office only when asked, beside the village services", async () => {
+  const { serviceLocations } = await import("./world");
+  const farm = establishedFarm();
+  expect(serviceLocations(farm).map((s) => s.id)).not.toContain("council");
+  expect(serviceLocations(farm, {}).map((s) => s.id)).not.toContain("council");
+  const shown = serviceLocations(farm, { council: true });
+  expect(shown.slice(0, -1)).toEqual(serviceLocations(farm));
+  expect(shown.at(-1)).toMatchObject({
+    id: "council",
+    name: "Council office",
+    row: 7,
+    col: 9,
+    tent: false,
+  });
+  const camp = { selfBuilt: true as const, plotCells: [], structures: [] };
+  expect(
+    serviceLocations(camp, { council: true }).map((s) => [s.id, s.name]),
+  ).toEqual([
+    ["home", "Your tent"],
+    ["council", "Council office"],
+  ]);
+  const settled = {
+    ...camp,
+    structures: [{ id: 1, kind: "home" as const, row: 11, col: 14, level: 1 }],
+  };
+  expect(serviceLocations(settled)).toEqual([]);
+  expect(serviceLocations(settled, { council: true })).toHaveLength(1);
+  const crowded = {
+    ...farm,
+    structures: [
+      ...farm.structures,
+      { id: 2, kind: "shed" as const, row: 7, col: 9, level: 1 },
+    ],
+  };
+  expect(serviceLocations(crowded, { council: true }).at(-1)).not.toMatchObject(
+    { row: 7, col: 9 },
+  );
+  expect(canPlace(farm, { row: 7, col: 9 })).toBe(true);
+  expect(
+    canPlace(farm, { row: 7, col: 9 }, 1, 1, { permitsRequired: true }),
+  ).toBe(false);
+  expect(() =>
+    actOnFarm(
+      { ...farm, coins: 1000 },
+      { type: "build", kind: "shed", cell: { row: 7, col: 9 } },
+      { turn: 1, policy: { permitsRequired: true } },
+    ),
+  ).toThrow(/occupied/);
 });

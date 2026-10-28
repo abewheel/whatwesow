@@ -5,6 +5,8 @@ import { buildings, cellAllowed, footprint } from "./world";
 export type FarmConsequences = {
   removeStructureIds?: number[];
   removePlotIds?: number[];
+  /** Crops lost on these plots; the plots stay. */
+  clearPlotIds?: number[];
   coinDelta?: number;
 };
 /** Reconcile a macro decision atomically; never refund confiscation or reuse removed IDs. */
@@ -20,7 +22,11 @@ export function applyFarmConsequences(
     !Number.isSafeInteger(effects.coinDelta)
   )
     throw new Error("Coin effects must be whole numbers.");
-  for (const ids of [effects.removeStructureIds, effects.removePlotIds])
+  for (const ids of [
+    effects.removeStructureIds,
+    effects.removePlotIds,
+    effects.clearPlotIds,
+  ])
     if (
       ids !== undefined &&
       (!Array.isArray(ids) ||
@@ -47,7 +53,9 @@ export function applyFarmConsequences(
     .filter((p) => !lostPlots.includes(p.id));
   state.plotIds = kept.map((p) => p.id);
   state.plotCells = kept.map((p) => p.cell);
-  state.plots = kept.map((p) => p.crop);
+  state.plots = kept.map((p) =>
+    effects.clearPlotIds?.includes(p.id) ? null : p.crop,
+  );
   state.coins += effects.coinDelta ?? 0;
   return {
     state: parseMicroState(state),

@@ -23,7 +23,6 @@ import {
   type ServiceId,
 } from "./game/services";
 import { WORLD_CELLS, WORLD_SIZE } from "./contracts/world";
-import { turnNumber } from "./macro/state";
 import {
   buildings,
   constructionCost,
@@ -47,30 +46,61 @@ import {
   WORLD_HEIGHT,
 } from "./game/scene";
 import {
+  actOnGame,
   initialState,
   parseState,
-  replaceDomain,
-  advanceSeason,
   farmContext,
+  type GameState,
 } from "./game/state";
+import {
+  answerCrisis,
+  answerOffer,
+  endTurn,
+  pendingCrisis,
+} from "./game/crisis";
+import { mountCrisisDialog, type CouncilAnswer } from "./crisis/dialog";
+import { councilFacts } from "./crisis/council";
 import { openSaveStore } from "./storage/save";
 import "./style.css";
-import { actOnFarm, type FarmAction } from "./micro/rules";
+import type { FarmAction } from "./micro/rules";
+import type { FarmPolicy } from "./contracts/farm-policy";
+import { canWork, plantQuote, saleQuote } from "./micro/money";
 import {
   crops,
   canPlant,
   expansionCost,
-  harvestValue,
   soilCost,
-  seedCost,
   growthSeasons,
   type CropId,
+  type Plot,
 } from "./micro/state";
+
+/** A planted plot's state in words for its accessible name; colour never carries it alone. */
+const plotCondition = (plot: NonNullable<Plot>) =>
+  [
+    plot.withered
+      ? "withered"
+      : plot.growth === crops[plot.crop].steps
+        ? "ready to harvest"
+        : `growing ${plot.growth}/${crops[plot.crop].steps}`,
+    plot.dry && !plot.withered ? "dry" : "",
+    plot.premium ? "premium seed" : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+/** Pending work waits extra seasons under a county permit delay. */
+const readyIn = (wait = 0) =>
+  wait ? `ready in ${wait + 1} seasons` : "ready next season";
+/** A council rule's reason as its own sentence. */
+const sentence = (reason: string) =>
+  `${reason[0].toUpperCase()}${reason.slice(1)}.`;
+/** While the council waits, the farm waits: every farm action is refused until it has an answer. */
+const councilWaiting = "The council is waiting for your answer.";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div>
-<header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><output id="season"></output><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
+<header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><output id="season"></output><button id="council-meeting" aria-haspopup="dialog" hidden>Council meeting</button><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
 <div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Click a building to visit, or an empty plot to plant.</strong><span id="farm-summary" class="sr-only"></span><div id="farm-stats" aria-hidden="true"></div></div>
 <section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><button id="seed-selection" aria-label="Choose seeds"></button><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
 <div id="service-controls" hidden><div class="seed-shop"><div id="crop-options"></div><p id="crop-opportunity"></p></div><button id="next-season">End turn</button><p id="progression"></p><p id="frost-warning"></p><button id="work" hidden>Unload a seed delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><button id="move-plot">Move a plot</button><details id="build-shop"><summary>Building plans</summary><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></details><p id="selected-building"></p><button id="upgrade-building" hidden></button><button id="move-building" hidden></button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="63" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="63" value="16"></label><button id="go-to-cell">Go to land</button></div>
@@ -94,7 +124,7 @@ const servicePanel = document.createElement("section");
 servicePanel.id = "service-panel";
 servicePanel.hidden = true;
 servicePanel.setAttribute("aria-labelledby", "service-title");
-servicePanel.innerHTML = `<div class="service-heading"><h2 id="service-title"></h2><button id="close-service" aria-label="Close building menu">×</button></div><div class="service-body"><p id="service-description" class="sr-only"></p><div id="home-actions" hidden></div><div id="seed-actions" hidden></div><div id="builder-actions" hidden></div><div id="field-actions" hidden></div></div>`;
+servicePanel.innerHTML = `<div class="service-heading"><h2 id="service-title"></h2><button id="close-service" aria-label="Close building menu">×</button></div><div class="service-body"><p id="service-description" class="sr-only"></p><div id="home-actions" hidden></div><div id="seed-actions" hidden></div><div id="builder-actions" hidden></div><div id="field-actions" hidden></div><div id="council-office" hidden><p id="permit-status"></p><button id="file-permit">File next season's permit · free</button></div></div>`;
 document.querySelector(".farm-card")!.append(servicePanel);
 const serviceFeedback = document.createElement("p");
 serviceFeedback.id = "service-feedback";
@@ -117,9 +147,35 @@ nextOpportunity.id = "next-opportunity";
 const goals = document.createElement("details");
 goals.innerHTML = "<summary>Next unlocks</summary>";
 goals.append(nextOpportunity);
-document.querySelector("#home-actions")!.append(seasonGuide, goals);
+// The council's rules for this farm, and the trades a crisis opens up.
+const councilSection = document.createElement("section");
+councilSection.id = "council-rules";
+councilSection.setAttribute("aria-labelledby", "council-rules-title");
+councilSection.innerHTML = `<h3 id="council-rules-title">Council rules</h3><ul id="council-facts"></ul><div id="council-trades"><button id="buy-water"></button><button id="sell-water"></button><button id="lock-price"></button></div><ul id="council-standing" class="crisis-standing"></ul>`;
+// Every building menu leads with the council while it waits, since farm actions wait too.
+const councilWait = document.createElement("div");
+councilWait.id = "council-waiting";
+councilWait.innerHTML = `<p id="council-wait">${councilWaiting}</p><button id="council-return">Answer the council</button>`;
+const councilReturn =
+  councilWait.querySelector<HTMLButtonElement>("#council-return")!;
+document.querySelector("#service-description")!.after(councilWait);
+document
+  .querySelector("#home-actions")!
+  .append(seasonGuide, councilSection, goals);
 
 moveControls("#seed-actions", [".seed-shop", "#work"]);
+const premiumToggle = document.createElement("label");
+premiumToggle.id = "premium-seed";
+premiumToggle.innerHTML = `<input type="checkbox" id="premium-choice"><span>Premium seed<small id="premium-terms"></small></span>`;
+document.querySelector("#crop-options")!.before(premiumToggle);
+const premiumChoice =
+  premiumToggle.querySelector<HTMLInputElement>("#premium-choice")!;
+const premiumTerms =
+  premiumToggle.querySelector<HTMLElement>("#premium-terms")!;
+premiumChoice.addEventListener("change", () => {
+  premium = premiumChoice.checked;
+  render();
+});
 moveControls("#field-actions", ["#expand", "#improve", "#move-plot"]);
 moveControls("#builder-actions", ["#build-shop"]);
 document.querySelector<HTMLButtonElement>("#expand")!.dataset.build = "plot";
@@ -313,7 +369,8 @@ layoutHelp.addEventListener("click", () => {
 });
 document.querySelector("#resume")!.before(layoutHelp);
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
+  // Escape closes the council meeting on its own; the farm behind it stays as it was.
+  if (event.key === "Escape" && !document.querySelector("#crisis[open]")) {
     navigationVersion++;
     cameraControls.open = false;
     closeService();
@@ -357,6 +414,8 @@ function enterFarm() {
   startup.hidden = true;
   document.querySelector<HTMLElement>("main")!.inert = false;
   viewport.focus({ preventScroll: true });
+  // A crisis saved before the answer reopens once the farm is visible.
+  if (pendingCrisis(state)) crisisDialog.open();
 }
 beginFarm.addEventListener("click", () => {
   if (artworkFailed) location.reload();
@@ -373,8 +432,21 @@ const game = new Phaser.Game({
   audio: { noAudio: true },
 });
 let state = initialState();
+// Farm rules now: the macro policy merged with the council's, derived once per saved state.
+let ruled: { state: GameState; context: ReturnType<typeof farmContext> } = {
+  state,
+  context: farmContext(state),
+};
+const rules = () => {
+  if (ruled.state !== state) ruled = { state, context: farmContext(state) };
+  return ruled.context;
+};
+/** Village services, with the council office while planting permits are required. */
+const villageServices = () =>
+  serviceLocations(state, { council: rules().policy.permitsRequired === true });
 const harvestFeedback = new HarvestFeedback(state.coins);
 let selected: CropId = "turnip";
+let premium = false;
 let saving = false;
 let loadFailed = false;
 let navigationVersion = 0;
@@ -613,8 +685,17 @@ viewport.addEventListener(
     const x = (e.clientX - bounds.left + viewport.scrollLeft) / zoom;
     const y = (e.clientY - bounds.top + viewport.scrollTop) / zoom;
     // Match the visible artwork as well as its keyboard-accessible ground tiles.
-    const services = serviceLocations(state).filter((s) =>
-      scene.hitsBuilding({ x, y }, s, s.frame, false, distinctServices[s.id]),
+    // The council office is a drawn placeholder: its ground tiles take the clicks.
+    const services = villageServices().filter(
+      (s) =>
+        s.id !== "council" &&
+        scene.hitsBuilding(
+          { x, y },
+          s,
+          s.frame,
+          false,
+          distinctServices[s.id as keyof typeof distinctServices],
+        ),
     );
     const structures = state.structures.filter((s) => {
       const item = buildings[s.kind];
@@ -672,6 +753,10 @@ function inspectBuilding(id: number) {
   if (!building) return;
   if (isTree(building.kind) && Boolean(building.product)) {
     closeService();
+    if (pendingCrisis(state)) {
+      message.textContent = councilWaiting;
+      return;
+    }
     const request = ++navigationVersion;
     const item = buildings[building.kind];
     const reached = scene.travelTo(
@@ -764,30 +849,37 @@ for (const [id, crop] of Object.entries(crops)) {
     selected = id as CropId;
     closeService();
     render();
-    const seasons = growthSeasons(state, id as CropId);
-    message.textContent = `${crop.name} · ${seasons} season${seasons === 1 ? "" : "s"} to grow · Harvest ${policyProduction(harvestValue(state, id as CropId), state.farmPolicy ?? {})} coins.`;
+    const { turn, policy } = rules();
+    const seasons = growthSeasons(state, id as CropId, policy);
+    message.textContent = `${crop.name} · ${seasons} season${seasons === 1 ? "" : "s"} to grow · Harvest ${saleQuote(state, id as CropId, policy, turn).value} coins.`;
   });
   cropOptions.append(button);
 }
 let farmQueue: Promise<void> = Promise.resolve();
-function act(action: FarmAction | { type: "season" }) {
+function act(action: FarmAction | { type: "season" } | CouncilAnswer) {
   const requestedNavigation = navigationVersion;
   farmQueue = farmQueue.then(async () => {
     try {
       const previous = state;
-      const result =
-        action.type === "season"
-          ? advanceSeason(state)
-          : actOnFarm(state, action, farmContext(state));
+      // End turn and council answers are whole-game transitions; farm actions change micro only.
+      let result: { state: GameState; message: string };
+      if (action.type === "season") result = endTurn(state);
+      else if (action.type === "answer")
+        result = answerCrisis(state, action.card);
+      else if (action.type === "offer")
+        result = answerOffer(state, action.accept);
+      else result = actOnGame(state, action, rules());
       await apply(
-        action.type === "season"
-          ? (result.state as typeof state)
-          : replaceDomain(state, "micro", result.state),
+        result.state,
         false,
         false,
         action.type === "harvest" || action.type === "harvestTree",
       );
-      if (action.type !== "season" && requestedNavigation === navigationVersion)
+      if (action.type === "answer" || action.type === "offer")
+        crisisDialog.answered(result.message);
+      else if (action.type === "season") {
+        if (pendingCrisis(state)) crisisDialog.open();
+      } else if (requestedNavigation === navigationVersion)
         scene.performAction(action, previous);
       if (action.type === "harvest" || action.type === "harvestTree") {
         const cell =
@@ -815,7 +907,9 @@ function act(action: FarmAction | { type: "season" }) {
     } catch (error) {
       message.textContent =
         error instanceof Error ? error.message : "Could not work the farm.";
-      if (!servicePanel.hidden) {
+      if (action.type === "answer" || action.type === "offer")
+        crisisDialog.fail(message.textContent);
+      else if (!servicePanel.hidden) {
         serviceFeedback.textContent = message.textContent;
         serviceFeedback.hidden = false;
       }
@@ -823,6 +917,25 @@ function act(action: FarmAction | { type: "season" }) {
   });
   return farmQueue;
 }
+const crisisDialog = mountCrisisDialog(document.querySelector(".farm-card")!, {
+  records: () => state.crises ?? [],
+  answer: act,
+  // The meeting's opener is often hidden or disabled once it closes: focus the way back
+  // to it while it waits (on the HUD, or in the open menu on phones), else End turn, else the farm.
+  onClose: () => {
+    const endTurn = document.querySelector<HTMLButtonElement>("#next-season")!;
+    // Not checkVisibility(): Safari before 17.4 lacks it.
+    const shown = (el: HTMLElement) => el.getClientRects().length > 0;
+    const target =
+      [councilMeeting, councilReturn].find(shown) ??
+      (shown(endTurn) && !endTurn.disabled ? endTurn : viewport);
+    target.focus({ preventScroll: true });
+  },
+});
+const councilMeeting =
+  document.querySelector<HTMLButtonElement>("#council-meeting")!;
+for (const button of [councilMeeting, councilReturn])
+  button.addEventListener("click", () => crisisDialog.open());
 scene.onLayout = (targets) => {
   const keys = new Set(targets.map(cellKey));
   for (const [key, button] of cellButtons)
@@ -830,7 +943,10 @@ scene.onLayout = (targets) => {
       button.remove();
       cellButtons.delete(key);
     }
-  const services = serviceLocations(state);
+  const services = villageServices();
+  const { policy } = rules();
+  const taken = new Set((policy.takenCells ?? []).map(cellKey));
+  const sealed = new Set(policy.sealedBuildings ?? []);
   const plotMap = new Map(state.plotCells.map((c, i) => [cellKey(c), i]));
   const structureMap = new Map(
     state.structures.flatMap((s) =>
@@ -875,7 +991,7 @@ scene.onLayout = (targets) => {
           );
           return;
         }
-        const service = serviceLocations(state).find((s) =>
+        const service = villageServices().find((s) =>
           footprint(s, s.width, s.height).some((c) => cellKey(c) === key),
         );
         if (service) {
@@ -885,9 +1001,16 @@ scene.onLayout = (targets) => {
         const index = state.plotCells.findIndex((c) => cellKey(c) === key);
         if (index >= 0) {
           closeService();
+          // Planting and harvesting wait for the council; the HUD offers the way back to it.
+          if (pendingCrisis(state)) {
+            navigationVersion++;
+            message.textContent = councilWaiting;
+            return;
+          }
           const request = ++navigationVersion;
           const plotId = state.plotIds[index],
-            crop = selected;
+            crop = selected,
+            premiumSeed = premium && !!rules().policy.premiumSeed;
           const actionType = state.plots[index] ? "harvest" : "plant";
           const reached = scene.travelTo(cell, 1, 1, true, "rear", () => {
             if (request !== navigationVersion) return;
@@ -900,7 +1023,12 @@ scene.onLayout = (targets) => {
             void act(
               actionType === "harvest"
                 ? { type: "harvest", plot: currentIndex }
-                : { type: "plant", plot: currentIndex, crop },
+                : {
+                    type: "plant",
+                    plot: currentIndex,
+                    crop,
+                    ...(premiumSeed ? { premium: true as const } : {}),
+                  },
             );
           });
           message.textContent = reached
@@ -958,14 +1086,19 @@ scene.onLayout = (targets) => {
     else delete button.dataset.service;
     button.toggleAttribute("data-building", Boolean(structure || service));
     const plot = index === undefined ? null : state.plots[index];
+    // Under crop rotation, an empty plot names the crop that cannot follow itself there.
+    const last =
+      index !== undefined && !plot && policy.rotation
+        ? state.lastCrops?.[String(state.plotIds[index])]
+        : undefined;
     const label =
       index !== undefined
-        ? `Plot ${index + 1}: ${!plot ? "empty" : `${crops[plot.crop].name}, ${plot.growth === crops[plot.crop].steps ? "ready to harvest" : `growing ${plot.growth}/${crops[plot.crop].steps}`}`}`
+        ? `Plot ${index + 1}: ${!plot ? `empty${last ? `, ${crops[last].name.toLowerCase()} grew here last` : ""}` : `${crops[plot.crop].name}, ${plotCondition(plot)}`}`
         : structure
-          ? `${buildings[structure.kind].name} ${structure.id}, ${isTree(structure.kind) ? treeStatus(structure) : structure.pendingConstruction ? "under construction, ready next season" : `level ${structure.level}`}`
+          ? `${buildings[structure.kind].name} ${structure.id}, ${isTree(structure.kind) ? treeStatus(structure) : structure.pendingConstruction ? `under construction, ${readyIn(structure.wait)}` : `level ${structure.level}${sealed.has(structure.kind) ? ", sealed by the council" : ""}`}`
           : service
             ? `Visit ${service.name}`
-            : `Land ${target.row},${target.col}`;
+            : `Land ${target.row},${target.col}${taken.has(key) ? ", taken by the county" : ""}`;
     if (button.getAttribute("aria-label") !== label) {
       button.setAttribute("aria-label", label);
       // Accessible names remain available without visible building labels.
@@ -992,7 +1125,7 @@ function showPreview(cell: Cell) {
     : undefined;
   const service =
     !kind && !hovered
-      ? serviceLocations(state).find((s) =>
+      ? villageServices().find((s) =>
           footprint(s, s.width, s.height).some(
             (c) => cellKey(c) === cellKey(cell),
           ),
@@ -1026,13 +1159,7 @@ function showPreview(cell: Cell) {
         (_, i) => state.plotIds[i] !== movingPlotId,
       ),
     };
-  const fits = canPlace(
-      layout,
-      cell,
-      item.width,
-      item.height,
-      state.farmPolicy,
-    ),
+  const fits = canPlace(layout, cell, item.width, item.height, rules().policy),
     pos = projectCell(anchor);
   preview.hidden = false;
   preview.dataset.valid = String(!kind || fits);
@@ -1087,6 +1214,15 @@ document.querySelector("#move-building")!.addEventListener("click", () => {
 document
   .querySelector("#work")!
   .addEventListener("click", () => void act({ type: "work" }));
+for (const [id, type] of [
+  ["#buy-water", "buyWater"],
+  ["#sell-water", "sellWater"],
+  ["#lock-price", "lockPrice"],
+  ["#file-permit", "filePermit"],
+] as const)
+  document
+    .querySelector(id)!
+    .addEventListener("click", () => void act({ type }));
 
 document
   .querySelector("#expand")!
@@ -1103,9 +1239,15 @@ let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
 function render() {
   if (activeService) updateServiceDetails(activeService);
   if (!cropUnlocked(state, selected)) selected = "turnip";
+  const owed = state.owed ?? 0;
   document.querySelector("#season")!.innerHTML =
-    `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span></span>`;
-  scene.setState(state);
+    `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins${owed ? ` · ${owed.toLocaleString()} coins owed` : ""}</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span>${owed ? `<span id="owed">Owed ${owed.toLocaleString()}</span>` : ""}</span>`;
+  const { turn, policy } = rules();
+  // The scene draws the farm under the rules in force, the council's included.
+  scene.setState({ ...state, farmPolicy: policy });
+  const waiting = pendingCrisis(state) !== undefined;
+  councilMeeting.hidden = councilWait.hidden = !waiting;
+  crisisDialog.refresh();
   const placing = Boolean(
     buildMode || movingId !== null || movingPlotId !== null || pickingPlot,
   );
@@ -1113,10 +1255,11 @@ function render() {
   document.querySelector<HTMLElement>("#placement-hint")!.hidden = !placing;
   document.querySelector("#seed-selection")!.innerHTML =
     `${icon(selected)}<span>${crops[selected].name}</span>`;
-  const turn = turnNumber(state),
-    policy = state.farmPolicy ?? {};
-  document.querySelector<HTMLButtonElement>("#next-season")!.disabled =
-    turn === 160;
+  const nextSeason = document.querySelector<HTMLButtonElement>("#next-season")!;
+  nextSeason.disabled = turn === 160 || waiting;
+  // Described by the council's note only while that note is true.
+  if (waiting) nextSeason.setAttribute("aria-describedby", "council-wait");
+  else nextSeason.removeAttribute("aria-describedby");
   document.querySelector("#frost-warning")!.textContent =
     state.season === "fall"
       ? `Winter is next. Harvest now: all ${state.plots.filter(Boolean).length} field crops will die, including ripe crops. Trees survive.`
@@ -1124,20 +1267,26 @@ function render() {
   document.querySelector("#next-season")!.textContent =
     turn === 160 ? "Final season · 160/160" : `End turn · ${turn}/160`;
   document.querySelector("#progression")!.innerHTML =
-    `<span>${icon("expand")}${state.plots.length} plots</span><span>${icon("harvest")}${totalHarvests(state)} harvests</span><span>${icon("coin")}+${policyProduction(seasonalIncome(state), policy)} / season</span>`;
+    `<span>${icon("expand")}${state.plots.length} plots</span><span>${icon("harvest")}${totalHarvests(state)} harvests</span><span>${icon("coin")}+${policyProduction(seasonalIncome(state, policy), policy)} / season</span>`;
   const ready = state.plots.filter(
-    (p) => p && p.growth >= crops[p.crop].steps,
+    (p) => p && !p.withered && p.growth >= crops[p.crop].steps,
   ).length;
   const growing = state.plots.filter(
-    (p) => p && p.growth < crops[p.crop].steps,
+    (p) => p && !p.withered && p.growth < crops[p.crop].steps,
   ).length;
+  const withered = state.plots.filter((p) => p?.withered).length;
   const planting = (Object.keys(crops) as CropId[])
-    .filter((id) => cropUnlocked(state, id) && canPlant(id, turn))
+    .filter(
+      (id) =>
+        cropUnlocked(state, id) &&
+        canPlant(id, turn) &&
+        !policy.recoveringCrops?.includes(id),
+    )
     .map((id) => crops[id].name.toLowerCase());
   seasonGuide.textContent =
     turn === 160
       ? `Final winter · ${ready} ready to harvest`
-      : `${ready} ready · ${growing} growing · ${planting.length ? `Plant ${planting.join(" or ")}` : state.season === "winter" ? "Winter · no planting" : "No planting this season"}`;
+      : `${ready} ready · ${growing} growing${withered ? ` · ${withered} withered` : ""} · ${planting.length ? `Plant ${planting.join(" or ")}` : state.season === "winter" ? "Winter · no planting" : "No planting this season"}`;
   nextOpportunity.textContent =
     turn === 160
       ? ""
@@ -1161,27 +1310,38 @@ function render() {
   )) {
     const kind = button.dataset.build as BuildingKind | "plot";
     if (kind === "plot") {
-      button.textContent = `Crop plot · 1×1 · ${policyCost(expansionCost(state), state.farmPolicy)} coins`;
+      button.textContent = `Crop plot · 1×1 · ${policyCost(expansionCost(state), policy)} coins`;
       button.disabled =
+        waiting ||
         state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
         state.coins < policyCost(expansionCost(state), policy);
       continue;
     }
     const item = buildings[kind],
       count = state.structures.filter((s) => s.kind === kind).length;
-    const available = canBuild(state, kind),
+    const available =
+        canBuild(state, kind) ||
+        policy.unlockedBuildings?.includes(kind) === true,
       cost = policyCost(constructionCost(state, kind), policy),
-      limit = policy.buildingLimits?.[kind];
+      limit = policy.buildingLimits?.[kind],
+      delay = isTree(kind) ? 0 : (policy.buildDelay ?? 0);
     const payback =
       kind === "market"
         ? ` · ${policyProduction(item.income, policy) > 0 ? Math.ceil(cost / policyProduction(item.income, policy)) : "No"} seasons to repay · ${160 - turn} seasons left`
         : "";
-    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${!available ? (opportunities[kind as Opportunity]?.need ?? "Complete your farmhouse") : `${count} built`} · ${item.benefit} · ready next season${payback}`;
+    // Why the council's rules stop this plan, stated on the plan itself.
+    const rule = policy.blockedBuildings?.includes(kind)
+      ? "Not allowed by the council"
+      : limit !== undefined && count >= limit
+        ? "No more allowed by the council"
+        : "";
+    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${!available ? (opportunities[kind as Opportunity]?.need ?? "Complete your farmhouse") : `${count} built`} · ${item.benefit} · ${readyIn(delay)}${payback}${rule ? ` · ${rule}` : ""}`;
     button.setAttribute("aria-label", label);
     button.title = label;
-    button.innerHTML = `${planIcon(kind)}<span class="plan-copy"><strong>${item.name}</strong><small>${item.benefit}</small><small>${item.width} × ${item.height} · ${count} built · Next season${payback}</small></span><span class="tool-price">${icon("coin")}${cost.toLocaleString()}</span>`;
+    button.innerHTML = `${planIcon(kind)}<span class="plan-copy"><strong>${item.name}</strong><small>${item.benefit}</small><small>${item.width} × ${item.height} · ${count} built · ${delay ? `In ${delay + 1} seasons` : "Next season"}${payback}</small>${rule ? `<small class="plan-rule">${rule}</small>` : ""}</span><span class="tool-price">${icon("coin")}${cost.toLocaleString()}</span>`;
     button.hidden = !available || (kind === "home" && count > 0);
     button.disabled =
+      waiting ||
       turn === 160 ||
       !available ||
       state.coins < cost ||
@@ -1227,6 +1387,8 @@ function render() {
     !inspected;
   upgrade.hidden = !inspected || buildings[inspected.kind].levels === 1;
   move.hidden = !inspected;
+  move.disabled = waiting;
+  document.querySelector<HTMLButtonElement>("#move-plot")!.disabled = waiting;
   if (!inspected)
     document.querySelector("#selected-building")!.textContent = orchard
       ? "Select a planted tree to improve its care or transplant it."
@@ -1249,23 +1411,27 @@ function render() {
         ? ` Upgrade repays in ${policyProduction(item.income, policy) > 0 ? Math.ceil(cost / policyProduction(item.income, policy)) : "no"} seasons; ${160 - turn} seasons remain.`
         : "";
     document.querySelector("#selected-building")!.textContent =
-      `${item.name} · Level ${inspected.level}/${item.levels}. ${item.benefit}. ${inspected.pendingConstruction ? "Ready next season." : inspected.pendingUpgrade ? `Level ${inspected.level + 1} next season.` : !remaining && inspected.level < item.levels ? "Ready to upgrade." : ""}${returnHint}`;
+      `${item.name} · Level ${inspected.level}/${item.levels}. ${item.benefit}. ${policy.sealedBuildings?.includes(inspected.kind) ? "Sealed by the council: no benefits. " : ""}${inspected.pendingConstruction ? `${readyIn(inspected.wait).replace("r", "R")}.` : inspected.pendingUpgrade ? `Level ${inspected.level + 1} ${inspected.wait ? `in ${inspected.wait + 1} seasons` : "next season"}.` : !remaining && inspected.level < item.levels ? "Ready to upgrade." : ""}${returnHint}`;
     upgrade.textContent = inspected.pendingConstruction
       ? isTree(inspected.kind)
         ? "Growing · ready next season"
-        : "⚒ Ready next season"
+        : `⚒ ${readyIn(inspected.wait).replace("r", "R")}`
       : inspected.pendingUpgrade
-        ? "⚒ Upgrade underway · ready next season"
+        ? `⚒ Upgrade underway · ${readyIn(inspected.wait)}`
         : inspected.level === item.levels
           ? "Fully upgraded"
-          : `${isTree(inspected.kind) ? "Improve tree care" : "Upgrade"} · ${cost} coins${remaining ? ` · Harvest ${remaining} more ${inspected.kind === "mill" ? "corn crops" : "crops"}` : ""}`;
+          : policy.frozenUpgrades
+            ? "Upgrades are frozen by the council"
+            : `${isTree(inspected.kind) ? "Improve tree care" : "Upgrade"} · ${cost} coins${remaining ? ` · Harvest ${remaining} more ${inspected.kind === "mill" ? "corn crops" : "crops"}` : ""}`;
     upgrade.disabled =
+      waiting ||
       !!inspected.pendingConstruction ||
       !!inspected.pendingUpgrade ||
       turn === 160 ||
       inspected.level === item.levels ||
       remaining > 0 ||
       state.coins < cost ||
+      policy.frozenUpgrades === true ||
       policy.blockedBuildings?.includes(inspected.kind) === true;
   }
 
@@ -1275,36 +1441,56 @@ function render() {
   )
     ? ""
     : "Eli is looking for a grower. Harvest a turnip and a carrot to hear his offer.";
+  // Premium seed is on offer only while a council rule allows it.
+  const offer = policy.premiumSeed;
+  if (!offer) premium = false;
+  premiumToggle.hidden = !offer;
+  premiumChoice.checked = premium;
+  premiumTerms.textContent = offer
+    ? `Seed costs ${Math.round((offer.seed - 1) * 100)}% more · yields ${Math.round((offer.yield - 1) * 100)}% more · 1 planting in ${offer.failOneIn} fails`
+    : "";
   for (const button of cropOptions.querySelectorAll<HTMLButtonElement>(
     "button",
   )) {
     const id = button.dataset.crop as CropId;
     button.setAttribute("aria-pressed", String(id === selected));
     const crop = crops[id];
-    const seasons = growthSeasons(state, id);
+    const seasons = growthSeasons(state, id, policy);
+    const quote = plantQuote(state, id, policy, turn, premium),
+      sale = saleQuote(state, id, policy, turn);
+    const price = quote.seed + quote.fee;
+    // The council's rules this planting breaks and the fine it costs, or why it is refused.
+    const rule =
+      quote.blocked ??
+      (quote.reasons.length
+        ? `${quote.reasons.map(sentence).join(" ")}${quote.fine ? ` Planting anyway costs a ${quote.fine}-coin fine.` : ""}`
+        : rotationRule(id, policy, turn, premium));
+    const earns = sale.overQuota
+      ? "0 coins over this season's sales limit"
+      : `${sale.value} coins${sale.tax ? ` after ${sale.tax} to the relief fund` : ""}${sale.held ? ", paid next season" : ""}`;
     const detail = !cropUnlocked(state, id)
       ? `${crop.name}: ${opportunities.corn.need}. Eli can find you seeds.`
-      : `${crop.name}: ${policyCost(seedCost(state, id), policy)} coins to plant, ${seasons} season${seasons === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")}, harvest ${policyProduction(harvestValue(state, id), policy)} coins. Harvest before winter frost.`;
+      : `${crop.name}: ${price} coins to plant${quote.fee ? ` including a ${quote.fee}-coin fee` : ""}, ${seasons} season${seasons === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")}, harvest ${earns}.${crop.thirsty ? " Thirsty." : ""}${rule ? ` ${rule}` : ""} Harvest before winter frost.`;
 
-    button.querySelector(".seed-price")!.innerHTML =
-      `${icon("coin")}${policyCost(seedCost(state, id), policy)}`;
-    button.disabled = !cropUnlocked(state, id) || !canPlant(id, turn);
+    button.querySelector(".seed-price")!.innerHTML = `${icon("coin")}${price}`;
+    button.disabled =
+      waiting ||
+      !cropUnlocked(state, id) ||
+      !canPlant(id, turn) ||
+      !!quote.blocked;
     button.setAttribute("aria-label", detail);
     button.querySelector(".control-detail")!.innerHTML = !cropUnlocked(
       state,
       id,
     )
       ? `<span>${opportunities.corn.need}</span>`
-      : `<span>${icon("grow")}${seasons} season${seasons === 1 ? "" : "s"} to grow</span><span>${icon("harvest")}${policyProduction(harvestValue(state, id), policy)} coins</span><span class="planting-seasons" aria-label="Plant in ${crop.plantingSeasons.join(" or ")}">${crop.plantingSeasons.map((s) => `<span title="${s}">${icon(s === "summer" ? "sun" : (s as "spring" | "fall"))}</span>`).join("")}</span>`;
+      : `<span>${icon("grow")}${seasons} season${seasons === 1 ? "" : "s"} to grow</span><span>${icon("harvest")}${earns}</span>${crop.thirsty ? '<span class="crop-tag thirsty">Thirsty</span>' : ""}<span class="planting-seasons" aria-label="Plant in ${crop.plantingSeasons.join(" or ")}">${crop.plantingSeasons.map((s) => `<span title="${s}">${icon(s === "summer" ? "sun" : (s as "spring" | "fall"))}</span>`).join("")}</span>${rule ? `<span class="crop-rule">${rule}</span>` : ""}`;
   }
-  document.querySelector<HTMLButtonElement>("#work")!.hidden =
-    policy.allowWork === false ||
-    state.coins >=
-      (state.plots.length
-        ? Math.max(1, policyCost(seedCost(state, "turnip"), policy))
-        : policyCost(expansionCost(state), policy) +
-          Math.max(1, policyCost(seedCost(state, "turnip"), policy))) ||
-    state.plots.some(Boolean);
+  renderCouncil(turn, waiting);
+  // Delivery work shows exactly when the farm rules allow it.
+  const work = document.querySelector<HTMLButtonElement>("#work")!;
+  work.hidden = !canWork(state, policy, turn);
+  work.disabled = waiting;
   const expand = document.querySelector<HTMLButtonElement>("#expand")!;
   const expandLabel =
     state.plots.length === WORLD_CELLS
@@ -1314,6 +1500,7 @@ function render() {
   expand.title = expandLabel;
   expand.innerHTML = `${icon("expand")}<span>Expand</span><span class="tool-price" aria-hidden="true">${state.plots.length === WORLD_CELLS ? "✓" : `${icon("coin")}${policyCost(expansionCost(state), policy)}`}</span>`;
   expand.disabled =
+    waiting ||
     state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
     state.coins < policyCost(expansionCost(state), policy);
   const improve = document.querySelector<HTMLButtonElement>("#improve")!;
@@ -1325,6 +1512,7 @@ function render() {
   const soilOffer = `soil${state.soilLevel + 1}` as Opportunity;
   const soilAvailable = state.soilLevel < 3 && hasOpportunity(state, soilOffer);
   improve.disabled =
+    waiting ||
     !!state.pendingSoilUpgrade ||
     turn === 160 ||
     !soilAvailable ||
@@ -1350,6 +1538,89 @@ function render() {
     `${state.plots.length} plots · ${ready} ready to harvest · Soil level ${state.soilLevel}/3`;
   document.querySelector("#farm-stats")!.innerHTML =
     `<span title="${state.plots.length} plots">${icon("expand")}${state.plots.length}</span><span title="${ready} ready to harvest">${icon("harvest")}${ready}</span><span title="Soil level ${state.soilLevel}/3">${icon("improve")}<span class="soil-meter">${[1, 2, 3].map((level) => `<i class="${level <= state.soilLevel ? "filled" : ""}"></i>`).join("")}</span></span>`;
+}
+/**
+ * Crop rotation in the seed basket: the empty plots where this crop grew last, and what
+ * planting it there costs. The council's assigned crop is exempt.
+ */
+function rotationRule(
+  crop: CropId,
+  policy: FarmPolicy,
+  turn: number,
+  premium: boolean,
+) {
+  if (!policy.rotation || policy.assignedCrops?.includes(crop)) return "";
+  const plots = state.plots.flatMap((plot, i) =>
+    !plot && state.lastCrops?.[String(state.plotIds[i])] === crop ? [i] : [],
+  );
+  if (!plots.length) return "";
+  const there = plantQuote(state, crop, policy, turn, premium, plots[0]);
+  return `${crops[crop].name} grew last in ${plots.length} empty plot${plots.length === 1 ? "" : "s"}. ${there.blocked ? "It cannot be planted there." : `Planting it there costs a ${there.fine}-coin fine.`}`;
+}
+/** The farmhouse's council rules and trades, and the council office's permit desk. */
+function renderCouncil(turn: number, waiting: boolean) {
+  const council = councilFacts(state, rules());
+  councilSection.hidden =
+    !state.crises?.length &&
+    !council.facts.length &&
+    !council.water &&
+    !council.lock;
+  document.querySelector("#council-facts")!.replaceChildren(
+    ...council.facts.map((fact) => {
+      const item = document.createElement("li");
+      item.textContent = fact;
+      return item;
+    }),
+  );
+  const standingRules =
+    document.querySelector<HTMLElement>("#council-standing")!;
+  standingRules.hidden = !council.standing.length;
+  standingRules.replaceChildren(
+    ...council.standing.map((rule) => {
+      const item = document.createElement("li");
+      item.append(
+        Object.assign(document.createElement("strong"), {
+          textContent: `${rule.policy}:`,
+        }),
+        ` ${rule.text}`,
+      );
+      return item;
+    }),
+  );
+  const buy = document.querySelector<HTMLButtonElement>("#buy-water")!,
+    sell = document.querySelector<HTMLButtonElement>("#sell-water")!,
+    lock = document.querySelector<HTMLButtonElement>("#lock-price")!;
+  // Bought water reaches the crops growing now; one sale gives up the season's water.
+  const water = council.water;
+  buy.hidden = !water || (water.covered && water.traded !== "bought");
+  sell.hidden = !water;
+  if (water) {
+    buy.textContent =
+      water.traded === "bought" && !water.unwatered
+        ? "Water bought this season"
+        : `Buy water · ${water.buy} coins`;
+    sell.textContent =
+      water.traded === "sold"
+        ? "Water rights sold this season"
+        : `Sell water rights · +${water.sell}`;
+    buy.disabled =
+      waiting ||
+      water.traded === "sold" ||
+      !water.unwatered ||
+      state.coins < water.buy;
+    sell.disabled = waiting || !!water.traded || !water.thirsty;
+  }
+  lock.hidden = !council.lock;
+  lock.textContent = council.lock?.label ?? "";
+  lock.disabled = waiting;
+  const permits = state.permits ?? [];
+  document.querySelector("#permit-status")!.textContent =
+    `This season: ${permits.includes(turn) ? "permit granted" : "no permit"}. Next season: ${permits.includes(turn + 1) ? "permit filed" : "not filed yet"}.`;
+  const file = document.querySelector<HTMLButtonElement>("#file-permit")!;
+  file.disabled = waiting || turn === 160 || permits.includes(turn + 1);
+  file.textContent = permits.includes(turn + 1)
+    ? "Next season's permit is filed"
+    : "File next season's permit · free";
 }
 async function apply(
   next: typeof state,

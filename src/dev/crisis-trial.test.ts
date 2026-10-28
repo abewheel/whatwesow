@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
-import content from "../../crisis-layer/content.json";
-import { engine, speakerFor, speakerLabel } from "./crisis-trial";
-import { portraitIds, portraitRows } from "./crisis-portraits";
+import { content, engine } from "../crisis/engine";
+import { speakerFor, speakerLabel } from "../crisis/view";
+import { portraitIds, portraitRows } from "../crisis/portraits";
 
 const personas = content.personas.map((p) => p.id);
 const hideIdentity = (text: string) =>

@@ -25,6 +25,13 @@ export const serviceMenus = {
       "Choose a plan to commission a building, or select one of your buildings to upgrade its facilities or move it.",
     container: "builder-actions",
   },
+  // Shown on the farm only while the council requires planting permits.
+  council: {
+    name: "Council office",
+    description:
+      "File a planting permit for next season. Filing is free; planting without a permit breaks the council's rules.",
+    container: "council-office",
+  },
 } as const;
 export type ServiceId = keyof typeof serviceMenus;
 export { isTree };

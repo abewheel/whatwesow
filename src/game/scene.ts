@@ -14,12 +14,23 @@ import {
   treeFrame,
   treeStage,
 } from "./tree-sprites";
-import { cropFrames, seasonalCropFrames, cropArtwork } from "./crop-sprites";
+import {
+  cropFrames,
+  seasonalCropFrames,
+  cropArtwork,
+  cropCondition,
+} from "./crop-sprites";
 import { project, footprint as renderFootprint, TILE_WIDTH } from "./layout";
 import Phaser from "phaser";
 import { drawBoundary } from "./boundary";
 import { borderDetailRect } from "./border-artwork";
-import { GroundLayer } from "./terrain";
+import {
+  GroundLayer,
+  drawReservoir,
+  groundTint,
+  shoreSides,
+  takenCell,
+} from "./terrain";
 import { Farmer, farmerRowBounds } from "./farmer";
 import { farmerDepth, type BuildingOccluder } from "./farmer-depth";
 import { farmerTaskForAction } from "./farmer-task";
@@ -29,8 +40,8 @@ import { initialMicroState, type MicroState } from "../micro/state";
 import {
   buildings,
   serviceLocations,
+  councilOffice,
   isTree,
-  cellAllowed,
   cellKey,
   WORLD_SIZE,
   type Cell,
@@ -51,6 +62,8 @@ export type PlotTarget = Cell & {
   width: number;
   height: number;
 };
+// Sealed buildings stand faded and grey.
+const sealedLook = { alpha: 0.6, tint: 0x9a9a9a };
 const palette = {
   spring: { grass: 0x7ea75a, light: 0xa5c66d, shade: 0x648b46, soil: 0x9c663d },
   summer: { grass: 0x7b9e45, light: 0xb0c66b, shade: 0x587c3b, soil: 0x996139 },
@@ -397,6 +410,8 @@ export class FarmScene extends Phaser.Scene {
     );
     const plotMap = new Map(this.farm.plotCells.map((c, i) => [cellKey(c), i]));
     const targets: PlotTarget[] = [];
+    // Crisis marks drawn this frame, published below for development checks.
+    const marks = { dry: 0, withered: 0, taken: 0, sealed: 0, council: "" };
     for (let sum = 0; sum < WORLD_SIZE * 2; sum++)
       for (let row = 0; row < WORLD_SIZE; row++) {
         const col = sum - row;
@@ -410,24 +425,42 @@ export class FarmScene extends Phaser.Scene {
           { row, col },
           { x, y },
           index === undefined ? "grass" : "soil",
-          cellAllowed({ row, col }, this.policy) ? undefined : 0x879777,
+          groundTint({ row, col }, this.policy),
         );
+        // Land given up for the county's reservoir lies under water.
+        if (takenCell({ row, col }, this.policy)) {
+          marks.taken++;
+          drawReservoir(
+            g,
+            { row, col },
+            { x, y },
+            this.season,
+            shoreSides({ row, col }, this.policy),
+          );
+        }
         if (index === undefined) continue;
         const plot = this.farm.plots[index];
         if (!plot) continue;
-        const art = cropArtwork(plot.crop, plot.growth);
+        const art = cropArtwork(plot.crop, plot.growth),
+          look = cropCondition(plot);
+        if (plot.withered) marks.withered++;
+        else if (plot.dry) marks.dry++;
         for (const [offset, depth] of [
           [-14, -2],
           [0, -7],
           [14, 3],
         ]) {
-          scenery.add(
-            this.add
-              .image(x + offset, y + depth, art.texture, art.frame)
-              .setOrigin(0.5, 0.95)
-              .setScale(art.scale)
-              .setDepth(y + depth),
-          );
+          const image = this.add
+            .image(x + offset, y + depth, art.texture, art.frame)
+            .setOrigin(0.5, 0.95)
+            .setScale(art.scale * look.scale)
+            .setDepth(y + depth);
+          if (look.tint !== undefined)
+            image
+              .setTint(look.tint)
+              .setTint2(look.shade)
+              .setTintMode(Phaser.TintModes.MULTIPLY_TWO);
+          scenery.add(image);
         }
       }
     // Phaser sorts by the depth below; equal depths retain placement order,
@@ -436,17 +469,23 @@ export class FarmScene extends Phaser.Scene {
       const item = buildings[s.kind];
       const location = projectCell(s);
       if (!visible(location.x, location.y)) continue;
+      // Sealed kinds give no benefits.
+      const sealed = !!this.policy?.sealedBuildings?.includes(s.kind);
+      if (sealed) marks.sealed++;
       if (isTree(s.kind)) {
         const { x, y } = location;
         const kind = s.kind as "apple" | "oak";
         const stage = treeStage(s);
-        const tree = this.add.container(x, y).setDepth(y);
-        tree.add(
-          this.add
-            .image(0, 0, `tree-${kind}`, treeFrame(s, this.season))
-            .setOrigin(0.5, 1)
-            .setScale([0.13, 0.17, 0.18][stage]),
-        );
+        const tree = this.add
+          .container(x, y)
+          .setDepth(y)
+          .setAlpha(sealed ? sealedLook.alpha : 1);
+        const crown = this.add
+          .image(0, 0, `tree-${kind}`, treeFrame(s, this.season))
+          .setOrigin(0.5, 1)
+          .setScale([0.13, 0.17, 0.18][stage]);
+        if (sealed) crown.setTint(sealedLook.tint);
+        tree.add(crown);
         if (s.product)
           for (const [dx, dy] of productPositions[kind])
             tree.add(
@@ -498,23 +537,50 @@ export class FarmScene extends Phaser.Scene {
             : atlas,
         distinctFrame ?? frame,
       );
-      scenery.add(
-        this.add
-          .image(
-            top.x,
-            top.y,
-            distinctFrame !== undefined
-              ? "distinct-buildings"
-              : stateAtlas
-                ? "farm-states"
-                : atlas,
-            distinctFrame ?? frame,
-          )
-          .setOrigin(0, 0)
-          .setDisplaySize(art.size, art.size)
-          .setAlpha(working && distinctFrame !== undefined ? 0.72 : 1)
-          .setDepth(front.y),
-      );
+      const building = this.add
+        .image(
+          top.x,
+          top.y,
+          distinctFrame !== undefined
+            ? "distinct-buildings"
+            : stateAtlas
+              ? "farm-states"
+              : atlas,
+          distinctFrame ?? frame,
+        )
+        .setOrigin(0, 0)
+        .setDisplaySize(art.size, art.size)
+        .setAlpha(
+          sealed
+            ? sealedLook.alpha
+            : working && distinctFrame !== undefined
+              ? 0.72
+              : 1,
+        )
+        .setDepth(front.y);
+      scenery.add(building);
+      if (sealed) {
+        building.setTint(sealedLook.tint);
+        // Crossed planks show the seal without relying on colour.
+        const middle = projectCell({
+          row: s.row + (item.height - 1) / 2,
+          col: s.col + (item.width - 1) / 2,
+        });
+        const x = middle.x,
+          y = middle.y - art.size * 0.2,
+          w = art.size * 0.2,
+          h = art.size * 0.1;
+        const planks = this.add.graphics().setDepth(front.y + 1);
+        for (const [width, color] of [
+          [7, 0x493621],
+          [4, 0x9b6a3c],
+        ])
+          planks
+            .lineStyle(width, color)
+            .lineBetween(x - w, y - h, x + w, y + h)
+            .lineBetween(x - w, y + h, x + w, y - h);
+        scenery.add(planks);
+      }
       if (working && distinctFrame !== undefined) {
         const scaffold = this.add.graphics().setDepth(front.y + 1);
         // Timber rails across the two front faces keep pending work visible without labels.
@@ -543,7 +609,9 @@ export class FarmScene extends Phaser.Scene {
         scenery.add(scaffold);
       }
     }
-    for (const service of serviceLocations(this.farm)) {
+    for (const service of serviceLocations(this.farm, {
+      council: this.policy?.permitsRequired === true,
+    })) {
       const point = projectCell(service);
       if (publishLayout && service.row < 0)
         targets.push({
@@ -554,6 +622,11 @@ export class FarmScene extends Phaser.Scene {
           height: 32,
         });
       if (!visible(point.x, point.y)) continue;
+      if (service.id === "council") {
+        marks.council = cellKey(service);
+        this.drawCouncilOffice(service, point);
+        continue;
+      }
       if (service.tent) {
         const tent = this.add.graphics().setDepth(point.y + 24);
         tent.fillStyle(0x59452f).fillEllipse(point.x, point.y + 18, 105, 34);
@@ -635,6 +708,84 @@ export class FarmScene extends Phaser.Scene {
       );
     }
     this.groundArt!.finish();
+    // Readable development evidence of crisis marks, like the farmer's data attributes.
+    if (import.meta.env.DEV) {
+      const data = this.game.canvas.dataset;
+      data.sceneDry = String(marks.dry);
+      data.sceneWithered = String(marks.withered);
+      data.sceneTaken = String(marks.taken);
+      data.sceneSealed = String(marks.sealed);
+      data.sceneCouncil = marks.council;
+    }
     if (publishLayout) this.onLayout?.(targets);
+  }
+  /** Placeholder civic office with its own silhouette: hipped slate roof, flag and notice board. */
+  private drawCouncilOffice(lot: Cell, point: { x: number; y: number }) {
+    const scenery = this.scenery!;
+    // Centre of the 2 × 2 lot; the front corner sets depth like other services.
+    const cx = point.x,
+      cy = point.y + 16,
+      front = projectCell({ row: lot.row + 1.5, col: lot.col + 1.5 });
+    // Flat x, y lists relative to the lot centre.
+    const points = (flat: number[]) =>
+      Array.from(
+        { length: flat.length / 2 },
+        (_, i) =>
+          new Phaser.Math.Vector2(cx + flat[i * 2], cy + flat[i * 2 + 1]),
+      );
+    const shadow = this.add.graphics().setDepth(-1);
+    shadow
+      .fillStyle(0x3b3424, this.season === "winter" ? 0.24 : 0.2)
+      .fillPoints(points([-30, 4, 10, -16, 52, 4, 12, 24]), true);
+    scenery.add(shadow);
+    const office = this.add.graphics().setDepth(front.y);
+    const shape = (color: number, ...flat: number[]) =>
+      office
+        .fillStyle(color)
+        .fillPoints(points(flat), true)
+        .lineStyle(2, 0x493621)
+        .strokePoints(points(flat), true);
+    const snow = this.season === "winter";
+    // Cream walls on a darker stone plinth; the lit face looks down-left.
+    shape(0xf1dfb3, -34, 0, 0, 17, 0, -11, -34, -28);
+    shape(0xcfb68a, 0, 17, 34, 0, 34, -28, 0, -11);
+    shape(0xa59a83, -34, 0, 0, 17, 0, 13, -34, -4);
+    shape(0x8c826e, 0, 17, 34, 0, 34, -4, 0, 13);
+    // Green door under a small pediment, and two windows on the shaded face.
+    shape(0x4e8547, -22, 6, -12, 11, -12, -5, -22, -10);
+    shape(0xfff0ca, -25, -11, -9, -3, -17, -15);
+    shape(0x68aeb9, 6, 4, 14, 0, 14, -9, 6, -5);
+    shape(0x68aeb9, 20, -3, 28, -7, 28, -16, 20, -12);
+    // A low hipped roof in slate, unlike the farm's terracotta.
+    shape(snow ? 0xe9f0ec : 0x7f939b, -39, -28, 0, -8, 0, -52);
+    shape(snow ? 0xc4d2cf : 0x5d6f78, 0, -8, 39, -28, 0, -52);
+    // A flag on the ridge and a notice board beside the front-left corner.
+    office.lineStyle(3, 0x5c4630).lineBetween(cx, cy - 52, cx, cy - 82);
+    shape(0xc6653c, 1, -81, 19, -78, 19, -68, 1, -71);
+    office.lineStyle(3, 0x68472c);
+    for (const x of [-44, -32])
+      office.lineBetween(cx + x, cy + 10, cx + x, cy - 6);
+    shape(0x805331, -48, -16, -28, -16, -28, -2, -48, -2);
+    shape(0xfff0ca, -45, -13, -39, -13, -39, -5, -45, -5);
+    shape(0xfff0ca, -37, -13, -31, -13, -31, -6, -37, -6);
+    scenery.add(office);
+    this.buildingOccluders.push({
+      x: cx - 48,
+      y: cy - 84,
+      size: 100,
+      front,
+    });
+    scenery.add(
+      this.add
+        .text(cx, cy + 22, councilOffice.name, {
+          fontFamily: "Farm Pixel",
+          fontSize: "14px",
+          color: "#493621",
+          backgroundColor: "#fff0ca",
+          padding: { x: 7, y: 4 },
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(WORLD_HEIGHT + cy),
+    );
   }
 }

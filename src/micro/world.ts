@@ -123,6 +123,8 @@ export type Structure = Cell & {
   harvestsAtLevel?: number;
   pendingUpgrade?: true;
   pendingConstruction?: true;
+  /** Seasons of permit delay left before pending work can complete. */
+  wait?: number;
   fruitReady?: boolean;
   age?: number;
   product?: boolean;
@@ -166,6 +168,24 @@ export const services = [
     frame: 4,
   },
 ] as const;
+// West of the seed shop; shown only while planting permits are required.
+export const councilOffice = {
+  id: "council",
+  name: "Council office",
+  row: 7,
+  col: 9,
+  width: 2,
+  height: 2,
+  frame: 0,
+} as const;
+const allServices = [...services, councilOffice];
+type Service = (typeof allServices)[number];
+export type ServiceLocation<S extends Service = Service> = Omit<
+  S,
+  "name" | "row" | "col"
+> &
+  Cell & { name: string; tent: boolean };
+export type ServiceOptions = { council?: boolean };
 export type Layout = {
   selfBuilt?: true;
   plotCells: Cell[];
@@ -181,7 +201,17 @@ export function constructionCost(layout: Layout, kind: BuildingKind) {
   );
 }
 /** Keep village lots clear of existing farms when loading an older layout. */
-export function serviceLocations(layout: Layout) {
+export function serviceLocations(
+  layout: Layout,
+): ServiceLocation<(typeof services)[number]>[];
+export function serviceLocations(
+  layout: Layout,
+  options: ServiceOptions,
+): ServiceLocation[];
+export function serviceLocations(
+  layout: Layout,
+  options: ServiceOptions = {},
+): ServiceLocation[] {
   const used = new Set(
     [
       ...layout.plotCells,
@@ -193,12 +223,19 @@ export function serviceLocations(layout: Layout) {
   const settled = layout.structures.some(
     (s) => s.kind === "home" && !s.pendingConstruction,
   );
-  return services
-    .filter((s) => !layout.selfBuilt || (!settled && s.id === "home"))
+  return allServices
+    .filter((s) => s.id !== "council" || options.council)
+    .filter(
+      (s) =>
+        s.id === "council" ||
+        !layout.selfBuilt ||
+        (!settled && s.id === "home"),
+    )
     .filter((service) => service.id !== "home" || !settled)
     .map((service) => {
+      const tent = service.id === "home" && !!layout.selfBuilt && !settled;
       const candidates = [
-        ...(!settled && layout.selfBuilt ? [{ row: 11, col: 14 }] : []),
+        ...(tent ? [{ row: 11, col: 14 }] : []),
         service,
         ...Array.from({ length: WORLD_SIZE * WORLD_SIZE }, (_, i) => ({
           row: Math.floor(i / WORLD_SIZE),
@@ -211,15 +248,15 @@ export function serviceLocations(layout: Layout) {
         ),
       ) ?? {
         row: -2,
-        col: 9 + services.findIndex((s) => s.id === service.id) * 5,
+        col: 9 + allServices.findIndex((s) => s.id === service.id) * 5,
       };
       for (const p of footprint(cell, service.width, service.height))
         used.add(cellKey(p));
       return {
         ...service,
         ...cell,
-        name: layout.selfBuilt && !settled ? "Your tent" : service.name,
-        tent: !!layout.selfBuilt && !settled,
+        name: tent ? "Your tent" : service.name,
+        tent,
       };
     });
 }
@@ -253,10 +290,13 @@ export const inBounds = (cell: Cell) =>
   cell.col >= 0 &&
   cell.row < WORLD_SIZE &&
   cell.col < WORLD_SIZE;
-export function occupiedCells(layout: Layout): Set<string> {
+export function occupiedCells(
+  layout: Layout,
+  options: ServiceOptions = {},
+): Set<string> {
   return new Set(
     [
-      ...serviceLocations(layout).flatMap((s) =>
+      ...serviceLocations(layout, options).flatMap((s) =>
         footprint(s, s.width, s.height),
       ),
       ...layout.plotCells,
@@ -275,7 +315,8 @@ export const cellAllowed = (cell: Cell, policy: FarmPolicy = {}) =>
         cell.col >= r.col &&
         cell.row < r.row + r.height &&
         cell.col < r.col + r.width,
-    ));
+    )) &&
+  !policy.takenCells?.some((c) => c.row === cell.row && c.col === cell.col);
 export const policyCost = (cost: number, policy: FarmPolicy = {}) =>
   Math.ceil(cost * (policy.costMultiplier ?? 1));
 export const policyProduction = (amount: number, policy: FarmPolicy = {}) =>
@@ -287,19 +328,31 @@ export function canPlace(
   height = 1,
   policy: FarmPolicy = {},
 ): boolean {
-  const occupied = occupiedCells(layout);
+  const occupied = occupiedCells(layout, {
+    council: policy.permitsRequired === true,
+  });
   return footprint(cell, width, height).every(
     (c) => cellAllowed(c, policy) && !occupied.has(cellKey(c)),
   );
 }
-export const buildingLevel = (layout: Layout, kind: BuildingKind) =>
-  layout.structures
-    .filter((s) => s.kind === kind && !s.pendingConstruction)
-    .reduce((sum, s) => sum + s.level, 0);
-export const seasonalIncome = (layout: Layout) =>
+/** Effect level of a kind; sealed kinds give no benefits. */
+export const buildingLevel = (
+  layout: Layout,
+  kind: BuildingKind,
+  policy: FarmPolicy = {},
+) =>
+  policy.sealedBuildings?.includes(kind)
+    ? 0
+    : layout.structures
+        .filter((s) => s.kind === kind && !s.pendingConstruction)
+        .reduce((sum, s) => sum + s.level, 0);
+export const seasonalIncome = (layout: Layout, policy: FarmPolicy = {}) =>
   layout.structures.reduce(
     (sum, s) =>
-      sum + (s.pendingConstruction ? 0 : buildings[s.kind].income * s.level),
+      sum +
+      (s.pendingConstruction || policy.sealedBuildings?.includes(s.kind)
+        ? 0
+        : buildings[s.kind].income * s.level),
     0,
   );
 

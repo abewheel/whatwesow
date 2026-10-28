@@ -95,8 +95,8 @@ test("quotes repeated facilities and remaining market payback", async ({
   await page.locator('[data-cell="19,20"]').click();
   await expect(page.locator("#farm-message")).toContainText("−3000 coins");
   await page.locator("#farm-mode").click();
-  await visitBuilding(page, "home");
-  await page.locator("#next-season").click();
+  // Summer brings the first crisis; endTurn answers the council.
+  await endTurn(page);
   await expect(page.locator("#season")).toContainText("summer");
   await visitBuilding(page, "builder");
   await page.locator("#structure-target").selectOption("3");

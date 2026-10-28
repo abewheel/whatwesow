@@ -405,3 +405,122 @@ it("harvests mature fruit each fall, keeps the tree, and never pays automaticall
   expect(unpicked.coins).toBe(964);
   expect(hasRipeFruit(unpicked.structures.at(-1)!)).toBe(true);
 });
+
+describe("crisis records in the save", () => {
+  const drought = { id: "Drought", turn: 6, pick: "D-OBJ" };
+  const atTurn6 = () => ({
+    ...initialState(),
+    year: 2,
+    season: "summer" as const,
+  });
+  it("round trips answered and waiting records", () => {
+    const state = {
+      ...atTurn6(),
+      year: 4,
+      season: "spring" as const,
+      crises: [drought, { id: "Blight", turn: 13, crop: "corn" }],
+    };
+    expect(parseState(JSON.parse(JSON.stringify(state)))).toEqual(state);
+    expect(readDomain(state, "macro")).toEqual({
+      year: 4,
+      season: "spring",
+      crises: state.crises,
+    });
+  });
+  it("loads saves without crisis records unchanged", () => {
+    expect(parseState(initialState())).not.toHaveProperty("crises");
+    expect(
+      parseState({ version: 1, coins: 5, year: 2, season: "summer" }),
+    ).not.toHaveProperty("crises");
+  });
+  it.each([
+    [[{ id: "Blight", turn: 6 }], /run order/],
+    [[{ id: "Drought", turn: 6, pick: "B-OBJ" }], /arguments/],
+    [[{ id: "Drought", turn: 6, pick: "D-NOBODY" }], /arguments/],
+    [[{ id: "Drought", turn: 6, crop: "wheat" }], /farm crop/],
+    [
+      [
+        { id: "Drought", turn: 6 },
+        { id: "Blight", turn: 13, pick: "B-OBJ" },
+      ],
+      /before the next/,
+    ],
+    [
+      [
+        drought,
+        { id: "Blight", turn: 13, pick: "B-OBJ" },
+        { id: "Eminent domain", turn: 17, pick: "E-LIB-P" },
+        { id: "Overproduction", turn: 23, pick: "O-OBJ" },
+      ],
+      /before the next/,
+    ],
+  ])("rejects records %j", (crises, error) =>
+    expect(() => parseState({ ...atTurn6(), year: 12, crises })).toThrow(error),
+  );
+  it("rejects records that fired after the save's season", async () => {
+    const { applyMacroChange } = await import("./state");
+    expect(() =>
+      parseState({ ...atTurn6(), crises: [{ id: "Drought", turn: 7 }] }),
+    ).toThrow("Crisis records cannot be later than the current season.");
+    expect(
+      parseState({ ...atTurn6(), crises: [{ id: "Drought", turn: 6 }] }).crises,
+    ).toHaveLength(1);
+    // Moving the clock back past a record in the macro editor is refused too.
+    const state = { ...atTurn6(), crises: [drought] };
+    expect(() =>
+      applyMacroChange(state, { year: 1, season: "fall", crises: [drought] }),
+    ).toThrow(/later than the current season/);
+  });
+  it("clears omitted records when replacing the macro domain and carries them through policy changes", async () => {
+    const { applyMacroChange } = await import("./state");
+    const state = { ...atTurn6(), crises: [drought] };
+    expect(
+      replaceDomain(state, "macro", { year: 2, season: "summer" }).crises,
+    ).toBeUndefined();
+    expect(
+      replaceDomain(state, "micro", { ...state, crises: [] }).crises,
+    ).toEqual([drought]);
+    expect(applyMacroChange(state, state).state.crises).toEqual([drought]);
+    expect(
+      applyMacroChange(state, { year: 2, season: "summer" }).state.crises,
+    ).toBeUndefined();
+  });
+  it("blocks the season change while the council waits for an answer", async () => {
+    const { advanceSeason } = await import("./state");
+    expect(() =>
+      advanceSeason({ ...atTurn6(), crises: [{ id: "Drought", turn: 6 }] }),
+    ).toThrow("The council is waiting for your answer.");
+    const sold = [
+      drought,
+      { id: "Blight", turn: 13, pick: "B-OBJ", crop: "corn" },
+      { id: "Eminent domain", turn: 17, pick: "E-LIB-P" },
+    ];
+    const pending = { ...atTurn6(), year: 5, crises: sold };
+    expect(() => advanceSeason(pending)).toThrow(/waiting/);
+    sold[2].pick = "E-LIB-P:decline";
+    expect(advanceSeason(pending).state.crises).toEqual(sold);
+  });
+  it("derives the farm rules without writing them into the macro policy", async () => {
+    const { farmContext } = await import("./state");
+    const state = {
+      ...atTurn6(),
+      farmPolicy: { seedMultiplier: 2 },
+      crises: [drought],
+    };
+    expect(farmContext(state)).toEqual({
+      turn: 6,
+      policy: { seedMultiplier: 2, waterTrade: { buy: 12, sell: 6 } },
+      drought: true,
+      water: {
+        bought: [],
+        sold: false,
+        atCost: false,
+        well: false,
+        thirsty: 0,
+        drying: 0,
+        withering: 0,
+      },
+    });
+    expect(state.farmPolicy).toEqual({ seedMultiplier: 2 });
+  });
+});

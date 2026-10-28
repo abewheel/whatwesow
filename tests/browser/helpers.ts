@@ -53,4 +53,17 @@ export async function endTurn(page: Page) {
   const before = await button.textContent();
   await button.click();
   await expect(button).not.toHaveText(before!);
+  await answerCouncil(page);
+}
+/** Answer a council meeting End turn opened: the first argument, and no to any deal. */
+export async function answerCouncil(page: Page) {
+  const dialog = page.locator("#crisis");
+  if (!(await dialog.isVisible())) return;
+  await dialog.locator(".crisis-card").first().click();
+  const back = dialog.getByRole("button", { name: "Back to the farm" });
+  await expect(back).toBeVisible();
+  const no = dialog.getByRole("button", { name: "Say no" });
+  if (await no.isVisible()) await no.click();
+  await back.click();
+  await expect(dialog).toBeHidden();
 }
