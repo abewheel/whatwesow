@@ -147,7 +147,7 @@ Start with [docs/session-start.md](docs/session-start.md) for implemented scope 
 ## Keep Validation Fast and Reliable
 
 - Iterate with focused tests; run `pnpm validate` on the settled candidate.
-- Run every browser test through `scripts/browser-shards.mjs` in CI; refresh timing hints after major suite changes. Never hide failures with retries or omitted tests.
+- Shard development browser tests with `scripts/browser-shards.mjs`; refresh timing hints after major suite changes. Never hide failures with retries or omitted tests.
 - Assert observable completion. Observe brief transitions in-page; avoid fixed sleeps and assumptions about frame rates.
 - Preserve pnpm/browser caches, superseded-run cancellation, and one PR run per update. Use the pinned runner's Chromium libraries instead of redundant system-package installs.
 - Keep the required `validate` gate dependent on every shard and production checks.

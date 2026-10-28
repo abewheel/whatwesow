@@ -80,37 +80,6 @@ Sources: [Pages Git integration](https://developers.cloudflare.com/pages/configu
 
 ## GitHub validation performance
 
-The `Validate` workflow runs build/unit checks and 19 browser shards in parallel.
-Each shard runs two workers; `fullyParallel` keeps individual tests independent. `scripts/browser-shards.mjs`
-discovers the full suite and schedules estimated longest tests on the least-loaded
-runner, using `scripts/browser-timings.json`. These local timings are scheduling
-hints; new or renamed tests get a ten-second estimate and still run. Refresh the
-hints after major suite changes.
-It preserves complete titles and projects, including parameterized tests. The final
-`validate` job keeps the existing required-check name and requires every shard and
-the production checks to pass. No test is omitted and automatic retries are off.
-The build already checks types, so CI does not run a second standalone typecheck.
+CI runs development browser tests across 19 timing-balanced shards alongside unit, build, and production checks. Every job must pass the aggregate `validate` gate. `scripts/browser-timings.json` contains scheduling estimates only; new tests default to ten seconds and remain included.
 
-Pull requests run once per update; pushes to `main` and manual runs also validate.
-New commits cancel obsolete runs for the same event and ref. The pnpm CLI itself
-is cached by OS, architecture, and package manifest so each runner avoids a fresh
-registry download of pnpm. Browser downloads
-are cached by OS, architecture, and lockfile; the pinned Ubuntu 24.04 hosted image already
-provides Chromium’s system libraries, so jobs avoid a redundant apt update and
-installation. A missing library fails browser launch rather than hiding it. Failed jobs retain screenshots, traces, and browser
-HTML reports for seven days. Traces omit DOM snapshots and continuous screenshots because copying the
-estate’s 4,096 interactive targets and reading rendered frames adds overhead.
-Call, network, and timing traces remain available, along with failure screenshots. Download a failure artifact and run
-`pnpm exec playwright show-trace path/to/trace.zip` to inspect it.
-
-The October 28 audit found seven failures in the last ten completed runs, with
-a median elapsed time of 17m 28s and browser suites taking 10–19 minutes, with repeated travel timeouts and a gait test sampling only 630ms of wall
-time. The gait check now waits for four observed frames and gives the actual
-walk the same 30-second arrival allowance as navigation checks. Season-transition
-checks record title insertions inside the page so reduced-motion transitions
-cannot disappear between test-runner round trips. Earlier farming
-and service failures refer to paths replaced by the current contextual menus.
-The target is over 90% less elapsed CI time; verify that against hosted run
-start/completion times after rollout, including runner queue time. Sharding uses
-more simultaneous runners, so account concurrency and runner minutes still matter.
-Local `pnpm validate` remains the complete unsharded check.
+Failed jobs retain reports, screenshots, and traces for seven days. Inspect traces with `pnpm exec playwright show-trace path/to/trace.zip`. DOM snapshots and continuous trace screenshots are disabled to avoid copying the estate's 4,096 targets; failure screenshots remain enabled. Follow the CI rules in `AGENTS.md`.
