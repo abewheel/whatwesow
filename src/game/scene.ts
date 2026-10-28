@@ -17,7 +17,12 @@ import {
 import { cropFrames, seasonalCropFrames, cropArtwork } from "./crop-sprites";
 import { project, footprint as renderFootprint, TILE_WIDTH } from "./layout";
 import Phaser from "phaser";
-import { drawBoundary } from "./boundary";
+import {
+  drawBoundary,
+  updateBoundaryWalkers,
+  type BoundaryWalker,
+} from "./boundary";
+import { prepareLaneArtwork } from "./lane-artwork";
 import { borderDetailRect } from "./border-artwork";
 import { GroundLayer } from "./terrain";
 import { Farmer, farmerFrames } from "./farmer";
@@ -63,6 +68,7 @@ export class FarmScene extends Phaser.Scene {
   private ground?: Phaser.GameObjects.Graphics;
   private groundArt?: GroundLayer;
   private scenery?: Phaser.GameObjects.Container;
+  private boundaryWalkers: BoundaryWalker[] = [];
   private treeViews = new Map<number, Phaser.GameObjects.Container>();
   private harvestEffects?: Phaser.GameObjects.Container;
   private farm = initialMicroState();
@@ -150,6 +156,7 @@ export class FarmScene extends Phaser.Scene {
   preload() {
     this.load.on("loaderror", () => this.onLoadError?.());
     this.load.on("progress", (value: number) => this.onProgress?.(value));
+    this.load.image("lane-source", "/art/lane-seasons.png");
     this.load.image("ground-materials", "/art/ground-materials.png");
     this.load.image("border-details", "/art/border-details-seasons.png");
     this.load.image("tree-apple", "/art/apple-stages.png");
@@ -171,6 +178,7 @@ export class FarmScene extends Phaser.Scene {
     this.load.image("farm-winter", "/art/farm-atlas-winter.png");
   }
   create() {
+    prepareLaneArtwork(this);
     const details = this.textures.get("border-details");
     const detailSource = details.getSourceImage();
     for (let frame = 0; frame < 16; frame++) {
@@ -274,6 +282,7 @@ export class FarmScene extends Phaser.Scene {
   }
   update(_time: number, delta: number) {
     this.farmer?.update(delta, projectCell);
+    updateBoundaryWalkers(this.boundaryWalkers, this.time.now);
     if (this.farmer) {
       this.farmer.view.setDepth(
         farmerDepth(this.farmer.view, this.buildingOccluders),
@@ -386,7 +395,7 @@ export class FarmScene extends Phaser.Scene {
     if (this.farmer) scenery.add(this.farmer.view);
     this.cameras.main.setBackgroundColor(p.grass);
     const atlas = this.buildingAtlas;
-    drawBoundary(
+    this.boundaryWalkers = drawBoundary(
       this,
       g,
       scenery,

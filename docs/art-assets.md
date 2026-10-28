@@ -24,7 +24,7 @@ The hedgerow source has an uneven row gutter. Its four frames use explicit recta
 
 `public/art/woodland-variation-seasons.png` adds a second four-season, two-column woodland atlas. Created with the built-in image generation tool. Prompt: a transparent pixel-art grouping of a tall silver birch, short blue-green spruce, and mossy fallen log, repeated at the same isometric camera and pivot in spring, summer, autumn, and winter. Show airy fresh spring leaves, full summer foliage, golden autumn birch leaves, and bare snowy winter birch beside a snowy evergreen. Keep generous transparent cell margins, root footprints, crisp leaf clusters, pale peeling bark, upper-left lighting, and no fruit or labels.
 
-The southwest river is a narrow winding channel with a visible far bank and meadow beyond it. The northeast hedge borders a wildflower meadow. Woodland fills the northwest exterior with deterministic, irregular groves selected from both seasonal sets. Deeper stands and edge trees vary in spacing, size, and shade; all tree feet remain outside the buildable grid. Water depth bands and ripples remain procedural; seasonal reeds, bank stones, flowers, and undergrowth use the border detail atlas. The road crosses the river at the south corner and continues beyond the view.
+The southwest river is a narrow winding channel with a visible far bank and meadow beyond it. The northeast hedge borders a second seasonal forest that continues through the upper scroll corners. Woodland fills the northwest exterior with deterministic, irregular groves selected from both seasonal sets. Deeper stands and edge trees vary in spacing, size, and shade; all tree feet remain outside the buildable grid. Water depth bands and ripples remain procedural; seasonal reeds, bank stones, flowers, and undergrowth use the border detail atlas. The road crosses the river at the south corner and continues beyond the view.
 
 ## Farmer and HUD
 
@@ -49,3 +49,15 @@ The building asset used the built-in image generation tool. Building prompt: a w
 Both assets were made with the built-in image generation tool. [Source layouts and full prompts](../public/art/ground-materials.md) record their generation and rendering contract.
 
 The seasonal crop expansion uses `seasonal-crops.png` for distinct radish, tomato, and pumpkin seedlings and ripe plants. Their produce icons are separate transparent PNGs, cropped from the same generated sheet to match the detailed HUD. Explicit frame bounds preserve the uneven gutters; source-independent display widths keep seedlings smaller than ripe plants and align the new plants with the original crops. [Layout and generation prompt](../public/art/seasonal-crops.md).
+
+## Exterior village and orchard
+
+Beyond the southwest river, seasonal cottages, barns, garden sheds, wells, flowering trees, and garden borders form a decorative village. Gravel lanes connect its blocks. The southeast lane borders an orchard with fruit trees, flowering trees, garden sheds, and wells. Both areas continue through the visible scroll bounds at every zoom, using the existing seasonal farm atlases. They remain outside buildable land and do not add services or income.
+
+Decorative villagers walk along the paths using the existing farmer frames. Their positions and gait follow scene time, so camera redraws do not restart their walks. Reduced motion keeps them in a stationary idle pose. All exterior placement uses stable world coordinates.
+
+## Lane, fence, and entrance
+
+`public/art/lane-seasons.png` contains four seasonal rows of timber fence spans, an open stone-pillared entrance, and bronze lantern posts. `src/game/lane-artwork.ts` records the measured gutters and aligns the fence and gate contacts to the 2:1 grid with a canvas shear. The fence leaves complete spans clear of the entrance; small verge stones edge the textured gravel lane. Lamps flank the entrance and repeat beside the orchard. Winter adds snow to rails, caps, and lanterns; autumn uses russet vines.
+
+Created with the built-in image generation tool. Prompt: a transparent three-column, four-row atlas of detailed painted pixel-art timber fence spans with capped posts and cross braces, an open entrance with cream stone pillars and terracotta caps, and ornate bronze amber lantern posts. Use warm upper-left light, wood grain, bolts, ivy, stone and flower barrels; repeat the geometry in spring, summer, autumn, and snowy winter, with generous transparent gutters and no labels.
