@@ -1,6 +1,6 @@
 /** Build an alternating gait from the neutral pose, rather than cycling the
  * source sheet's six near-identical raised-boot drawings. */
-export function createFarmerGait(source: CanvasImageSource) {
+export function createFarmerGait(source: CanvasImageSource, female = false) {
   const canvas = document.createElement("canvas");
   canvas.width = 128 * 8;
   canvas.height = 192;
@@ -8,7 +8,14 @@ export function createFarmerGait(source: CanvasImageSource) {
   const pose = document.createElement("canvas");
   pose.width = 128;
   pose.height = 192;
-  pose.getContext("2d")!.drawImage(source, 60, 1260, 84, 178, 22, 0, 84, 178);
+  if (female) {
+    // Normalize her neutral pose to the shared hip and boot anchors before animating.
+    pose
+      .getContext("2d")!
+      .drawImage(source, 43, 1259, 123, 189, 10, 0, 110, 178);
+  } else {
+    pose.getContext("2d")!.drawImage(source, 60, 1260, 84, 178, 22, 0, 84, 178);
+  }
   const leg = (right: boolean, angle: number, lift: number) => {
     context.save();
     const hip = right ? 75 : 55;

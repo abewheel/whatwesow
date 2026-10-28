@@ -631,7 +631,12 @@ export function drawBoundary(
       end = at(col + 2.4, row);
     if (!visible([start, end], 70)) return;
     const walker = scene.add
-      .image(start.x, start.y, "farmer", 42)
+      .image(
+        start.x,
+        start.y,
+        noise(seed + 73) > 0.5 ? "farmer-female" : "farmer",
+        42,
+      )
       .setOrigin(0.5, 1)
       .setScale(0.25)
       .setTint([0xffd4b8, 0xd3e2ff, 0xe9d1ff][Math.abs(seed) % 3]);

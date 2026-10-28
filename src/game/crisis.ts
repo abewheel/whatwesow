@@ -179,8 +179,14 @@ export function selectPlots(
 }
 
 // Both parts come from a parsed save, whose lots are already enlarged.
-const compose = (micro: MicroState, macro: MacroState) =>
-  parseState({ version: 3, buildingLayout: 2, ...micro, ...macro });
+const compose = (current: GameState, micro: MicroState, macro: MacroState) =>
+  parseState({
+    version: 3,
+    buildingLayout: 2,
+    farmerVariant: current.farmerVariant,
+    ...micro,
+    ...macro,
+  });
 const heading = (n: number, id: string) =>
   engine.text.fill(content.strings.crisisHeading, {
     n,
@@ -211,7 +217,7 @@ export function fireCrisis(state: GameState): GameState {
           ),
         }).state
       : parseMicroState(current);
-  return compose(farm, {
+  return compose(current, farm, {
     ...parseMacroState(current),
     crises: [...(current.crises ?? []), record],
   });
@@ -376,7 +382,7 @@ function commit(
     farm = applyFarmConsequences(farm, { removePlotIds, clearPlotIds }).state;
   const paid = credit(farm, income);
   if (paid.toOwed) notes.push(`${paid.toOwed} paid toward what you owe.`);
-  const next = compose(paid.state, {
+  const next = compose(current, paid.state, {
     ...parseMacroState(current),
     crises: [...records.slice(0, -1), record],
   });

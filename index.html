@@ -118,6 +118,29 @@
       />
       <div class="arrival">
         <h1 id="startup-title">What We Sow</h1>
+        <div
+          id="character-select"
+          role="group"
+          aria-label="Choose your farmer"
+          hidden
+        >
+          <button
+            type="button"
+            data-farmer="male"
+            aria-label="Male farmer"
+            aria-pressed="true"
+          >
+            <span class="farmer-picture male" aria-hidden="true"></span>
+          </button>
+          <button
+            type="button"
+            data-farmer="female"
+            aria-label="Female farmer"
+            aria-pressed="false"
+          >
+            <span class="farmer-picture female" aria-hidden="true"></span>
+          </button>
+        </div>
         <p id="startup-copy" role="status">Preparing your land…</p>
         <progress
           id="loading-progress"

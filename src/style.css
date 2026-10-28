@@ -2105,3 +2105,49 @@ button.crisis-card {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+#character-select:not([hidden]) {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+#character-select button {
+  width: 88px;
+  height: 112px;
+  padding: 6px;
+  border: 3px solid #b69b70;
+  border-radius: 12px;
+  background: #213b30df;
+}
+#character-select button[aria-pressed="true"] {
+  border-color: #ffe5a0;
+  background: #587043;
+  box-shadow:
+    0 0 0 3px #243e31,
+    0 0 18px #ffe5a055;
+}
+.farmer-picture {
+  display: block;
+  width: 64px;
+  height: 88px;
+  margin: auto;
+  background-image: url("/art/farmer-sprites.png");
+  background-size: 488.7px 651.6px;
+  background-position: -20px -565px;
+  background-repeat: no-repeat;
+}
+.farmer-picture.female {
+  background-image: url("/art/farmer-female-sprites.png");
+}
+@media (max-height: 420px) {
+  #startup h1 {
+    margin: 0 0 8px;
+  }
+  #character-select button {
+    margin-top: 4px;
+    height: 96px;
+  }
+  #startup #begin-farm {
+    margin-top: 12px;
+  }
+}

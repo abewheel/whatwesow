@@ -39,7 +39,11 @@ import {
 export { seasons } from "../macro/state";
 
 // Only integration joins domains and migrates older save envelopes.
-export type GameState = { version: 3; buildingLayout?: 2 } & MicroState &
+export type GameState = {
+  version: 3;
+  buildingLayout?: 2;
+  farmerVariant?: "male" | "female";
+} & MicroState &
   MacroState;
 export const initialState = (): GameState => ({
   version: 3,
@@ -88,6 +92,12 @@ export function parseState(value: unknown): GameState {
   if (saved.version !== 3) throw new Error("Use version 1, 2 or 3.");
   if (saved.buildingLayout !== undefined && saved.buildingLayout !== 2)
     throw new Error("Invalid building layout version.");
+  if (
+    saved.farmerVariant !== undefined &&
+    saved.farmerVariant !== "male" &&
+    saved.farmerVariant !== "female"
+  )
+    throw new Error("Invalid farmer variant.");
   const macro = parseMacro(value),
     farm = parseMicroState(value);
   const state: GameState = {
@@ -95,6 +105,9 @@ export function parseState(value: unknown): GameState {
     buildingLayout: 2,
     ...farm,
     ...macro,
+    ...(saved.farmerVariant
+      ? { farmerVariant: saved.farmerVariant as "male" | "female" }
+      : {}),
   };
   // Larger lots also keep off land the council's rules have taken.
   return saved.buildingLayout === 2
@@ -199,6 +212,7 @@ export function advanceSeason(state: GameState): {
     version: 3,
     buildingLayout: 2,
     ...paid.state,
+    farmerVariant: current.farmerVariant,
     seasonSales: undefined,
     water: undefined,
     permits: permits?.filter((t) => t >= next),

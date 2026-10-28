@@ -79,6 +79,117 @@ export const farmerFrames = [
   ],
 ];
 
+export const femaleFarmerFrames = [
+  [
+    [65, 0, 181, 175],
+    [239, 0, 360, 176],
+    [424, 0, 543, 176],
+    [594, 0, 727, 176],
+    [777, 0, 910, 176],
+    [962, 0, 1086, 176],
+  ],
+  [
+    [60, 177, 181, 357],
+    [240, 177, 364, 357],
+    [423, 177, 548, 357],
+    [596, 177, 724, 357],
+    [777, 177, 909, 357],
+    [964, 177, 1086, 357],
+  ],
+  [
+    [51, 357, 178, 536],
+    [231, 386, 366, 536],
+    [406, 385, 549, 536],
+    [591, 355, 742, 536],
+    [773, 357, 913, 536],
+    [966, 357, 1086, 536],
+  ],
+  [
+    [50, 536, 174, 729],
+    [223, 536, 383, 729],
+    [409, 540, 576, 729],
+    [595, 536, 760, 729],
+    [775, 540, 916, 729],
+    [966, 536, 1086, 729],
+  ],
+  [
+    [40, 749, 187, 904],
+    [220, 751, 382, 904],
+    [402, 727, 567, 914],
+    [592, 726, 742, 917],
+    [775, 741, 931, 910],
+    [962, 726, 1086, 915],
+  ],
+  [
+    [34, 908, 190, 1088],
+    [218, 910, 385, 1088],
+    [402, 910, 574, 1088],
+    [592, 908, 756, 1088],
+    [772, 907, 939, 1088],
+    [960, 907, 1086, 1088],
+  ],
+  [
+    [42, 1088, 181, 1259],
+    [222, 1088, 365, 1259],
+    [404, 1088, 548, 1259],
+    [590, 1088, 730, 1259],
+    [774, 1088, 912, 1259],
+    [960, 1088, 1086, 1259],
+  ],
+  [
+    [43, 1259, 166, 1448],
+    [226, 1259, 344, 1448],
+    [409, 1259, 527, 1448],
+    [594, 1259, 714, 1448],
+    [777, 1259, 896, 1448],
+    [964, 1259, 1086, 1448],
+  ],
+];
+
+// Absolute boot contacts measured separately for the female work poses.
+const femaleWorkContacts = [
+  [
+    [111, 526],
+    [287, 522],
+    [466, 523],
+    [655, 525],
+    [839, 525],
+    [1027, 525],
+  ],
+  [
+    [107, 711],
+    [283, 711],
+    [471, 711],
+    [657, 711],
+    [839, 712],
+    [1026, 713],
+  ],
+  [
+    [106, 886],
+    [283, 887],
+    [470, 889],
+    [655, 899],
+    [844, 894],
+    [1027, 896],
+  ],
+  [
+    [110, 1071],
+    [284, 1072],
+    [471, 1073],
+    [659, 1065],
+    [843, 1072],
+    [1029, 1072],
+  ],
+  [
+    [105, 1246],
+    [283, 1246],
+    [469, 1246],
+    [656, 1246],
+    [839, 1246],
+    [1025, 1246],
+  ],
+];
+
 // Contact points in the original 181px grid, separate from tools and loose soil.
 // Keeping feet anchored prevents the generated poses from sliding between cells.
 const contacts = [
@@ -165,16 +276,19 @@ export class Farmer {
   private clock = 0;
   private stride = 0;
   private facing = 1;
+  variant: "male" | "female" = "male";
   private back = false;
   constructor(scene: Phaser.Scene) {
-    if (!scene.textures.exists("farmer-gait")) {
-      const source = scene.textures.get("farmer").getSourceImage();
-      const texture = scene.textures.addCanvas(
-        "farmer-gait",
-        createFarmerGait(source as HTMLImageElement),
-      )!;
-      for (let frame = 0; frame < 8; frame++)
-        texture.add(frame, 0, frame * 128, 0, 128, 192);
+    for (const key of ["farmer", "farmer-female"]) {
+      if (!scene.textures.exists(`${key}-gait`)) {
+        const source = scene.textures.get(key).getSourceImage();
+        const texture = scene.textures.addCanvas(
+          `${key}-gait`,
+          createFarmerGait(source as HTMLImageElement, key === "farmer-female"),
+        )!;
+        for (let frame = 0; frame < 8; frame++)
+          texture.add(frame, 0, frame * 128, 0, 128, 192);
+      }
     }
     const shadow = scene.add.graphics();
     shadow.fillStyle(0x233226, 0.08).fillEllipse(2, 2, 29, 13);
@@ -367,14 +481,32 @@ export class Farmer {
     const walkFrame = Math.floor(this.stride) % 8;
     const pose = frame;
     const [cx, originalCy] = contacts[row][pose];
-    const [left, top, right, bottom] = farmerFrames[row][pose];
+    const frames =
+      this.variant === "female" ? femaleFarmerFrames : farmerFrames;
+    const [left, top, right, bottom] = frames[row][pose];
+    const femaleContact =
+      this.variant === "female" && action
+        ? femaleWorkContacts[row - 2]?.[pose]
+        : undefined;
     const width = right - left;
     const height = bottom - top;
-    const contactX = walking || !action ? (left + right) / 2 : cx + pose * 181;
-    const cy = walking ? height - 8 : originalCy + row * 181 - top;
+    const contactX =
+      femaleContact?.[0] ??
+      (walking || !action ? (left + right) / 2 : cx + pose * 181);
+    const cy = femaleContact
+      ? femaleContact[1] - top
+      : walking
+        ? height - 8
+        : originalCy + row * 181 - top;
     this.art
       .setTexture(
-        walking ? "farmer-gait" : "farmer",
+        walking
+          ? this.variant === "female"
+            ? "farmer-female-gait"
+            : "farmer-gait"
+          : this.variant === "female"
+            ? "farmer-female"
+            : "farmer",
         walking ? walkFrame : row * 6 + pose,
       )
       // One stable idle drawing breathes continuously, with its boots fixed at the origin.

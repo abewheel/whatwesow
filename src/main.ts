@@ -430,7 +430,11 @@ document
       await farmQueue;
       navigationVersion++;
       scene.stopFarmer();
-      await apply(initialState(), true, true);
+      await apply(
+        { ...initialState(), farmerVariant: state.farmerVariant },
+        true,
+        true,
+      );
       restartConfirm.close();
       menu.close();
       centerFarm();
@@ -1212,6 +1216,19 @@ const startupFontReady = document.fonts
   .then(() => startup.classList.add("fonts-ready"));
 const startupCopy = document.querySelector<HTMLElement>("#startup-copy")!;
 const beginFarm = document.querySelector<HTMLButtonElement>("#begin-farm")!;
+let selectedFarmer: "male" | "female" = "male";
+const characterSelect =
+  document.querySelector<HTMLElement>("#character-select")!;
+characterSelect
+  .querySelectorAll<HTMLButtonElement>("button")
+  .forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedFarmer = button.dataset.farmer as "male" | "female";
+      characterSelect.querySelectorAll("button").forEach((choice) => {
+        choice.setAttribute("aria-pressed", String(choice === button));
+      });
+    });
+  });
 const loadingProgress =
   document.querySelector<HTMLProgressElement>("#loading-progress")!;
 const sceneReady = new Promise<void>((resolve) => {
@@ -1240,9 +1257,20 @@ function enterFarm() {
   // A crisis saved before the answer reopens once the farm is visible.
   if (pendingCrisis(state)) crisisDialog.open();
 }
-beginFarm.addEventListener("click", () => {
+beginFarm.addEventListener("click", async () => {
   if (artworkFailed) location.reload();
-  else enterFarm();
+  else {
+    state = { ...state, farmerVariant: selectedFarmer };
+    scene.setState(state);
+    try {
+      if (!store) throw new Error("Local saves are unavailable.");
+      await store.save(state);
+      enterFarm();
+    } catch {
+      startupCopy.hidden = false;
+      startupCopy.textContent = "Could not save your farmer. Please try again.";
+    }
+  }
 });
 document.querySelector<HTMLElement>("main")!.inert = true;
 const game = new Phaser.Game({
@@ -2031,7 +2059,8 @@ try {
   const saved = await store.load();
   newFarm =
     saved === undefined ||
-    (saved.selfBuilt === true &&
+    (saved.farmerVariant === undefined &&
+      saved.selfBuilt === true &&
       saved.year === 1 &&
       saved.season === "spring" &&
       saved.coins === 240 &&
@@ -2105,6 +2134,7 @@ await new Promise<void>((resolve) =>
 if (artworkFailed) {
   showArtworkError();
 } else if (newFarm && !loadFailed) {
+  characterSelect.hidden = false;
   loadingProgress.hidden = true;
   startupCopy.hidden = true;
   beginFarm.hidden = false;

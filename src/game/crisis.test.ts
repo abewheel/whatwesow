@@ -1511,3 +1511,14 @@ describe("council money and land", () => {
     expect(() => answerOffer(answered, true)).toThrow(/No deal/);
   });
 });
+
+it("keeps the selected farmer through council triggers, votes and land offers", () => {
+  const met = endTurn(farmAt(5, { farmerVariant: "female" })).state;
+  expect(met.farmerVariant).toBe("female");
+  const answered = answerCrisis(met, card("Drought", "OBJ")).state;
+  expect(answered.farmerVariant).toBe("female");
+  expect(endTurn(answered).state.farmerVariant).toBe("female");
+  const offered = { ...pass(2, 40).state, farmerVariant: "female" as const };
+  expect(answerOffer(offered, true).state.farmerVariant).toBe("female");
+  expect(answerOffer(offered, false).state.farmerVariant).toBe("female");
+});

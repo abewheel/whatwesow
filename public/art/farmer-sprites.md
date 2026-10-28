@@ -13,7 +13,9 @@
 | 6 | 36–41 | Carry a produce basket |
 | 7 | 42–47 | Idle |
 
-Walking uses the first two rows of the same sheet, with six frames per direction and a gait driven by distance traveled. Farming actions play once over 1.15 seconds. These animations are presentation only and do not delay or change saved farming results. Appearance customization is deferred; this sheet contains one complete character.
+Walking derives eight alternating leg poses from each variant’s neutral idle drawing through `farmer-gait.ts`, with a gait driven by distance traveled. The source sheet’s two walking rows remain available as reference poses. Farming actions play once over 1.15 seconds. These animations are presentation only and do not delay or change saved farming results. The start screen offers male and female farmers, with male selected by default. The selection persists as `farmerVariant` in the save; older saves use male. `farmer-female-sprites.png` covers the same 48 poses with separate measured rectangles in `femaleFarmerFrames`. Both variants share routing, the derived eight-frame gait, work timing, effects, facing, and idle breathing. Each gait normalizes the neutral drawing to shared hip and boot anchors. Background villagers use both variants.
+
+The female sheet was made with the built-in image generation tool using the male sheet as the edit target. Prompt: Edit target sprite atlas: create female farmer version of all 48 poses. Preserve EXACT six column eight row layout, positions, dimensions, scale, tools, gestures and boot positions of reference. Change each man to same consistent adult woman, no facial hair, brown braid tucked behind shoulders, straw hat green rolled sleeve shirt blue denim overalls brown boots. Match painted rendering and shading. Row order southeast walk, northeast walk, planting, watering, harvesting, digging, carrying basket, idle. All six frames each row. Transparent background. No text or grid. Output same aspect ratio as reference. Every pose fully contained.
 
 Created with the built-in image generation tool, using `farm-atlas.png` as a style reference.
 

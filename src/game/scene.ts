@@ -56,7 +56,7 @@ import {
   shoreSides,
   takenCell,
 } from "./terrain";
-import { Farmer, farmerFrames } from "./farmer";
+import { Farmer, farmerFrames, femaleFarmerFrames } from "./farmer";
 import { farmerDepth, type BuildingOccluder } from "./farmer-depth";
 import { farmerTaskForAction } from "./farmer-task";
 import type { FarmAction } from "../micro/rules";
@@ -351,6 +351,7 @@ export class FarmScene extends Phaser.Scene {
     );
     this.load.image("hedgerow", "/art/hedgerow-seasons.png");
     this.load.image("farmer", "/art/farmer-sprites.png");
+    this.load.image("farmer-female", "/art/farmer-female-sprites.png");
     this.load.image("distinct-buildings", "/art/distinct-buildings.png");
     this.load.image("farm-states", "/art/farm-states.png");
     this.load.image("farm-spring", "/art/farm-atlas.png");
@@ -384,17 +385,20 @@ export class FarmScene extends Phaser.Scene {
       const [x, y, width, height] = productFrames[kind];
       this.textures.get("tree-products").add(kind, 0, x, y, width, height);
     }
-    const farmer = this.textures.get("farmer");
-    for (let row = 0; row < 8; row++)
-      for (let col = 0; col < 6; col++)
-        farmer.add(
-          row * 6 + col,
-          0,
-          farmerFrames[row][col][0],
-          farmerFrames[row][col][1],
-          farmerFrames[row][col][2] - farmerFrames[row][col][0],
-          farmerFrames[row][col][3] - farmerFrames[row][col][1],
-        );
+    for (const key of ["farmer", "farmer-female"]) {
+      const farmer = this.textures.get(key);
+      const frames = key === "farmer" ? farmerFrames : femaleFarmerFrames;
+      for (let row = 0; row < 8; row++)
+        for (let col = 0; col < 6; col++)
+          farmer.add(
+            row * 6 + col,
+            0,
+            frames[row][col][0],
+            frames[row][col][1],
+            frames[row][col][2] - frames[row][col][0],
+            frames[row][col][3] - frames[row][col][1],
+          );
+    }
     const distinct = this.textures.get("distinct-buildings");
     const source = distinct.getSourceImage();
     for (let i = 0; i < distinctBuildingRects.length; i++) {
@@ -556,8 +560,11 @@ export class FarmScene extends Phaser.Scene {
       });
     }
   }
-  setState(state: MacroState & MicroState) {
+  setState(
+    state: MacroState & MicroState & { farmerVariant?: "male" | "female" },
+  ) {
     this.farm = state;
+    if (this.farmer) this.farmer.variant = state.farmerVariant ?? "male";
     this.farmer?.setWorld(state, state.farmPolicy);
     this.policy = state.farmPolicy;
     this.season = state.season;
