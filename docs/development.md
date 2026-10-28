@@ -80,7 +80,7 @@ Sources: [Pages Git integration](https://developers.cloudflare.com/pages/configu
 
 ## GitHub validation performance
 
-The `Validate` workflow runs build/unit checks and 16 browser shards in parallel.
+The `Validate` workflow runs build/unit checks and 19 browser shards in parallel.
 Each shard runs two workers, keeping the original per-runner load; `fullyParallel`
 lets Playwright distribute individual tests rather than whole files. The final
 `validate` job keeps the existing required-check name and requires every shard and
@@ -91,13 +91,17 @@ Pull requests run once per update; pushes to `main` and manual runs also validat
 New commits cancel obsolete runs for the same event and ref. Browser downloads
 are cached by OS, architecture, and lockfile; system dependencies are still
 installed on each runner. Failed jobs retain screenshots, traces, and browser
-HTML reports for seven days. Download a failure artifact and run
+HTML reports for seven days. Traces omit DOM snapshots because repeatedly
+copying the estate’s 4,096 interactive targets adds substantial overhead; call,
+network, timing, and screenshot evidence remains available. Download a failure artifact and run
 `pnpm exec playwright show-trace path/to/trace.zip` to inspect it.
 
 The October 28 audit found seven failures in the last ten completed runs, with
 a median elapsed time of 17m 28s and browser suites taking 10–19 minutes, with repeated travel timeouts and a gait test sampling only 630ms of wall
 time. The gait check now waits for four observed frames and gives the actual
-walk the same 30-second arrival allowance as navigation checks. Earlier farming
+walk the same 30-second arrival allowance as navigation checks. Season-transition
+checks record title insertions inside the page so reduced-motion transitions
+cannot disappear between test-runner round trips. Earlier farming
 and service failures refer to paths replaced by the current contextual menus.
 The target is over 90% less elapsed CI time; verify that against hosted run
 start/completion times after rollout, including runner queue time. Sharding uses

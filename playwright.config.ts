@@ -22,7 +22,9 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     headless: true,
-    trace: "retain-on-failure",
+    // The estate has 4,096 DOM targets. Snapshotting that tree at every
+    // action dominates these tests; retain call/network/timing evidence instead.
+    trace: { mode: "retain-on-failure", snapshots: false },
     screenshot: "only-on-failure",
   },
   webServer: {

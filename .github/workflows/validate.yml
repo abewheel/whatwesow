@@ -44,7 +44,7 @@ jobs:
       # Finish the other shards even if one fails, so every failure is visible.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     env:
       PLAYWRIGHT_WORKERS: 2
     steps:
@@ -60,7 +60,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm exec playwright install --with-deps --only-shell chromium
-      - run: pnpm test:browser --shard=${{ matrix.shard }}/16
+      - run: pnpm test:browser --shard=${{ matrix.shard }}/19
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
