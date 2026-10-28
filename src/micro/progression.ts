@@ -85,6 +85,7 @@ export const hasOpportunity = (s: MicroState, id: Opportunity) =>
   s.opportunities.includes(id);
 export const canBuild = (s: MicroState, kind: BuildingKind) =>
   kind === "home" ||
+  kind === "beehive" ||
   (kind === "oak" &&
     s.structures.some(
       (b) =>
@@ -124,7 +125,8 @@ export function earnOpportunities(s: MicroState): Opportunity[] {
   };
   // Existing saves retain access to crops and structures they already own.
   for (const b of s.structures)
-    if (b.kind !== "home" && b.kind !== "oak") ready[b.kind] = true;
+    if (b.kind !== "home" && b.kind !== "oak" && b.kind !== "beehive")
+      ready[b.kind] = true;
   if (s.plots.some((p) => p?.crop === "corn")) ready.corn = true;
   return [
     ...new Set([

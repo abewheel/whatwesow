@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { MacroState } from "../macro/state";
-import { WORLD_SIZE, type Cell } from "../micro/world";
+import { WORLD_SIZE, WILD_HIVE_CELL, type Cell } from "../micro/world";
 import type { GroundLayer } from "./terrain";
 import { seasonFrame } from "./border-artwork";
 import { laneArtwork, type LaneKind } from "./lane-artwork";
@@ -513,7 +513,8 @@ export function drawBoundary(
   // Northeast: the low cottage wall now opens onto a textured wildflower meadow.
   const frame = seasonFrame(season);
   const hedgeFrame = scene.textures.get("hedgerow").get(frame);
-  for (let col = 0.5; col < WORLD_SIZE; col += 1.3) {
+  // Leave the corner open beside the wild honey tree.
+  for (let col = 3.1; col < WORLD_SIZE; col += 1.3) {
     const pos = at(col, -0.9);
     if (!visible([pos], 130)) continue;
     scenery.add(
@@ -539,6 +540,14 @@ export function drawBoundary(
     const pos = at(col, row),
       size = baseSize * (0.78 + noise(seed + 17) * 0.5);
     if (!visible([pos], size)) return;
+    // Keep foreground woodland canopies from hiding the permanent honey tree.
+    const hive = point(WILD_HIVE_CELL);
+    if (
+      pos.y > hive.y + 16 &&
+      pos.y - size * 0.96 < hive.y + 16 &&
+      Math.abs(pos.x - hive.x) < size * 0.45 + 80
+    )
+      return;
     const tints = winter
       ? [0xffffff, 0xe8eff1, 0xd7e3e5]
       : [0xffffff, 0xe6edd6, 0xd1dfc8, 0xf0ead3];

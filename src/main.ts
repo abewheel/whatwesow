@@ -1,3 +1,4 @@
+import { hiveAnchor, hiveBounds } from "./game/hive-artwork";
 import {
   buildingArtwork,
   distinctStructures,
@@ -22,7 +23,8 @@ import {
   structureSize,
   constructionCost,
   isAnimal,
-  animalProducts,
+  isProducer,
+  buildingProducts,
   serviceLocations,
   serviceOptions,
   canPlace,
@@ -222,6 +224,24 @@ function positionContext() {
       right: x + 35 * zoom,
       top: y - 56 * zoom,
       bottom: y + 16 * zoom,
+    };
+  } else if (service?.id === "hive" || building?.kind === "beehive") {
+    const lot = building
+      ? { ...building, ...structureSize(building) }
+      : service!;
+    const art = hiveBounds(
+      projectCell(hiveAnchor(lot)),
+      service?.id === "hive",
+    );
+    anchor = {
+      left: bounds.left - card.left + art.x * zoom - viewport.scrollLeft,
+      right:
+        bounds.left -
+        card.left +
+        (art.x + art.width) * zoom -
+        viewport.scrollLeft,
+      top: bounds.top - card.top + art.y * zoom - viewport.scrollTop,
+      bottom: bounds.top - card.top + art.bottom * zoom - viewport.scrollTop,
     };
   } else if (service?.tent) {
     anchor = {
@@ -679,17 +699,18 @@ function refreshContext() {
     );
     tileActions.append(stats);
     if (
-      isAnimal(building.kind) &&
+      isProducer(building.kind) &&
       !building.pendingConstruction &&
       !building.pendingDemolition
     ) {
-      const product = animalProducts[building.kind],
+      if (!building.product) note("Collected · returns next season");
+      const product = buildingProducts[building.kind],
         sale = animalQuote(state, building, policy, turn);
       tileButton(
         `Collect ${product.product.toLowerCase()} · ${earnings(sale)}`,
         () => harvestSelectedTree(building.id),
         waiting || !building.product,
-        "collect-animal",
+        building.kind === "beehive" ? "collect-hive" : "collect-animal",
         "harvestValue",
         `${icon("harvestValue")}${sale.value}${sale.tax ? `<small>−${sale.tax} tax</small>` : ""}${sale.overQuota ? "<small>Sales limit</small>" : ""}`,
       );
@@ -777,6 +798,19 @@ function refreshContext() {
         () => void act({ type: "filePermit" }),
         waiting || final || permits.includes(turn + 1),
         "file-permit",
+      );
+    } else if (target.id === "hive") {
+      note(
+        state.honeyReady !== false
+          ? "Honey ready · 12 coins"
+          : "Collected · returns next season",
+      );
+      note("Wild honey returns every season, including winter.");
+      tileButton(
+        "Collect honey · +12 coins",
+        () => void act({ type: "collectHoney" }),
+        waiting || state.honeyReady === false,
+        "collect-honey",
       );
     } else if (!home)
       tileButton(
@@ -1489,21 +1523,28 @@ viewport.addEventListener(
     const x = (e.clientX - bounds.left + viewport.scrollLeft) / zoom;
     const y = (e.clientY - bounds.top + viewport.scrollTop) / zoom;
     // Match the visible artwork as well as its keyboard-accessible ground tiles.
-    // The council office is a drawn placeholder: its ground tiles take the clicks.
     const services = villageServices().filter((s) =>
-      s.tent
-        ? scene.hitsTent({ x, y }, s)
-        : s.id !== "council" &&
-          scene.hitsBuilding(
-            { x, y },
-            s,
-            s.frame,
-            false,
-            distinctServices[s.id as keyof typeof distinctServices],
-          ),
+      s.id === "hive"
+        ? scene.hitsHive({ x, y }, s)
+        : s.tent
+          ? scene.hitsTent({ x, y }, s)
+          : s.id !== "council" &&
+            scene.hitsBuilding(
+              { x, y },
+              s,
+              s.frame,
+              false,
+              distinctServices[s.id as keyof typeof distinctServices],
+            ),
     );
     const structures = state.structures.filter((s) => {
       const item = { ...buildings[s.kind], ...structureSize(s) };
+      if (s.kind === "beehive")
+        return scene.hitsHive(
+          { x, y },
+          { ...s, width: item.width, height: item.height },
+          false,
+        );
       if (isAnimal(s.kind))
         return scene.hitsAnimal(
           { x, y },
@@ -1529,23 +1570,30 @@ viewport.addEventListener(
     // at equal depth, so they also win equal-depth artwork hits.
     const hits = [
       ...structures.map((s) => ({
-        depth: projectCell(
-          isTree(s.kind)
-            ? s
-            : {
-                row: s.row + structureSize(s).height - 0.5,
-                col: s.col + structureSize(s).width - 0.5,
-              },
-        ).y,
+        depth:
+          s.kind === "beehive"
+            ? hiveBounds(projectCell(hiveAnchor({ ...s, ...structureSize(s) })))
+                .bottom
+            : projectCell(
+                isTree(s.kind)
+                  ? s
+                  : {
+                      row: s.row + structureSize(s).height - 0.5,
+                      col: s.col + structureSize(s).width - 0.5,
+                    },
+              ).y,
         select: () => inspectBuilding(s.id),
       })),
       ...services.map((s) => ({
-        depth: s.tent
-          ? projectCell(s).y + 24
-          : projectCell({
-              row: s.row + s.height - 0.5,
-              col: s.col + s.width - 0.5,
-            }).y,
+        depth:
+          s.id === "hive"
+            ? hiveBounds(projectCell(s), true).bottom
+            : s.tent
+              ? projectCell(s).y + 24
+              : projectCell({
+                  row: s.row + s.height - 0.5,
+                  col: s.col + s.width - 0.5,
+                }).y,
         select: () => openContext({ type: "service", id: s.id, cell: s }),
       })),
     ].sort((a, b) => a.depth - b.depth);
@@ -1566,7 +1614,7 @@ function harvestSelectedTree(id: number) {
   const building = state.structures.find((s) => s.id === id);
   if (!building) return;
   if (
-    (isTree(building.kind) || isAnimal(building.kind)) &&
+    (isTree(building.kind) || isProducer(building.kind)) &&
     Boolean(building.product) &&
     !building.pendingConstruction &&
     !building.pendingDemolition
@@ -1583,7 +1631,12 @@ function harvestSelectedTree(id: number) {
       () => {
         if (request === navigationVersion)
           void act({
-            type: isAnimal(building.kind) ? "collectAnimal" : "harvestTree",
+            type:
+              building.kind === "beehive"
+                ? "collectHive"
+                : isAnimal(building.kind)
+                  ? "collectAnimal"
+                  : "harvestTree",
             id,
           });
       },
@@ -1631,24 +1684,31 @@ function act(action: FarmAction | { type: "season" } | CouncilAnswer) {
         false,
         action.type === "harvest" ||
           action.type === "harvestTree" ||
-          action.type === "collectAnimal",
+          action.type === "collectAnimal" ||
+          action.type === "collectHive" ||
+          action.type === "collectHoney",
       );
       if (action.type === "answer" || action.type === "offer")
         crisisDialog.answered(result.message);
       else if (
         action.type !== "season" &&
+        action.type !== "collectHoney" &&
         requestedNavigation === navigationVersion
       )
         scene.performAction(action, previous);
       if (
         action.type === "harvest" ||
         action.type === "harvestTree" ||
-        action.type === "collectAnimal"
+        action.type === "collectAnimal" ||
+        action.type === "collectHive" ||
+        action.type === "collectHoney"
       ) {
         const cell =
-          action.type === "harvest"
-            ? previous.plotCells[action.plot]
-            : previous.structures.find((s) => s.id === action.id);
+          action.type === "collectHoney"
+            ? serviceLocations(previous).find((s) => s.id === "hive")
+            : action.type === "harvest"
+              ? previous.plotCells[action.plot]
+              : previous.structures.find((s) => s.id === action.id);
         const tile =
           cell && cellButtons.get(cellKey(cell))?.getBoundingClientRect();
         if (tile && state.coins > previous.coins)
@@ -1820,7 +1880,7 @@ scene.onLayout = (targets) => {
         : structure
           ? structure.pendingDemolition
             ? `${buildings[structure.kind].name} ${structure.id}, teardown underway, clears next season`
-            : `${buildings[structure.kind].name} ${structure.id}, ${isAnimal(structure.kind) ? `${structure.pendingConstruction ? `under construction, ${readyIn(structure.wait)}` : structure.product ? `${animalProducts[structure.kind].product} ready to collect` : "collected, return next season"}` : isTree(structure.kind) ? treeStatus(structure) : structure.pendingConstruction ? `under construction, ${readyIn(structure.wait)}` : `level ${structure.level}${sealed.has(structure.kind) ? ", sealed by the council" : ""}`}`
+            : `${buildings[structure.kind].name} ${structure.id}, ${isProducer(structure.kind) ? `${structure.pendingConstruction ? `under construction, ${readyIn(structure.wait)}` : structure.product ? `${buildingProducts[structure.kind].product} ready to collect` : "collected, return next season"}` : isTree(structure.kind) ? treeStatus(structure) : structure.pendingConstruction ? `under construction, ${readyIn(structure.wait)}` : `level ${structure.level}${sealed.has(structure.kind) ? ", sealed by the council" : ""}`}`
           : service
             ? `Visit ${service.name}`
             : `Land ${target.row},${target.col}${taken.has(key) ? ", taken by the county" : ""}`;

@@ -243,7 +243,9 @@ it("keeps services at reachable roadside entrances when dense farms fill every l
   expect(
     serviceLocations(dense, { council: true }).find((s) => s.id === "council"),
   ).toMatchObject({ row: -3, col: 29 });
-  for (const service of serviceLocations(dense, { council: true })) {
+  for (const service of serviceLocations(dense, { council: true }).filter(
+    (s) => s.id !== "hive",
+  )) {
     expect(service.row).toBe(-service.height);
     expect(
       farmerWorkRoute(
@@ -279,6 +281,7 @@ it("shows the council office only when asked, beside the village services", asyn
   expect(
     serviceLocations(camp, { council: true }).map((s) => [s.id, s.name]),
   ).toEqual([
+    ["hive", "Wild beehive"],
     ["home", "Your tent"],
     ["council", "Council office"],
   ]);
@@ -286,8 +289,8 @@ it("shows the council office only when asked, beside the village services", asyn
     ...camp,
     structures: [{ id: 1, kind: "home" as const, row: 11, col: 14, level: 1 }],
   };
-  expect(serviceLocations(settled)).toEqual([]);
-  expect(serviceLocations(settled, { council: true })).toHaveLength(1);
+  expect(serviceLocations(settled).map((s) => s.id)).toEqual(["hive"]);
+  expect(serviceLocations(settled, { council: true })).toHaveLength(2);
   const crowded = {
     ...farm,
     structures: [

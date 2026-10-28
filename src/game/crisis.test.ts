@@ -416,7 +416,7 @@ describe("crisis triggers", () => {
     expect(until("turnip")).toEqual([9, 10, 13]);
     expect(recoveryUntil("corn", 13, 1)).toBe(13);
   });
-  it("crashes every crop, fruit and animal product price to 60% for the summer and fall harvests", () => {
+  it("crashes all sold produce including wooden-hive honey, but preserves wild recovery honey", () => {
     const state = councilAt(5);
     expect(seasons[(30 - 1) % 4]).toBe("summer");
     const prices = crisisPolicy(state, 30).cropPrices!;
@@ -427,11 +427,18 @@ describe("crisis triggers", () => {
       "coop",
       "dairy",
       "sheepfold",
+      "beehive",
     ])
       expect(prices[id]).toBe(0.6);
     // A level-1 coop's eggs sell for 30 coins, cut to 18.
     const coop = { id: 9, kind: "coop" as const, row: 0, col: 0, level: 1 };
     expect(animalQuote(state, coop, { cropPrices: prices }, 30).value).toBe(18);
+    const hive = { id: 10, kind: "beehive" as const, row: 0, col: 0, level: 1 };
+    expect(animalQuote(state, hive, { cropPrices: prices }, 30).value).toBe(9);
+    const settled = pass(5, 80).state;
+    expect(actOnGame(settled, { type: "collectHoney" }).state.coins).toBe(
+      settled.coins + 12,
+    );
     expect(crisisPolicy(state, 31).cropPrices).toEqual(prices);
     expect(crisisPolicy(state, 32).cropPrices).toBeUndefined();
   });
@@ -910,6 +917,7 @@ describe("eminent domain policies", () => {
     });
     expect(state.permits).toEqual([14]);
     expect(state.crises![2].limits).toEqual({
+      beehive: 0,
       coop: 0,
       dairy: 0,
       sheepfold: 0,

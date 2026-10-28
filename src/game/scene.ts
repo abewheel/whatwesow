@@ -1,3 +1,9 @@
+import {
+  hiveAnchor,
+  hiveBounds,
+  wildHiveTexture,
+  woodenHiveTexture,
+} from "./hive-artwork";
 import { createBuildingShadow } from "./building-shadow";
 import {
   animalArtwork,
@@ -28,7 +34,13 @@ import {
   cropArtwork,
   cropCondition,
 } from "./crop-sprites";
-import { project, footprint as renderFootprint, TILE_WIDTH } from "./layout";
+import {
+  project,
+  footprint as renderFootprint,
+  TILE_WIDTH,
+  WORLD_TOP,
+} from "./layout";
+
 import Phaser from "phaser";
 import {
   drawBoundary,
@@ -62,8 +74,9 @@ import {
   WORLD_SIZE,
   type Cell,
 } from "../micro/world";
+// Leave enough camera headroom to reach the top-corner hive below the phone HUD.
 export const WORLD_WIDTH = WORLD_SIZE * 64 + 512,
-  WORLD_HEIGHT = WORLD_SIZE * 32 + 512;
+  WORLD_HEIGHT = WORLD_SIZE * 32 + WORLD_TOP + 352;
 // Preserve the shared logical projection; the scrollable view scales tiles to 64px.
 const renderScale = 64 / TILE_WIDTH;
 const tentWidth = 160;
@@ -71,7 +84,7 @@ const tentHeight = tentWidth * (2 / 3);
 export const TENT_CENTER_OFFSET = tentHeight / 2 - 24;
 const worldPoint = (p: { x: number; y: number }) => ({
   x: WORLD_WIDTH / 2 + p.x * renderScale,
-  y: 160 + p.y * renderScale,
+  y: WORLD_TOP + p.y * renderScale,
 });
 export const projectCell = ({ row, col }: Cell) =>
   worldPoint(project(col, row));
@@ -138,6 +151,91 @@ export class FarmScene extends Phaser.Scene {
         selectedFrame,
       ) > 32
     );
+  }
+  hitsHive(
+    point: { x: number; y: number },
+    lot: Cell & { width: number; height: number },
+    wild = true,
+  ) {
+    const art = hiveBounds(projectCell(hiveAnchor(lot)), wild);
+    const x = (point.x - art.x) / art.width;
+    const y = (point.y - art.y) / art.height;
+    if (x < 0 || x >= 1 || y < 0 || y >= 1) return false;
+    const texture = wild
+      ? wildHiveTexture(this.season)
+      : woodenHiveTexture(this.season);
+    const source = this.textures.getFrame(texture);
+    return (
+      this.textures.getPixelAlpha(
+        Math.floor(x * source.cutWidth),
+        Math.floor(y * source.cutHeight),
+        texture,
+      ) > 32
+    );
+  }
+  private drawHive(
+    lot: Cell & { width: number; height: number },
+    wild: boolean,
+    ready: boolean,
+    working = false,
+  ) {
+    const point = projectCell(hiveAnchor(lot));
+    const art = hiveBounds(point, wild);
+    const texture = wild
+      ? wildHiveTexture(this.season)
+      : woodenHiveTexture(this.season);
+    this.scenery!.add(
+      this.add
+        .image(art.x, art.y, texture)
+        .setOrigin(0)
+        .setDisplaySize(art.width, art.height)
+        .setDepth(art.bottom)
+        .setAlpha(working ? 0.55 : 1),
+    );
+    this.buildingOccluders.push({
+      x: art.x,
+      y: art.y,
+      size: art.width,
+      height: art.height,
+      front: { x: point.x, y: art.bottom },
+    });
+    if (working) {
+      const scaffold = this.add.graphics().setDepth(art.bottom + 1);
+      scaffold.lineStyle(3, 0x89633d);
+      for (const dx of [-32, 0, 32])
+        scaffold.lineBetween(
+          point.x + dx,
+          art.bottom - 50,
+          point.x + dx,
+          art.bottom,
+        );
+      for (const dy of [16, 40])
+        scaffold.lineBetween(
+          point.x - 38,
+          art.bottom - dy,
+          point.x + 38,
+          art.bottom - dy,
+        );
+      this.scenery!.add(scaffold);
+    } else if (ready) {
+      this.scenery!.add(
+        this.add
+          .text(
+            point.x + (wild ? 66 : 0),
+            point.y - (wild ? 85 : 87),
+            wild ? "+12" : "Honey",
+            {
+              fontFamily: "Farm Pixel",
+              fontSize: "16px",
+              color: "#fff0ae",
+              backgroundColor: "#65431e",
+              padding: { x: 6, y: 3 },
+            },
+          )
+          .setOrigin(0.5, 1)
+          .setDepth(art.bottom + 1),
+      );
+    }
   }
   hitsTent(point: { x: number; y: number }, cell: Cell) {
     const anchor = projectCell(cell);
@@ -231,6 +329,13 @@ export class FarmScene extends Phaser.Scene {
     this.load.image("animal-buildings", "/art/animal-buildings-seasons.png");
     this.load.image("livestock", "/art/livestock-sprites.png");
 
+    for (const season of ["spring", "summer", "fall", "winter"])
+      this.load.image(
+        wildHiveTexture(season),
+        `/art/wild-beehive-${season}.png`,
+      );
+    this.load.image("beehive-winter", "/art/beehive-winter.png");
+    this.load.image("beehive", "/art/beehive.png");
     this.load.image("starter-tent", "/art/starter-tent.png");
     this.load.image("ground-materials", "/art/ground-materials.png");
     this.load.image("border-details", "/art/border-details-seasons.png");
@@ -554,6 +659,15 @@ export class FarmScene extends Phaser.Scene {
       // Sealed kinds give no benefits.
       const sealed = !!this.policy?.sealedBuildings?.includes(s.kind);
       if (sealed) marks.sealed++;
+      if (s.kind === "beehive") {
+        this.drawHive(
+          { ...s, width: item.width, height: item.height },
+          false,
+          !!s.product,
+          !!s.pendingConstruction,
+        );
+        continue;
+      }
       if (isAnimal(s.kind)) {
         const art = animalArtwork({
           ...s,
@@ -756,6 +870,10 @@ export class FarmScene extends Phaser.Scene {
       if (service.id === "council") {
         marks.council = cellKey(service);
         this.drawCouncilOffice(service, point);
+        continue;
+      }
+      if (service.id === "hive") {
+        this.drawHive(service, true, this.farm.honeyReady !== false);
         continue;
       }
       if (service.tent) {

@@ -10,7 +10,7 @@ import {
   structureSize,
   compactBuildingSizes,
   isTree,
-  isAnimal,
+  isProducer,
   treeMaturity,
   buildingLevel,
   cellKey,
@@ -94,6 +94,7 @@ export type MicroState = {
   premiumSeedBatches?: Partial<
     Record<CropId, { quantity: number; yield: number; failOneIn: number }[]>
   >;
+  honeyReady?: boolean;
   harvests: Record<CropId, number>;
   opportunities: Opportunity[];
   coins: number;
@@ -132,6 +133,7 @@ export const homesteadMicroState = (): MicroState => ({
     carrot: 0,
     corn: 0,
   },
+  honeyReady: true,
   harvests: { radish: 0, tomato: 0, pumpkin: 0, turnip: 0, carrot: 0, corn: 0 },
   opportunities: [],
   coins: 100,
@@ -295,11 +297,11 @@ export function parseMicroState(value: unknown): MicroState {
     )
       throw new Error("Invalid permit delay.");
     if (
-      isAnimal(kind) &&
+      isProducer(kind) &&
       b.product !== undefined &&
       (typeof b.product !== "boolean" || (b.pendingConstruction && b.product))
     )
-      throw new Error("Invalid animal product readiness.");
+      throw new Error("Invalid building product readiness.");
     if (b.footprint !== undefined) {
       const f = b.footprint as { width: number; height: number };
       const old = compactBuildingSizes[kind],
@@ -322,7 +324,7 @@ export function parseMicroState(value: unknown): MicroState {
             },
           }
         : {}),
-      ...(isAnimal(kind) ? { product: b.product === true } : {}),
+      ...(isProducer(kind) ? { product: b.product === true } : {}),
       ...(b.harvestsAtLevel === undefined
         ? {}
         : { harvestsAtLevel: b.harvestsAtLevel as number }),
@@ -503,7 +505,10 @@ export function parseMicroState(value: unknown): MicroState {
     plotIds,
     thirstyPlots({ plots } as MicroState).map((i) => plotIds[i]),
   );
+  if (s.honeyReady !== undefined && typeof s.honeyReady !== "boolean")
+    throw new Error("Invalid honey readiness.");
   const result: MicroState = {
+    honeyReady: s.honeyReady !== false,
     ...(s.selfBuilt === true ? { selfBuilt: true as const } : {}),
     ...council,
     seeds,

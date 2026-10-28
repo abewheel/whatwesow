@@ -2,6 +2,8 @@
 export const TILE_WIDTH = 36;
 export const TILE_HEIGHT = 18;
 export const FARM_SIZE = 18;
+// Camera headroom keeps the top-corner honey tree reachable below phone controls.
+export const WORLD_TOP = 384;
 
 export function project(col: number, row: number) {
   return {

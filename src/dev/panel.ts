@@ -33,6 +33,7 @@ export function mountDevPanel(
     editor.value = JSON.stringify(select(presetState(preset)), null, 2);
   });
   panel.querySelector("#apply-state")!.addEventListener("click", async () => {
+    status.textContent = "Applying state…";
     try {
       const value: unknown = JSON.parse(editor.value);
       await apply(

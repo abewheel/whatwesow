@@ -79,7 +79,9 @@ it("supports tearing down unfinished work, blocks last-turn teardown, and return
   const start = homesteadMicroState();
   start.selfBuilt = true;
   const pending = actOnFarm(start, { type: "teardown", id: 1 }).state;
-  expect(serviceLocations(pending)[0].tent).toBe(true);
+  expect(
+    serviceLocations(pending).find((service) => service.id === "home")?.tent,
+  ).toBe(true);
   expect(() => actOnFarm(start, { type: "teardown", id: 1 }, 160)).toThrow(
     /next season/,
   );

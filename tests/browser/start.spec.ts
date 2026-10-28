@@ -19,7 +19,7 @@ test("loads behind a cover, starts bare, builds fields and completes a home next
   await page.locator("#begin-farm").click();
   await expect(page.locator("[data-plot]")).toHaveCount(0);
   await expect(page.locator("[data-structure]")).toHaveCount(0);
-  await expect(page.locator("[data-service]")).toHaveCount(1);
+  await expect(page.locator("[data-service]")).toHaveCount(2);
   await page.locator('[data-cell="16,16"]').click();
   await page.locator("#expand").click();
   await expect(page.locator("[data-plot]")).toHaveCount(1);
@@ -35,7 +35,7 @@ test("loads behind a cover, starts bare, builds fields and completes a home next
   await visitBuilding(page, "home");
   await page.locator("#next-season").click();
   await expect(page.locator("#season")).toContainText("summer");
-  await expect(page.locator("[data-service]")).toHaveCount(0);
+  await expect(page.locator("[data-service]")).toHaveCount(1);
   await expect(page.locator('[data-structure="1"]')).toHaveAttribute(
     "aria-label",
     /level 1/,

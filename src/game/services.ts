@@ -1,6 +1,11 @@
 import { isTree, type BuildingKind } from "../micro/world";
 
 export const serviceMenus = {
+  hive: {
+    name: "Wild beehive",
+    description: "Collect honey once each season.",
+    container: "hive-actions",
+  },
   home: {
     name: "Farmhouse",
     description:

@@ -1,3 +1,4 @@
+import { WORLD_TOP, project, TILE_WIDTH } from "../../src/game/layout";
 import { expect, test } from "./fixtures";
 import { clickCamera } from "./helpers";
 
@@ -22,7 +23,12 @@ test("building hover follows its complete footprint across cells and zoom", asyn
         width: el.style.width,
         height: el.style.height,
       })),
-    ).toEqual({ left: "2432px", top: "480px", width: "192px", height: "96px" });
+    ).toEqual({
+      left: "2432px",
+      top: `${WORLD_TOP + 320}px`,
+      width: "192px",
+      height: "96px",
+    });
     await expect(page.locator(`[data-cell="${cell}"]`)).not.toHaveAttribute(
       "title",
     );
@@ -95,14 +101,15 @@ test("farmer sorts ahead of both farmhouse front edges and behind its rear", asy
   await expect(page.locator("main")).toHaveJSProperty("inert", false);
   const canvas = page.locator("canvas");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
-  // The farmhouse's bottom corner projects to y=624. Both side paths have
-  // smaller screen y, so sorting by feet alone would hide the farmer.
+  // Both side paths have smaller screen y than the farmhouse front, so sorting
+  // by feet alone would hide the farmer. Account for camera padding separately.
+  const homeFront = WORLD_TOP + project(16.5, 12.5).y * (64 / TILE_WIDTH);
   for (const cell of ["13,15", "12,17", "10,15"]) {
     await page.locator(`[data-cell="${cell}"]`).press("Enter");
     await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
     await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
     const depth = Number(await canvas.getAttribute("data-farmer-depth"));
-    if (cell === "10,15") expect(depth).toBeLessThan(624);
-    else expect(depth).toBeGreaterThan(624);
+    if (cell === "10,15") expect(depth).toBeLessThan(homeFront);
+    else expect(depth).toBeGreaterThan(homeFront);
   }
 });

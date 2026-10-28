@@ -19,6 +19,7 @@ Definitions live in `src/micro/world.ts`. The first facility costs its base pric
 | Build           | Milestone                               | Base cost | Footprint | Effect per level                                      |
 | --------------- | --------------------------------------- | --------- | --------- | ----------------------------------------------------- |
 | Farmhouse       | Available at start                      | 120       | 5 × 4     | Home and calendar                                     |
+| Wooden beehive | Available at the start | 120 | 2 × 2 | Collect 15 coins of honey each season |
 | Chicken coop    | 3 harvests                              | 240       | 4 × 4     | Collect eggs for 30 coins per level each season       |
 | Dairy barn      | 12 harvests                             | 750       | 5 × 5     | Collect milk for 75 coins per level each season       |
 | Sheepfold       | 24 harvests                             | 1,200     | 5 × 5     | Collect wool for 120 coins per level each season      |
@@ -34,7 +35,7 @@ Definitions live in `src/micro/world.ts`. The first facility costs its base pric
 
 Turnips and carrots are available at the start. Harvest one of each to receive Eli's corn seed offer. New plans appear on open land as milestones are earned. Selected buildings show upgrade requirements. Offers remain available once earned, even after land or building losses. There is no research currency or separate progression screen.
 
-Production buildings and apple trees have three levels. Each individual building earns level 2 after 12 harvests made since construction completes, and level 3 after 24 more harvests since its last upgrade completes. Mills count only corn harvests. An upgrade costs base cost × the new level. Homes and oaks have one level. Soil improvements need 3, 30, and 90 total harvests, in order, and cost 80, 160, and 240 coins.
+Production buildings other than wooden beehives, and apple trees, have three levels. Wooden beehives have one level. Each individual building earns level 2 after 12 harvests made since construction completes, and level 3 after 24 more harvests since its last upgrade completes. Mills count only corn harvests. An upgrade costs base cost × the new level. Homes and oaks have one level. Soil improvements need 3, 30, and 90 total harvests, in order, and cost 80, 160, and 240 coins.
 
 Upgrades and soil improvements cost coins when started and finish at the start of the next turn. Their benefits stay at the current level until then. Each building and the soil can have one upgrade underway; different buildings can upgrade together. Pending work survives saving and reloading. Losing a building also loses its pending upgrade, without a refund. New construction also charges immediately and finishes next season. Its footprint stays reserved while work is underway, but its benefits remain inactive. Buildings use unfinished timber-and-stone artwork, with a work symbol and grey name while construction or an upgrade is pending. Trees start as saplings and grow over multiple years, with visible sapling, growing, and mature stages. The starting farmhouse and structures in older saves are already complete.
 

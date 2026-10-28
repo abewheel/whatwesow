@@ -10,7 +10,25 @@ export const animalProducts = {
 export type AnimalKind = keyof typeof animalProducts;
 export const isAnimal = (kind: string): kind is AnimalKind =>
   Object.hasOwn(animalProducts, kind);
+export const buildingProducts = {
+  ...animalProducts,
+  beehive: { product: "Honey", value: 15 },
+} as const;
+export type ProducerKind = keyof typeof buildingProducts;
+export const isProducer = (kind: string): kind is ProducerKind =>
+  Object.hasOwn(buildingProducts, kind);
 export const buildings = {
+  beehive: {
+    name: "Wooden beehive",
+    cost: 120,
+    width: 2,
+    height: 2,
+    frame: 0,
+    levels: 1,
+    benefit: "Collect honey each season: 15 coins",
+    bonus: 0,
+    income: 0,
+  },
   coop: {
     name: "Chicken coop",
     cost: 240,
@@ -166,7 +184,7 @@ export const compactBuildingSizes: Record<
     kind,
     kind === "home" || kind === "barn" || kind === "greenhouse"
       ? { width: 3, height: 2 }
-      : kind === "shed" || kind === "well"
+      : kind === "shed" || kind === "well" || kind === "beehive"
         ? { width: 2, height: 2 }
         : kind === "apple" || kind === "oak"
           ? { width: 1, height: 1 }
@@ -190,8 +208,17 @@ export type Structure = Cell & {
   age?: number;
   product?: boolean;
 };
+export const WILD_HIVE_CELL: Cell = { row: -1, col: -1 };
 // The first camp provides services until the farmhouse is complete.
 export const services = [
+  {
+    id: "hive",
+    name: "Wild beehive",
+    ...WILD_HIVE_CELL,
+    width: 1,
+    height: 1,
+    frame: 0,
+  },
   {
     id: "home",
     name: "Farmhouse office",
@@ -296,11 +323,13 @@ export function serviceLocations(
     .filter(
       (s) =>
         s.id === "council" ||
+        s.id === "hive" ||
         !layout.selfBuilt ||
         (!settled && s.id === "home"),
     )
     .filter((service) => service.id !== "home" || !settled)
     .map((original) => {
+      if (original.id === "hive") return { ...original, tent: false };
       const tent = original.id === "home" && !!layout.selfBuilt && !settled;
       const service = tent ? { ...original, width: 2, height: 2 } : original;
       const candidates = (function* () {
@@ -327,7 +356,12 @@ export function serviceLocations(
         }
       cell ??= {
         row: -service.height,
-        col: 9 + allServices.findIndex((s) => s.id === service.id) * 5,
+        col:
+          9 +
+          allServices
+            .filter((s) => s.id !== "hive")
+            .findIndex((s) => s.id === service.id) *
+            5,
       };
       for (const p of footprint(cell, service.width, service.height))
         used.add(cellKey(p));
@@ -455,7 +489,7 @@ export function seasonTrees(
   season: string,
 ): Structure[] {
   return structures.map((s) => {
-    if (isAnimal(s.kind)) return { ...s, product: !s.pendingConstruction };
+    if (isProducer(s.kind)) return { ...s, product: !s.pendingConstruction };
     if (!isTree(s.kind)) return s;
     const age = Math.min(160, (s.age ?? 0) + 1);
     return {

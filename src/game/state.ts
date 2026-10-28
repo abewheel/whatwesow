@@ -204,6 +204,7 @@ export function advanceSeason(state: GameState): {
     permits: permits?.filter((t) => t >= next),
     contract: contract && contract.until >= next ? contract : undefined,
     ...macro,
+    honeyReady: true,
     structures: seasonTrees(farm.structures, macro.season),
   });
   return {

@@ -13,8 +13,8 @@ import {
 } from "./state";
 import {
   cellAllowed,
-  animalProducts,
-  isAnimal,
+  buildingProducts,
+  isProducer,
   policyCost,
   type Structure,
 } from "./world";
@@ -292,14 +292,15 @@ export function fruitQuote(
   const base = (tree.kind === "apple" ? 24 : 8) * tree.level;
   return { ...priceSale(state, tree.kind, base, policy, turn), held: false };
 }
-/** Eggs, milk and wool sell through the same chain as fruit. */
+/** Eggs, milk, wool and wooden-hive honey sell through the same chain as fruit. */
 export function animalQuote(
   state: MicroState,
   animal: Structure,
   policy: FarmPolicy = {},
   turn = 1,
 ): SaleQuote {
-  if (!isAnimal(animal.kind)) throw new Error("Only animal buildings collect.");
-  const base = animalProducts[animal.kind].value * animal.level;
+  if (!isProducer(animal.kind))
+    throw new Error("Only animal buildings collect.");
+  const base = buildingProducts[animal.kind].value * animal.level;
   return { ...priceSale(state, animal.kind, base, policy, turn), held: false };
 }

@@ -14,8 +14,8 @@ import {
   buildings,
   constructionCost,
   isTree,
-  isAnimal,
-  animalProducts,
+  isProducer,
+  buildingProducts,
   treeProduct,
   buildingLevel,
   canPlace,
@@ -57,6 +57,8 @@ export type FarmAction =
   | { type: "harvestFruit"; id: number }
   | { type: "harvestTree"; id: number }
   | { type: "collectAnimal"; id: number }
+  | { type: "collectHive"; id: number }
+  | { type: "collectHoney" }
   | { type: "work" }
   | { type: "expand"; cell?: Cell }
   | { type: "build"; kind: BuildingKind; cell: Cell }
@@ -216,16 +218,21 @@ export function actOnFarm(
         `${crops[plot.crop].name} harvested`,
       ));
     }
-  } else if (action.type === "collectAnimal") {
+  } else if (action.type === "collectAnimal" || action.type === "collectHive") {
     const animal = state.structures.find((s) => s.id === action.id);
     if (
       !animal ||
-      !isAnimal(animal.kind) ||
+      !isProducer(animal.kind) ||
+      (action.type === "collectHive") !== (animal.kind === "beehive") ||
       animal.pendingConstruction ||
       animal.pendingDemolition ||
       !animal.product
     )
-      throw new Error("No animal products ready. Return next season.");
+      throw new Error(
+        action.type === "collectHive"
+          ? "No honey ready. Return next season."
+          : "No animal produce ready. Return next season.",
+      );
     if (!cellAllowed(animal, policy))
       throw new Error("This building is outside the current land grant.");
     const sale = animalQuote(state, animal, policy, turn);
@@ -235,7 +242,7 @@ export function actOnFarm(
       sale,
       policy,
       turn,
-      `${animalProducts[animal.kind].product} collected`,
+      `${buildingProducts[animal.kind].product} collected`,
     ));
   } else if (action.type === "harvestTree") {
     const tree = state.structures.find((s) => s.id === action.id);
@@ -258,6 +265,12 @@ export function actOnFarm(
       turn,
       `${treeProduct(tree.kind)} harvested`,
     ));
+  } else if (action.type === "collectHoney") {
+    if (state.honeyReady === false)
+      throw new Error("Honey collected. Return next season.");
+    state.honeyReady = false;
+    state.coins += 12;
+    message = "Honey collected! +12 coins. More next season.";
   } else if (action.type === "work") {
     if (!canWork(state, policy, turn))
       throw new Error("You already have seeds or crops to keep farming.");
@@ -358,7 +371,7 @@ export function actOnFarm(
     delete building.pendingUpgrade;
     delete building.wait;
     building.pendingDemolition = true;
-    if (isTree(building.kind) || isAnimal(building.kind))
+    if (isTree(building.kind) || isProducer(building.kind))
       building.product = false;
     message = `${buildings[building.kind].name} teardown started. Land clears next season. No coins returned.`;
   } else if (action.type === "movePlot") {

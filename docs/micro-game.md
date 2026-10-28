@@ -50,3 +50,11 @@ Use the micro scope in Playtest tools:
 Loading fills the editor; applying saves and renders the scenario. Micro presets preserve the live macro calendar. Full-game presets replace both domains. For council rules, use the whole-game [crisis presets](crises.md#test-crises). See [playtesting recipes](playtesting.md) for instance isolation, JSON editing, and automation.
 
 Run `pnpm test:micro` for economics and transitions (council rules are in `src/micro/council.test.ts` and `src/micro/money.test.ts`), `pnpm test:integration` for save migration, domain composition and crises, and `pnpm test:browser` for real plot interactions and presets. Run `pnpm validate` before handing over changes.
+
+## Honey recovery
+
+Every farm has a permanent wild beehive hanging from a tree just outside the topmost corner (row -1, column -1). Tap it and collect honey for 12 coins once per season, including winter. The tree changes through spring, summer, fall, and winter. Collection is immediate and free, so a crowded farm or a zero balance cannot prevent it. Honey does not accumulate across seasons. The wild hive cannot be bought, moved, upgraded, or lost, and its exterior position preserves all land in existing saves.
+
+Micro saves store optional `honeyReady` readiness, defaulting to true for older saves. Collection saves false; advancing the season resets it to true. Calendar edits in playtest tools do not refill honey. The fixed 12-coin return is unaffected by production policies, preserving recovery income. Delivery work remains available at home for immediate seed recovery.
+
+Wooden beehives are a separate buildable plan, available from the start. The first costs 120 coins, reserves 2 × 2 tiles, finishes next season, and produces 15 coins of honey once per season. That repays the first hive in eight collections, matching the chicken coop's base payback. Further hives use normal rising construction prices. Wooden hives have one level, can be moved, and use normal production policies and loss rules. The farmer visits to collect, and each hive saves its own `product` readiness independently of the wild hive.

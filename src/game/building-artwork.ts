@@ -8,6 +8,7 @@ export const distinctStructures: Partial<Record<BuildingKind, number>> = {
 };
 // The farmhouse uses the farm atlas; the council office is a drawn placeholder.
 export const distinctServices = {
+  hive: undefined,
   seeds: 4,
   builder: 5,
   fields: 6,
