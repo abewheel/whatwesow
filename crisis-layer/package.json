@@ -1,0 +1,9 @@
+{
+  "name": "discourse-layer-prototype",
+  "private": true,
+  "description": "Crisis-layer prototype: play eight crises and watch the Overton window move.",
+  "scripts": {
+    "content": "node -e \"const c=require('./content.json');require('fs').writeFileSync('content.js','window.CONTENT = '+JSON.stringify(c,null,2)+';\\n')\"",
+    "test": "node test.js"
+  }
+}

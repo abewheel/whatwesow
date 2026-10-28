@@ -7,6 +7,8 @@ export default tseslint.config(
       "node_modules/**",
       "test-results/**",
       "playwright-report/**",
+      // Self-contained prototype with its own tests; the game imports it as data.
+      "crisis-layer/**",
     ],
   },
   ...["micro", "macro"].map((domain) => ({

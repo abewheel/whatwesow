@@ -1228,6 +1228,8 @@ if (import.meta.env.DEV) {
     () => state,
     (next) => apply(next, true, true),
   );
+  const { mountCrisisTrial } = await import("./dev/crisis-trial");
+  mountCrisisTrial();
 }
 
 await Promise.all([

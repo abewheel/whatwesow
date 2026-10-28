@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discourse Layer</title>
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --ink: #1d1c1a;
+    --muted: #6b6760;
+    --rule: #dedad2;
+    --card: #ffffff;
+    --card-hover: #f3f0e9;
+    --band: rgba(70, 110, 160, 0.20);
+    --band-edge: #466ea0;
+    --ask: #b5651d;
+    --enacted: #2e7d4f;
+    --center: #1d1c1a;
+    --warn: #a3322a;
+    --code: #f1eee7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #181715;
+      --ink: #ece9e3;
+      --muted: #a39e95;
+      --rule: #3a3833;
+      --card: #22211e;
+      --card-hover: #2c2a26;
+      --band: rgba(120, 160, 210, 0.22);
+      --band-edge: #8fb1db;
+      --ask: #e0a060;
+      --enacted: #6cc28f;
+      --center: #ece9e3;
+      --warn: #e2766d;
+      --code: #2a2925;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #181715; --ink: #ece9e3; --muted: #a39e95; --rule: #3a3833; --card: #22211e;
+    --card-hover: #2c2a26; --band: rgba(120, 160, 210, 0.22); --band-edge: #8fb1db;
+    --ask: #e0a060; --enacted: #6cc28f; --center: #ece9e3; --warn: #e2766d; --code: #2a2925;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .page { max-width: 720px; margin: 0 auto; padding: 16px 16px 64px; }
+  h2 { font-size: 1.35rem; line-height: 1.3; margin: 1.6rem 0 0.4rem; }
+  h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 1.6rem 0 0.5rem; }
+  h4 { font-size: 0.95rem; margin: 1rem 0 0.3rem; }
+  p { margin: 0.6rem 0; }
+  button { font: inherit; color: inherit; }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.85rem; }
+
+  .debug-toggle {
+    position: fixed; top: 10px; right: 10px; z-index: 5;
+    font-size: 0.8rem; padding: 4px 10px; border: 1px solid var(--rule);
+    background: var(--card); border-radius: 999px; cursor: pointer;
+  }
+  .debug-toggle[aria-pressed="true"] { border-color: var(--warn); color: var(--warn); }
+
+  /* window bar */
+  .bar { padding-top: 28px; border-bottom: 1px solid var(--rule); padding-bottom: 12px; }
+  .axis { position: relative; height: 78px; margin: 0 4px; }
+  .track { position: absolute; left: 0; right: 0; top: 20px; height: 24px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .band { position: absolute; top: 20px; height: 24px; background: var(--band); border-left: 2px solid var(--band-edge); border-right: 2px solid var(--band-edge); }
+  .band-next { position: absolute; top: 17px; height: 30px; border: 2px dashed var(--band-edge); }
+  .tick { position: absolute; top: 20px; height: 24px; width: 0; border-left: 1px solid var(--rule); }
+  .tick-label { position: absolute; top: 46px; transform: translateX(-50%); font-size: 0.75rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .axis-ends { display: flex; justify-content: space-between; margin: 0 4px 6px; font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+  .center-mark { position: absolute; top: 14px; height: 36px; width: 0; border-left: 2px solid var(--center); }
+  .center-mark::after { content: ""; position: absolute; top: 14px; left: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--center); }
+  .center-mark.next { border-left-style: dashed; opacity: 0.6; }
+  .center-mark.next::after { background: transparent; border: 2px solid var(--center); }
+  .ask-mark, .enacted-mark { position: absolute; transform: translateX(-50%); font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+  .ask-mark { top: 0; color: var(--ask); }
+  .enacted-mark { top: 60px; color: var(--enacted); }
+  .names { display: flex; margin: 4px 4px 0; font-size: 0.72rem; line-height: 1.3; color: var(--muted); }
+  .names > div { text-align: center; padding: 0 3px; overflow-wrap: anywhere; }
+  .names .is-ask { color: var(--ask); }
+  .names .is-enacted { color: var(--enacted); font-weight: 600; }
+  .names .tag { display: block; font-weight: 600; }
+  .legend { font-size: 0.85rem; margin: 10px 0 0; }
+  .legend span.ask { color: var(--ask); font-weight: 600; }
+  .legend span.enacted { color: var(--enacted); font-weight: 600; }
+
+  /* farm */
+  .farm { border: 1px solid var(--rule); border-radius: 8px; padding: 4px 16px 10px; margin: 1.2rem 0; }
+  .farm h3 { margin-top: 0.8rem; }
+  .tiles { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: 0.3rem 0; }
+  .tiles div { font-variant-numeric: tabular-nums; }
+  .tiles b { font-size: 1.15rem; }
+  .farm ul { margin: 0.2rem 0 0.4rem; padding-left: 1.2rem; }
+  .gone { color: var(--warn); font-weight: 600; }
+
+  /* cards */
+  .card {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
+    padding: 14px 16px; margin: 10px 0; line-height: 1.6;
+  }
+  .card:hover, .card:focus-visible { background: var(--card-hover); border-color: var(--muted); outline: none; }
+  .picked.opposing { border-left-color: var(--warn); }
+  .picked { background: var(--card); border: 1px solid var(--rule); border-left: 4px solid var(--ink); border-radius: 8px; padding: 14px 16px; margin: 1rem 0; }
+  .picked .who { margin-top: 8px; font-size: 0.9rem; font-weight: 600; }
+  .meta { display: block; margin-top: 8px; font-size: 0.8rem; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+  .meta .look { color: var(--ink); }
+
+  .reveal p.line { margin: 0.8rem 0; }
+  .arith { font-variant-numeric: tabular-nums; }
+  .attribution { border-left: 3px solid var(--ask); padding-left: 12px; }
+  .offer { display: flex; gap: 10px; margin: 0.6rem 0; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 1.6rem 0; }
+  .btn { padding: 8px 18px; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+  .btn.secondary { background: transparent; color: var(--ink); border-color: var(--rule); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* debug */
+  .debug-panel { margin: 1rem 0; padding: 4px 16px 12px; border: 1px dashed var(--warn); border-radius: 8px; font-size: 0.9rem; }
+  .debug-panel .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 14px; }
+  .debug-panel label { display: flex; flex-direction: column; font-size: 0.8rem; color: var(--muted); }
+  .debug-panel input, .debug-panel select { font: inherit; font-size: 0.9rem; padding: 4px 6px; color: var(--ink); background: var(--card); border: 1px solid var(--rule); border-radius: 4px; }
+  .debug-panel .actions { margin: 0.8rem 0 0.2rem; }
+  .debug-panel .btn { padding: 4px 12px; font-size: 0.85rem; }
+
+  .scroll { overflow-x: auto; margin: 0.6rem 0; }
+  table { border-collapse: collapse; font-size: 0.82rem; width: 100%; }
+  th, td { text-align: left; vertical-align: top; padding: 5px 8px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+  th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  td.num { text-align: right; white-space: nowrap; }
+  table.wide td, table.wide th { white-space: nowrap; }
+  tr.totals td { font-weight: 600; border-top: 2px solid var(--rule); }
+  code { background: var(--code); padding: 1px 4px; border-radius: 3px; font-size: 0.85em; }
+
+  .traj svg { width: 100%; height: auto; display: block; }
+  .traj .grid-line { stroke: var(--rule); stroke-width: 1; }
+  .traj .boundary { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 4 4; }
+  .traj .axis-text { fill: var(--muted); font-size: 11px; }
+  .traj .you { fill: none; stroke: var(--band-edge); stroke-width: 2.5; }
+  .traj .you-dot { fill: var(--band-edge); }
+  .traj .cf { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 4; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 0.85rem; color: var(--muted); }
+  .key i { display: inline-block; width: 22px; height: 0; vertical-align: middle; margin-right: 6px; }
+  .key .k-you { border-top: 3px solid var(--band-edge); }
+  .key .k-cf { border-top: 2px dashed var(--muted); }
+  .error { color: var(--warn); border: 1px solid var(--warn); border-radius: 6px; padding: 10px 14px; }
+</style>
+</head>
+<body>
+<button id="debugToggle" class="debug-toggle" type="button" data-action="toggle-debug" aria-pressed="false">Debug: off</button>
+<div class="page">
+  <div id="bar"></div>
+  <div id="debug"></div>
+  <main id="screen"></main>
+  <section id="ledger"></section>
+</div>
+
+<script src="content.js"></script>
+
+<!-- Engine: pure. replay(picks, config) -> state. No DOM access. Shared with the farm game; see INTEGRATION.md. -->
+<script src="engine.js"></script>
+
+<!-- UI: renders from replay(picks, config). The only game state is `picks` and `config`. -->
+<script id="ui">
+(function () {
+  'use strict';
+  const C = window.CONTENT, E = window.Engine, S = C.strings;
+  const ORDER = C.params.runOrder, TOTAL = ORDER.length;
+  const DEBUG_KEY = 'discourseLayer.debug';
+
+  let picks = [];
+  let config = E.defaults('proposal');
+  let view = 'crisis';          // which screen is showing: 'crisis' | 'reveal' | 'report'
+  let debug = readDebug();
+  let lastHash = null;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const { fill, fmt, amount, position, moved } = E.text;
+  const t = (tpl, vars) => esc(fill(tpl, vars || {}));
+  const immediateText = E.text.immediate;
+  const sideOf = card => E.text.label(card) + (debug ? ' (' + card.cardType + ')' : '');
+
+  function readDebug() { try { return localStorage.getItem(DEBUG_KEY) === '1'; } catch (e) { return false; } }
+  function writeDebug() { try { localStorage.setItem(DEBUG_KEY, debug ? '1' : '0'); } catch (e) { /* storage unavailable */ } }
+
+  // ---------- URL hash ----------
+  const HASH_KEYS = [['startCenter', 'start'], ['halfWidth', 'half'], ['oppositionShift', 'opp'], ['spacing', 'spacing'], ['extreme', 'extreme']];
+
+  function writeHash() {
+    const d = E.defaults(config.resolution), parts = [];
+    if (config.resolution !== 'proposal') parts.push('rule=' + config.resolution);
+    if (config.order !== d.order) parts.push('order=' + config.order);
+    HASH_KEYS.forEach(([k, h]) => { if (config[k] !== d[k]) parts.push(h + '=' + config[k]); });
+    if (picks.length) parts.push('picks=' + picks.join(','));
+    const hash = parts.length ? '#' + parts.join('&') : '';
+    lastHash = hash;
+    if ((location.hash || '') === hash) return;
+    try { history.replaceState(null, '', hash || location.pathname + location.search); }
+    catch (e) { location.hash = hash; }
+  }
+
+  function readHash() {
+    const q = {};
+    (location.hash || '').replace(/^#/, '').split('&').filter(Boolean).forEach(p => {
+      const i = p.indexOf('=');
+      if (i > 0) q[p.slice(0, i)] = decodeURIComponent(p.slice(i + 1));
+    });
+    config = E.defaults(q.rule);
+    if (q.order === 'resolveThenShift' || q.order === 'shiftThenResolve') config.order = q.order;
+    HASH_KEYS.forEach(([k, h]) => { const v = parseFloat(q[h]); if (isFinite(v)) config[k] = v; });
+    picks = [];
+    (q.picks ? q.picks.split(',') : []).some(p => {
+      try { E.replay(picks.concat([p]), config); picks.push(p); return false; } catch (e) { return true; }
+    });
+    const st = E.replay(picks, config), last = st.ledger[st.ledger.length - 1];
+    view = last && last.offer && last.accepted === null ? 'reveal' : st.done ? 'report' : 'crisis';
+  }
+
+  // ---------- helpers ----------
+  const handFor = E.hand, oppositionFor = E.opposition;
+  const pct = x => (Math.max(-100, Math.min(100, x)) + 100) / 2;
+  const range = (c, hw) => fmt(c - hw) + ' to ' + fmt(c + hw);
+
+  function pendingOffer(st) {
+    const last = st.ledger[st.ledger.length - 1];
+    return !!(last && last.offer && last.accepted === null);
+  }
+
+  // ---------- window bar ----------
+  function renderBar(st) {
+    const cfg = st.config, hw = cfg.halfWidth;
+    let crisis = null, rec = null, center = st.center;
+    if (view === 'reveal' && st.ledger.length) { rec = st.ledger[st.ledger.length - 1]; crisis = E.crisisById[rec.crisisId]; center = rec.before; }
+    else if (view === 'crisis' && !st.done) crisis = E.crisisById[ORDER[st.ledger.length]];
+
+    const rs = E.rungs(cfg);
+    const band = (c, cls) => { const l = pct(c - hw), r = pct(c + hw); return `<div class="${cls}" style="left:${l}%;width:${Math.max(0, r - l)}%"></div>`; };
+    let h = '<div class="axis"><div class="track"></div>';
+    h += band(center, 'band');
+    if (rec) h += band(rec.after, 'band-next');
+    rs.forEach(r => { h += `<div class="tick" style="left:${pct(r)}%"></div><div class="tick-label" style="left:${pct(r)}%">${fmt(r)}</div>`; });
+    h += `<div class="center-mark" style="left:${pct(center)}%" title="council's mood"></div>`;
+    if (rec) h += `<div class="center-mark next" style="left:${pct(rec.after)}%" title="council's mood after"></div>`;
+    if (rec && rec.ask !== null) h += `<div class="ask-mark" style="left:${pct(rec.ask)}%">${t(S.markerAsked)}</div>`;
+    if (rec) h += `<div class="enacted-mark" style="left:${pct(rec.enactedPos)}%">${t(S.markerPassed)}</div>`;
+    h += '</div>';
+    h += `<div class="axis-ends"><span>${t(S.axisControl)}</span><span>${t(S.axisFreedom)}</span></div>`;
+
+    if (crisis && cfg.spacing > 0) {
+      const colW = cfg.spacing / 2, first = pct(rs[0] - cfg.spacing / 2);
+      h += `<div class="names" style="padding-left:${first}%">`;
+      rs.forEach(r => {
+        const p = E.policyAt(crisis, r);
+        const isAsk = rec && rec.ask === r, isEn = rec && rec.enactedPos === r;
+        h += `<div class="${isAsk ? 'is-ask ' : ''}${isEn ? 'is-enacted' : ''}" style="width:${colW}%;flex:none">`;
+        h += p.missing ? '' : esc(p.name);
+        if (isAsk) h += `<span class="tag">${t(S.markerAsked)}</span>`;
+        if (isEn) h += `<span class="tag">${t(S.markerPassed)}</span>`;
+        h += '</div>';
+      });
+      h += '</div>';
+    }
+
+    let legend;
+    if (rec) {
+      legend = t(S.legendBefore) + ' ' + t(cfg.order === 'shiftThenResolve' ? S.decidedAfter : S.decidedBefore);
+      if (rec.ask !== null) legend += ` <span class="ask">${t(S.legendAsked, { policy: E.policyAt(crisis, rec.ask).name })}</span>`;
+      legend += ` <span class="enacted">${t(S.legendPassed, { policy: rec.enactedName })}</span>`;
+      if (debug) legend += `<br><span class="meta">window ${range(rec.before, hw)} (center ${fmt(rec.before)}) → ${range(rec.after, hw)} (center ${fmt(rec.after)}) · ask ${fmt(rec.ask)} · enacted ${fmt(rec.enactedPos)}</span>`;
+    } else {
+      legend = t(S.legendNow);
+      if (debug) legend += `<br><span class="meta">window ${range(center, hw)}, center ${fmt(center)}</span>`;
+    }
+    h += `<p class="legend">${legend}</p>`;
+    $('bar').innerHTML = `<div class="bar">${h}</div>`;
+  }
+
+  // ---------- shared blocks ----------
+  function farmBlock(st) {
+    let h = `<section class="farm"><h3>${t(S.farmHeading)}</h3><div class="tiles">` +
+      `<div>${t(S.tilesRemaining)}: <b>${st.tilesRemaining}</b></div>` +
+      `<div>${t(S.tilesTaken)}: <b>${st.tilesTaken}</b></div>` +
+      `<div>${t(S.tilesSold)}: <b>${st.tilesSold}</b></div></div>`;
+    if (st.tilesRemaining === 0) h += `<p class="gone">${t(S.farmGone)}</p>`;
+    h += `<h4>${t(S.standingHeading)}</h4>`;
+    h += st.standing.length
+      ? '<ul>' + st.standing.map(s => `<li><b>${esc(s.policy)}:</b> ${esc(s.text)}</li>`).join('') + '</ul>'
+      : `<p class="muted">${t(S.standingNone)}</p>`;
+    return h + '</section>';
+  }
+
+  function cardMeta(card, n) {
+    if (!debug) return '';
+    const r = E.replay(picks.concat([card.id]), config).ledger[n];
+    return `<span class="meta">${esc(card.persona)} · ${esc(card.cardType)} · ${card.premiseType} · shift ${fmt(card.explicitShift)} · concludes ${fmt(card.conclusionPos)}<br>` +
+      `<span class="look">→ window ${fmt(r.after)}, enacts ${esc(r.enactedName)} (${fmt(r.enactedPos)})</span></span>`;
+  }
+
+  const effectsText = list => (list && list.length ? list.map(e => Object.keys(e).map(k => k === 'type' ? e.type : k + '=' + e[k]).join(' ')).join('; ') : 'none');
+
+  function policyTable(crisis) {
+    return '<h3>Policies (debug)</h3><div class="scroll"><table><tr><th>Pos</th><th>Policy</th><th>Effects</th><th>Tiles lost</th><th>Offer</th></tr>' +
+      crisis.policies.slice().sort((a, b) => b.pos - a.pos).map(p =>
+        `<tr><td class="num">${fmt(p.pos)}</td><td>${esc(p.name)}</td><td><code>${esc(effectsText(p.effects))}</code></td><td class="num">${p.tilesLost}</td><td>${p.offer ? 'yes, ' + p.offerTiles + ' tiles' : ''}</td></tr>`
+      ).join('') + '</table></div>';
+  }
+
+  // ---------- crisis screen ----------
+  function renderCrisis(st) {
+    const n = st.ledger.length, crisis = E.crisisById[ORDER[n]];
+    let h = `<h2>${t(S.crisisHeading, { n: n + 1, total: TOTAL, title: crisis.title })}</h2>`;
+    h += `<p>${esc(crisis.trigger)}</p>`;
+    if (debug && crisis.note) h += `<p class="meta">note: ${esc(crisis.note)}</p>`;
+    const prev = st.ledger.filter(r => r.crisisId === crisis.id).pop();
+    if (prev) h += `<p class="muted">${t(S.facedBefore, { policy: prev.enactedName })}</p>`;
+    h += farmBlock(st);
+    if (debug) h += policyTable(crisis);
+
+    h += `<section class="hand"><h3>${t(S.handHeading)}</h3><p class="muted">${t(S.handHint)}</p>`;
+    handFor(crisis.id, n).forEach(c => {
+      h += `<button class="card" data-action="pick" data-id="${esc(c.id)}">${esc(c.argument)}${cardMeta(c, n)}</button>`;
+    });
+    h += '</section>';
+    h += `<div class="actions"><button class="btn secondary" data-action="undo" ${picks.length ? '' : 'disabled'}>Undo</button></div>`;
+    return h;
+  }
+
+  // ---------- reveal screen ----------
+  // The sentences come from Engine.text.reveal, the same call the farm game makes; this only lays them out.
+  function renderReveal(st) {
+    const rec = st.ledger[st.ledger.length - 1], card = E.cardById[rec.cardId];
+    const r = E.text.reveal(st);
+    const debugTag = c => (debug ? ' (' + c.cardType + ')' : '');
+    let h = `<div class="reveal"><h2>${esc(r.heading)}</h2>`;
+    h += `<div class="picked">${esc(r.argument)}<div class="who">${esc(r.label + debugTag(card))}</div></div>`;
+    // The case for control is made every crisis; the player only sees it here, after choosing.
+    if (r.opposition) {
+      h += `<p class="line">${esc(r.opposition.lead)}</p><div class="picked opposing">${esc(r.opposition.argument)}<div class="who">${esc(r.opposition.label + debugTag(oppositionFor(rec.crisisId)))}</div></div>`;
+    }
+    h += `<p class="line">${esc(r.answer)}</p>`;
+    h += `<p class="line arith">${esc(r.shift)}</p>`;
+    h += `<p class="line">${esc(r.resolution)}</p>`;
+    if (r.attribution) h += `<p class="line attribution">${esc(r.attribution)}</p>`;
+
+    h += `<h3>${esc(r.immediateHeading)}</h3><p>${esc(r.immediate)}</p>`;
+    if (debug) h += `<p class="meta">effects: ${esc(effectsText(r.effects))}</p>`;
+    if (r.offer) {
+      h += r.offer === 'pending'
+        ? '<div class="offer"><button class="btn" data-action="accept">Take the deal</button><button class="btn secondary" data-action="decline">Say no</button></div>'
+        : `<p><b>${esc(r.offerResult)}</b></p>`;
+    }
+    h += farmBlock(st);
+    const last = rec.n >= TOTAL;
+    h += `<div class="actions"><button class="btn" data-action="next" ${rec.offer && rec.accepted === null ? 'disabled' : ''}>${last ? 'End report' : 'Next crisis'}</button>` +
+      '<button class="btn secondary" data-action="undo">Undo</button></div></div>';
+    return h;
+  }
+
+  // ---------- end report ----------
+  const OBJ_SHIFT = (C.cards.find(c => c.key === 'OBJ') || { explicitShift: 0 }).explicitShift;
+
+  function totalsOf(st) {
+    const cfg = st.config;
+    const denom = OBJ_SHIFT + cfg.oppositionShift;
+    const needed = denom > 0 ? String(Math.max(0, Math.ceil((cfg.spacing - cfg.halfWidth - st.center) / denom))) : S.rightsNeverEnough;
+    return {
+      passed: cfg.resolution === 'center' ? '—' : String(st.ledger.filter(r => r.inWindow === true).length),
+      taken: st.tilesTaken, sold: st.tilesSold, center: fill(S.positionLean, { amount: amount(st.center) }), needed
+    };
+  }
+
+  function tilesCell(r) {
+    const bits = [];
+    if (r.tilesLost) bits.push(r.tilesLost + ' tiles taken');
+    if (r.sold) bits.push(r.sold + ' tiles sold');
+    if (r.offer && r.accepted === false) bits.push('offer turned down');
+    if (r.offer && r.accepted === null) bits.push('offer not answered');
+    return bits.join(', ') || '—';
+  }
+
+  function trajectory(st, cf) {
+    const W = 640, H = 260, L = 44, R = 16, T = 12, B = 28;
+    const x = i => L + i * (W - L - R) / TOTAL;
+    const y = v => T + (100 - Math.max(-100, Math.min(100, v))) / 200 * (H - T - B);
+    const rs = E.rungs(st.config);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Window center after each crisis">`;
+    rs.forEach((r, i) => {
+      s += `<line class="grid-line" x1="${L}" x2="${W - R}" y1="${y(r)}" y2="${y(r)}"/><text class="axis-text" x="${L - 6}" y="${y(r) + 4}" text-anchor="end">${fmt(r)}</text>`;
+      if (i) { const m = (r + rs[i - 1]) / 2; s += `<line class="boundary" x1="${L}" x2="${W - R}" y1="${y(m)}" y2="${y(m)}"/>`; }
+    });
+    s += `<text class="axis-text" x="${L}" y="${T + 10}" dx="4">↑ freedom</text><text class="axis-text" x="${L}" y="${H - B - 4}" dx="4">↓ control</text>`;
+    for (let i = 0; i <= TOTAL; i++) s += `<text class="axis-text" x="${x(i)}" y="${H - 8}" text-anchor="middle">${i === 0 ? 'start' : i}</text>`;
+    const pts = run => [run.config.startCenter].concat(run.ledger.map(r => r.after)).map((v, i) => x(i) + ',' + y(v)).join(' ');
+    s += `<polyline class="cf" points="${pts(cf)}"/>`;
+    s += `<polyline class="you" points="${pts(st)}"/>`;
+    st.ledger.forEach((r, i) => { s += `<circle class="you-dot" cx="${x(i + 1)}" cy="${y(r.after)}" r="3.5"><title>${r.n}. ${esc(r.crisisTitle)}: ${fmt(r.after)}</title></circle>`; });
+    s += '</svg>';
+    return `<div class="traj">${s}<div class="key"><span><i class="k-you"></i>${t(S.reportYourRun)}</span><span><i class="k-cf"></i>${t(S.reportCounterfactual)}</span>` +
+      `</div><p class="muted small">${t(S.reportTrajectoryKey)}</p></div>`;
+  }
+
+  function runCell(r) {
+    const card = E.cardById[r.cardId];
+    return `${esc(sideOf(card))}<br>Mood moved ${esc(moved(r.net))}, and now ${esc(position(r.after))}<br>` +
+      `Passed: ${esc(r.enactedName)}${r.tilesLost || r.sold ? ' · ' + tilesCell(r) : ''}`;
+  }
+
+  function renderReport(st) {
+    const cf = window.sim.run('OBJ', Object.assign({}, config, { acceptOffers: true }));
+    const cfState = E.replay(cf.picks, cf.config);
+    const you = totalsOf(st), them = totalsOf(cfState);
+    const crisisOf = r => E.crisisById[r.crisisId];
+    let h = `<h2>${t(S.reportHeading)}</h2>`;
+    h += `<h3>${t(S.reportTrajectory)}</h3>` + trajectory(st, cf);
+
+    h += `<h3>${t(S.reportYourRun)}</h3><div class="scroll"><table><tr><th>Crisis</th><th>Who you sided with</th><th>Council's mood moved</th><th>Asked for</th><th>Passed</th><th>Your land</th></tr>`;
+    st.ledger.forEach(r => {
+      h += `<tr><td>${r.n}. ${esc(r.crisisTitle)}</td><td>${esc(sideOf(E.cardById[r.cardId]))}</td><td>${esc(moved(r.net))}, and now ${esc(position(r.after))}</td>` +
+        `<td>${r.ask === null ? '—' : esc(E.policyAt(crisisOf(r), r.ask).name)}</td><td>${esc(r.enactedName)}</td><td>${tilesCell(r)}</td></tr>`;
+    });
+    h += '</table></div>';
+
+    h += '<h3>Totals</h3><div class="scroll"><table>';
+    h += `<tr><th></th><th>${t(S.reportYourRun)}</th><th>${t(S.reportCounterfactual)}</th></tr>`;
+    [[S.reportPassed, 'passed'], [S.reportTaken, 'taken'], [S.reportSold, 'sold'], [S.reportFinal, 'center'],
+     [fill(S.rightsNeeded, { pos: fmt(st.config.spacing) }), 'needed']].forEach(([label, k]) => {
+      h += `<tr><td>${esc(label)}</td><td>${esc(you[k])}</td><td>${esc(them[k])}</td></tr>`;
+    });
+    h += '</table></div>';
+
+    h += `<h3>${t(S.reportSideBySide)}</h3><div class="scroll"><table>`;
+    h += `<tr><th>Crisis</th><th>${t(S.reportYourRun)}</th><th>${t(S.reportCounterfactual)}</th></tr>`;
+    st.ledger.forEach((r, i) => { h += `<tr><td>${r.n}. ${esc(r.crisisTitle)}</td><td>${runCell(r)}</td><td>${runCell(cf.ledger[i])}</td></tr>`; });
+    h += '</table></div>';
+    h += `<p class="muted small">${t(S.reportOffersNote)}</p>`;
+    h += '<div class="actions"><button class="btn secondary" data-action="undo">Undo</button><button class="btn secondary" data-action="restart">Restart</button></div>';
+    return h;
+  }
+
+  // ---------- debug panel and ledger ----------
+  function renderDebugPanel() {
+    if (!debug) { $('debug').innerHTML = ''; return; }
+    const sel = (k, opts) => `<select data-k="${k}">` + opts.map(o => `<option${config[k] === o ? ' selected' : ''}>${o}</option>`).join('') + '</select>';
+    const num = k => `<label>${k}<input type="number" data-k="${k}" value="${config[k]}"></label>`;
+    $('debug').innerHTML = '<section class="debug-panel"><h3>Debug settings</h3><div class="grid">' +
+      `<label>resolution${sel('resolution', ['proposal', 'lobby', 'center'])}</label>` +
+      `<label>order${sel('order', ['resolveThenShift', 'shiftThenResolve'])}</label>` +
+      ['startCenter', 'halfWidth', 'oppositionShift', 'spacing', 'extreme'].map(num).join('') +
+      '</div><div class="actions"><button class="btn secondary" data-action="restart">Restart</button>' +
+      '<button class="btn secondary" data-action="undo">Undo</button>' +
+      '<button class="btn secondary" data-action="tests">Run sim.tests() in console</button></div>' +
+      '<p class="muted small">The address bar holds the picks and any changed settings; copy it to share this run.</p></section>';
+  }
+
+  function renderLedger(st) {
+    if (!debug) { $('ledger').innerHTML = ''; return; }
+    const cols = ['n', 'crisisId', 'cardId', 'persona', 'premiseType', 'explicitShift', 'oppositionShift', 'net', 'before', 'after',
+      'ask', 'askSource', 'inWindow', 'enactedPos', 'enactedName', 'tilesLost', 'offer', 'accepted', 'attributionCrisis'];
+    const cell = v => v === null ? '—' : typeof v === 'number' ? fmt(v) : esc(v);
+    $('ledger').innerHTML = '<h3>Ledger (debug)</h3><div class="scroll"><table class="wide"><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>' +
+      st.ledger.map(r => '<tr>' + cols.map(c => `<td>${c === 'n' ? r.n : cell(r[c])}</td>`).join('') + '</tr>').join('') +
+      (st.ledger.length ? '' : `<tr><td colspan="${cols.length}" class="muted">No picks yet.</td></tr>`) + '</table></div>';
+  }
+
+  // ---------- render ----------
+  function render() {
+    const toggle = $('debugToggle');
+    toggle.textContent = 'Debug: ' + (debug ? 'on' : 'off');
+    toggle.setAttribute('aria-pressed', String(debug));
+    let st;
+    try { st = E.replay(picks, config); }
+    catch (e) { $('screen').innerHTML = `<p class="error">${esc(e.message)}</p>`; return; }
+    if (view === 'reveal' && !st.ledger.length) view = 'crisis';
+    if (view === 'crisis' && st.done) view = 'report';
+    renderBar(st);
+    $('screen').innerHTML = view === 'reveal' ? renderReveal(st) : view === 'report' ? renderReport(st) : renderCrisis(st);
+    renderLedger(st);
+    writeHash();
+  }
+
+  function go(nextView) { view = nextView; render(); window.scrollTo(0, 0); }
+
+  function setDecision(decision) {
+    const last = picks.length - 1;
+    picks[last] = E.parsePick(picks[last]).cardId + ':' + decision;
+    render();
+  }
+
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (!el || el.disabled) return;
+    switch (el.dataset.action) {
+      case 'pick': picks.push(el.dataset.id); go('reveal'); break;
+      case 'accept': setDecision('accept'); break;
+      case 'decline': setDecision('decline'); break;
+      case 'next': go(picks.length >= TOTAL ? 'report' : 'crisis'); break;
+      case 'undo': if (picks.length) { picks.pop(); go('crisis'); } break;
+      case 'restart': picks = []; go('crisis'); break;
+      case 'toggle-debug': debug = !debug; writeDebug(); renderDebugPanel(); render(); break;
+      case 'tests': window.sim.tests(); break;
+    }
+  });
+
+  $('debug').addEventListener('input', e => {
+    const k = e.target.dataset.k;
+    if (!k) return;
+    if (k === 'resolution') {
+      config.resolution = e.target.value;
+      config.order = E.ORDER_FOR[config.resolution];
+      $('debug').querySelector('[data-k="order"]').value = config.order;
+    } else if (k === 'order') {
+      config.order = e.target.value;
+    } else {
+      const v = parseFloat(e.target.value);
+      if (!isFinite(v) || ((k === 'spacing' || k === 'extreme') && v <= 0) || (k === 'halfWidth' && v < 0)) return;
+      config[k] = v;
+    }
+    render();
+  });
+
+  window.addEventListener('hashchange', () => {
+    if ((location.hash || '') === lastHash) return;
+    readHash(); renderDebugPanel(); render();
+  });
+
+  readHash();
+  renderDebugPanel();
+  render();
+})();
+</script>
+</body>
+</html>
