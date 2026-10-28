@@ -8,6 +8,7 @@ test("honey rescues an empty farm and can only be collected once until next seas
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
   await page.getByLabel("Work on").selectOption("micro");
   await page.getByRole("button", { name: "Read current state" }).click();
   const farm = JSON.parse(
@@ -19,9 +20,26 @@ test("honey rescues an empty farm and can only be collected once until next seas
   await page.getByRole("button", { name: "Apply state" }).click();
   await expect(page.locator("#dev-status")).toContainText("applied");
   const hive = page.locator('[data-service="hive"]');
-  await hive.scrollIntoViewIfNeeded();
-  await hive.click({ force: true });
+  // Center the ground target below the fixed HUD, then let Playwright check
+  // that the pointer can actually reach it instead of forcing an obscured hit.
+  await hive.evaluate((target) =>
+    target.scrollIntoView({ block: "center", inline: "center" }),
+  );
+  await hive.click();
+  await expect(page.locator("#farm canvas")).toHaveAttribute(
+    "data-farmer-motion",
+    "walk",
+  );
+  await expect(page.locator("#service-panel")).toBeHidden();
   await expect(page.locator("#service-title")).toHaveText("Wild beehive");
+  await expect(page.locator("#farm canvas")).toHaveAttribute(
+    "data-farmer-cell",
+    "0,0",
+  );
+  await expect(page.locator("#farm canvas")).toHaveAttribute(
+    "data-farmer-motion",
+    "idle",
+  );
   await page.getByRole("button", { name: "Collect honey · +12 coins" }).click();
   await expect(page.locator("#season")).toContainText("12 coins");
   await expect(page.locator("#collect-honey")).toBeDisabled();
@@ -29,8 +47,8 @@ test("honey rescues an empty farm and can only be collected once until next seas
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
-  await hive.scrollIntoViewIfNeeded();
-  await hive.click({ force: true });
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
+  await hive.press("Enter");
   await expect(page.locator("#collect-honey")).toBeDisabled();
   await page
     .getByRole("button", { name: "Close actions", exact: true })

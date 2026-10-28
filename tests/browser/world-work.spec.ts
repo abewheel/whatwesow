@@ -1,5 +1,33 @@
 import { test, expect } from "./fixtures";
+import type { Page } from "@playwright/test";
 import { readFarm, setFarm, closeActions } from "./context-helpers";
+
+// Observe in the browser before the action: a busy runner can spend longer than
+// the entire fade returning from click(), so driver polling can miss it.
+async function observeRemoval(page: Page, name: string) {
+  await page.locator("canvas").evaluate((canvas, expectedName) => {
+    delete canvas.dataset.testObservedRemoval;
+    const observer = new MutationObserver(() => {
+      const removing = JSON.parse(canvas.dataset.sceneRemoving ?? "[]") as {
+        name: string;
+        alpha: number;
+      }[];
+      if (
+        removing.some(
+          (view) =>
+            view.name === expectedName && view.alpha > 0 && view.alpha < 1,
+        )
+      ) {
+        canvas.dataset.testObservedRemoval = expectedName;
+        observer.disconnect();
+      }
+    });
+    observer.observe(canvas, {
+      attributes: true,
+      attributeFilter: ["data-scene-removing"],
+    });
+  }, name);
+}
 
 test("construction markers cover hives, pens, trees and distinct buildings", async ({
   page,
@@ -99,6 +127,7 @@ test("cleared obstacles fade once while their tiles become available immediately
   await closeActions(page);
   await page.locator('[data-cell="16,16"]').press("Enter");
   await expect(page.locator("#service-panel")).toBeVisible();
+  await observeRemoval(page, "debris:16,16");
   await page
     .getByRole("button", { name: "Clear · 36 coins", exact: true })
     .click();
@@ -110,11 +139,10 @@ test("cleared obstacles fade once while their tiles become available immediately
           alpha: number;
         }[],
     );
-  await expect
-    .poll(async () =>
-      (await removals()).some((view) => view.alpha > 0 && view.alpha < 1),
-    )
-    .toBe(true);
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-test-observed-removal",
+    "debris:16,16",
+  );
   // Both arms share one removal; the simulation has already released all five cells.
   expect((await removals()).every((view) => view.name === "debris:16,16")).toBe(
     true,
@@ -153,21 +181,12 @@ for (const planted of [false, true])
     await closeActions(page);
     await page.locator('[data-cell="16,16"]').press("Enter");
     await expect(page.locator("#service-panel")).toBeVisible();
+    await observeRemoval(page, "soil:16,16");
     await page.locator("#delete-plot").click();
-    await expect
-      .poll(() =>
-        page.locator("canvas").evaluate((canvas) => {
-          const removing = JSON.parse(canvas.dataset.sceneRemoving ?? "[]") as {
-            name: string;
-            alpha: number;
-          }[];
-          return removing.some(
-            (view) =>
-              view.name === "soil:16,16" && view.alpha > 0 && view.alpha < 1,
-          );
-        }),
-      )
-      .toBe(true);
+    await expect(page.locator("canvas")).toHaveAttribute(
+      "data-test-observed-removal",
+      "soil:16,16",
+    );
     await expect(page.locator('[data-cell="16,16"]')).toHaveAttribute(
       "aria-label",
       "Land 16,16",
