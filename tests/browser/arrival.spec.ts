@@ -66,6 +66,8 @@ test("planting spends seeds only after arrival and persists once", async ({
   await expect(page.locator("[data-plot='8']")).toHaveAttribute(
     "aria-label",
     /Turnip, growing/,
+    // This plot requires a full walk; software rendering on CI can be slower.
+    { timeout: 30000 },
   );
   await expect(page.locator("#season")).toContainText("96 coins");
   const [row, col] = (await page

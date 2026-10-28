@@ -11,7 +11,8 @@ if (workers !== undefined && (!Number.isInteger(workers) || workers < 1))
 export default defineConfig({
   testDir: "./tests/browser",
   fullyParallel: true,
-  timeout: 60000,
+  // A path can include several real walks, seasonal saves, and asset reloads.
+  timeout: 120000,
   expect: { timeout: 15000 },
   workers,
   use: { baseURL: `http://127.0.0.1:${port}`, headless: true },

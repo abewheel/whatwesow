@@ -18,7 +18,8 @@ test("the HUD stays compact and clicks walk to ground and building entrances", a
   await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
   await expect(canvas).toHaveAttribute("data-farmer-target", "20,20");
   await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20", {
-    timeout: 10000,
+    // Keep real travel covered on software-rendered CI browsers.
+    timeout: 30000,
   });
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.locator("[data-service=seeds]").click();

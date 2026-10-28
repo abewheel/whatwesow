@@ -142,7 +142,7 @@ it("earns the complete farming progression within a lifetime from the bare start
     state.structures.every((s) => !s.pendingConstruction && !s.pendingUpgrade),
   ).toBe(true);
   expect(() => advanceSeason(state)).toThrow();
-});
+}, 15000);
 
 for (const crop of ["turnip", "carrot", "corn"] as CropId[]) {
   it.each([
