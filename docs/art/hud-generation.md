@@ -3,7 +3,7 @@
 Generated with the built-in imagegen tool, using `public/art/farm-atlas.png` as the visual reference. These are static assets; generation is not part of the game runtime.
 
 - `public/art/hud-frame-detailed.png`: nine-slice frame, sliced 150 pixels from each edge. CSS preserves the corners while stretching the rails and parchment.
-- `public/art/hud-icons-detailed.png`: transparent 4 × 4 atlas. Cell mapping lives in `src/game/icons.ts`.
+- `public/art/hud-icons-detailed.png`: transparent source atlas. The generated spacing is uneven, so `public/art/icons/` contains individual square crops with transparent padding. `src/game/icons.ts` selects these files, and CSS fits the complete image inside each control. Do not sample equal atlas cells, which clip artwork and expose neighboring icons.
 
 ## Frame prompt
 

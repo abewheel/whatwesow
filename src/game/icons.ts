@@ -1,29 +1,27 @@
-/** Atlas cells share the farm buildings' painted material and lighting reference. */
-const sprites = {
-  radish: [0, 0],
-  tomato: [0, 0],
-  pumpkin: [0, 0],
-  turnip: [0, 0],
-  carrot: [1, 0],
-  corn: [2, 0],
-  grow: [3, 0],
-  expand: [0, 1],
-  improve: [1, 1],
-  coin: [2, 1],
-  harvest: [3, 1],
-  sun: [0, 2],
-  spring: [1, 2],
-  fall: [2, 2],
-  winter: [3, 2],
-  menu: [0, 3],
-  home: [1, 3],
-  build: [2, 3],
-  seeds: [3, 3],
-} as const;
-export type Icon = keyof typeof sprites;
+/** Isolated source crops keep neighboring atlas artwork out of controls. */
+export type Icon =
+  | "radish"
+  | "tomato"
+  | "pumpkin"
+  | "turnip"
+  | "carrot"
+  | "corn"
+  | "grow"
+  | "expand"
+  | "improve"
+  | "coin"
+  | "harvest"
+  | "sun"
+  | "spring"
+  | "fall"
+  | "winter"
+  | "menu"
+  | "home"
+  | "build"
+  | "seeds";
 export function icon(name: Icon, className = "") {
-  if (["radish", "tomato", "pumpkin"].includes(name))
-    return `<span class="pixel-icon ${className}" aria-hidden="true" style="background-image:url('/art/${name}-icon.png');background-size:contain;background-position:center"></span>`;
-  const [col, row] = sprites[name];
-  return `<span class="pixel-icon ${className}" aria-hidden="true" style="background-position:${(col * 100) / 3}% ${(row * 100) / 3}%"></span>`;
+  const path = ["radish", "tomato", "pumpkin"].includes(name)
+    ? `/art/${name}-icon.png`
+    : `/art/icons/${name}.png`;
+  return `<span class="pixel-icon ${className}" aria-hidden="true" style="background-image:url('${path}')"></span>`;
 }

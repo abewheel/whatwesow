@@ -20,7 +20,7 @@ import Phaser from "phaser";
 import { drawBoundary } from "./boundary";
 import { borderDetailRect } from "./border-artwork";
 import { GroundLayer } from "./terrain";
-import { Farmer, farmerRowBounds } from "./farmer";
+import { Farmer, farmerFrames } from "./farmer";
 import { farmerDepth, type BuildingOccluder } from "./farmer-depth";
 import { farmerTaskForAction } from "./farmer-task";
 import type { FarmAction } from "../micro/rules";
@@ -194,10 +194,10 @@ export class FarmScene extends Phaser.Scene {
         farmer.add(
           row * 6 + col,
           0,
-          col * 181,
-          farmerRowBounds[row],
-          181,
-          farmerRowBounds[row + 1] - farmerRowBounds[row],
+          farmerFrames[row][col][0],
+          farmerFrames[row][col][1],
+          farmerFrames[row][col][2] - farmerFrames[row][col][0],
+          farmerFrames[row][col][3] - farmerFrames[row][col][1],
         );
     const distinct = this.textures.get("distinct-buildings");
     const source = distinct.getSourceImage();

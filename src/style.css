@@ -115,8 +115,8 @@ small {
   width: 28px;
   height: 28px;
   flex-shrink: 0;
-  background-image: url("/art/hud-icons-detailed.png");
-  background-size: 400% 400%;
+  background-size: contain;
+  background-position: center;
   background-repeat: no-repeat;
   filter: drop-shadow(0 1px 1px #49362130);
 }
