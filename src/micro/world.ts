@@ -82,18 +82,18 @@ export const buildings = {
   },
   greenhouse: {
     name: "Greenhouse",
-    cost: 4500,
+    cost: 2400,
     width: 3,
     height: 2,
     frame: 0,
     levels: 3,
-    benefit: "+8 coins per harvest per level",
-    bonus: 8,
+    benefit: "+10 coins per harvest per level",
+    bonus: 10,
     income: 0,
   },
   market: {
     name: "Farm market",
-    cost: 12000,
+    cost: 3000,
     width: 3,
     height: 3,
     frame: 4,
@@ -104,13 +104,13 @@ export const buildings = {
   },
   hall: {
     name: "Legacy hall",
-    cost: 25000,
+    cost: 10000,
     width: 3,
     height: 3,
     frame: 0,
     levels: 3,
-    benefit: "+30 coins per harvest per level",
-    bonus: 30,
+    benefit: "+50 coins per harvest per level",
+    bonus: 50,
     income: 0,
   },
 } as const;
@@ -171,6 +171,15 @@ export type Layout = {
   plotCells: Cell[];
   structures: Structure[];
 };
+/** More facilities of the same kind cost more; upgrading saves land. */
+export function constructionCost(layout: Layout, kind: BuildingKind) {
+  const levels = layout.structures
+    .filter((s) => s.kind === kind)
+    .reduce((sum, s) => sum + s.level + (s.pendingUpgrade ? 1 : 0), 0);
+  return (
+    buildings[kind].cost * (isTree(kind) || kind === "home" ? 1 : 1 + levels)
+  );
+}
 /** Keep village lots clear of existing farms when loading an older layout. */
 export function serviceLocations(layout: Layout) {
   const used = new Set(

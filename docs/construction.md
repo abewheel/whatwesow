@@ -4,6 +4,8 @@ The estate is a 64 × 64 grid with 4,096 cells. Plots, buildings, and trees all 
 
 New farms start with a tent, no fields or buildings, and 240 coins. Click the tent for house plans, fields, seeds, and End turn. A house costs 120 coins and takes one season to complete. The tent stays until then, and its services move into the finished farmhouse. Other construction unlocks through farming.
 
+If structures block a walking path, open the farm menu and choose **Clear blocked access**. Select any building or tree and move it for free, then return to normal visits.
+
 Click a building and the farmer walks to its entrance before its menu opens. The farmhouse ends the season and shows income; the seed shop and nursery supplies crop seeds and trees; the field shed handles plots, soil, plot movement and tree care; the builder handles structures, upgrades and movement. A farmhouse office appears if a saved farm has no home. Dense imported farms use roadside service entrances without moving saved objects.
 
 Choose a plan, then choose land. The menu closes while the placement tool stays active, and the footprint preview marks permitted placements. **Cancel placement** or Escape returns to farming. Click a structure to walk over and inspect it. Click a ripe tree to harvest on arrival; use the field shed's tree selector for care or movement. **Move a plot** moves its growing crop too. Drag, scroll or use arrow keys to explore; folded **View controls** holds zoom, pan, **Center farm**, and coordinate navigation (0–63). The canvas stays viewport-sized and renders nearby terrain.
@@ -12,7 +14,7 @@ Use **Zoom out** and **Zoom in** for 25%–200% views, or **100%** to reset. Wit
 
 ## Farming opportunities
 
-Definitions live in `src/micro/world.ts`. Costs are prototype tuning values, with repeated builds charging the same base cost. Benefits add across buildings and their levels, then macro production policy applies.
+Definitions live in `src/micro/world.ts`. The first facility costs its base price. Each additional facility of that kind costs base price × (1 + existing levels), including paid work underway. Trees keep their base price so orchards can grow. Upgrades keep their base price × new level and save land compared with another building. Benefits add across buildings and their levels, then macro production policy applies.
 
 | Build | Milestone | Base cost | Footprint | Effect per level |
 | --- | --- | --- | --- | --- |
@@ -23,9 +25,9 @@ Definitions live in `src/micro/world.ts`. Costs are prototype tuning values, wit
 | Irrigation well | 12 harvests and 10 plots | 180 | 2 × 2 | 1 extra grow step and 1 extra harvest coin |
 | Harvest barn | 24 harvests | 600 | 3 × 2 | 2 extra harvest coins |
 | Grain mill | 12 corn harvests | 1,800 | 3 × 3 | 15 extra coins per corn harvest |
-| Greenhouse | 80 harvests and soil level 1 | 4,500 | 3 × 2 | 8 extra harvest coins |
-| Farm market | 160 harvests, including all three crops | 12,000 | 3 × 3 | 150 coins on each season transition |
-| Legacy hall | 300 harvests and a farm market | 25,000 | 3 × 3 | 30 extra harvest coins |
+| Greenhouse | 80 harvests and soil level 1 | 2,400 | 3 × 2 | 10 extra harvest coins |
+| Farm market | 160 harvests, including all three crops | 3,000 | 3 × 3 | 150 coins on each season transition |
+| Legacy hall | 300 harvests and a farm market | 10,000 | 3 × 3 | 50 extra harvest coins |
 
 Turnips and carrots are available at the start. Harvest one of each to receive Eli's corn seed offer. Opportunities arrive as short character notes in the farming status and **Build → Farm news**. Locked items explain their milestones in the existing controls. Offers remain available once earned, even after land or building losses. There is no research currency or separate progression screen.
 
@@ -35,7 +37,7 @@ Upgrades and soil improvements cost coins when started and finish at the start o
 
 **End turn** advances one season, grows crops using the previous turn's irrigation, completes construction and upgrades, then pays seasonal market income at the completed levels. Mature trees produce in fall; click a ripe tree  to harvest it. The tree stays planted and produces again the following fall. Unpicked fruit keeps without stacking, and fruit earns no automatic income. Use the field shed to inspect or move a tree. Seed discounts and harvest bonuses apply to actions in the new turn. Turn 160 is year 40, winter; the calendar stops there, so new construction and upgrades cannot start in that final season. There is no end-of-life narrative in this slice.
 
-Tune milestones in `src/micro/progression.ts`. Calendar advancement never earns farming opportunities. Prices and effects are prototype tuning values.
+Tune milestones in `src/micro/progression.ts`. Calendar advancement never earns farming opportunities. A first market repays its price in 20 season transitions; its upgrades take 40 and 60 transitions. Market plans and inspections show payback against the remaining lifetime, including policy-adjusted prices and income. Late purchases may not repay their cost before the final winter.
 
 ## System boundaries
 

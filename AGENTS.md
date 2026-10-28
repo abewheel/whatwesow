@@ -147,3 +147,13 @@ Start with [docs/session-start.md](docs/session-start.md) for implemented scope 
 ## Micro and Macro Work
 
 Before changing game rules, read [ownership and contracts](docs/game-boundaries.md). Work in the owning domain and coordinate shared contract changes. Use [playtesting recipes](docs/playtesting.md) for isolated domain states and focused tests; start with [development](docs/development.md) for setup.
+
+## Mobile and Interface Requirements
+
+Mobile support is required for every player-facing feature. Keep the farm visible, the HUD compact, and menus sized to their content. Prefer artwork, icons, short labels, and numeric feedback over repeated instructions. Show purchase benefits, costs, requirements, and pending work without relying on hover.
+
+- Support narrow portrait phones starting at 320 × 568 and short landscape phones such as 667 × 375. Respect safe areas, changing viewport height, and the on-screen keyboard.
+- Make touch panning, planting, harvesting, building, movement, upgrades, zoom, and save controls work. Keep buttons and form controls at least 44px high; grid targets must remain usable with zoom.
+- Keep menus within the viewport, with a reachable close control and one scrolling content area. Panels must not cover the control needed to close them or hide information needed for a purchase.
+- Use readable native form controls, validate invalid or empty input visibly, support Enter where appropriate, and keep failures visible inside the active menu.
+- Validate changed paths in touch-enabled Playwright at portrait and landscape sizes. Check the iPhone browser engine with WebKit for menu and form changes. Run the documented mobile tests in [development](docs/development.md), inspect console and network failures, capture and inspect current screenshots, and return the relevant screenshots with the result.

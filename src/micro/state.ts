@@ -311,6 +311,17 @@ export const harvestValue = (state: MicroState, crop: CropId) =>
 export const seedCost = (state: MicroState, crop: CropId) =>
   Math.max(1, crops[crop].seed - buildingLevel(state, "shed"));
 
+/** Growth uses today's irrigation before paid work completes for later seasons. */
+export function growthSeasons(state: MicroState, crop: CropId): number {
+  const first = 1 + buildingLevel(state, "well");
+  const later =
+    1 +
+    state.structures
+      .filter((s) => s.kind === "well")
+      .reduce((sum, s) => sum + s.level + (s.pendingUpgrade ? 1 : 0), 0);
+  return 1 + Math.ceil(Math.max(0, crops[crop].steps - first) / later);
+}
+
 export function canPlant(crop: CropId, turn: number): boolean {
   return (crops[crop].plantingSeasons as readonly string[]).includes(
     ["spring", "summer", "fall", "winter"][(turn - 1) % 4],

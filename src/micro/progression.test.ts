@@ -40,7 +40,7 @@ it("earns corn and early story offers through real harvests, not money or time",
 it("requires harvests after each individual building level, and corn for a mill", () => {
   let s = parseMicroState({
     ...initialMicroState(),
-    coins: 10000,
+    coins: 20000,
     harvests: { turnip: 30, carrot: 1, corn: 12 },
   });
   s = actOnFarm(s, {

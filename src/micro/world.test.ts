@@ -144,7 +144,7 @@ describe("estate construction", () => {
         159,
       ).state;
     state = completeUpgrades(state);
-    expect(harvestValue(state, "corn")).toBe(34 + 1 + 2 + 15 + 8 + 30);
+    expect(harvestValue(state, "corn")).toBe(34 + 1 + 2 + 15 + 10 + 50);
     expect(seasonalIncome(state)).toBe(150);
     expect(seedCost(state, "corn")).toBe(11);
     state = actOnFarm(

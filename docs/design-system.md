@@ -20,7 +20,7 @@ Summer deepens greens; fall turns foliage amber and rust; winter adds pale snow 
 
 ## Composition and scale
 
-Use nearly the whole viewport for the farm. The farm name, seasonal resources, and menu sit over its top edge. Selected seeds, placement cancellation, folded camera controls, and action feedback sit at the bottom. Save status and export/import live inside the farm menu. Building menus open when the farmer reaches their entrance. On small screens, hide secondary copy and keep controls within the viewport. Keep development tools below the game.
+Use nearly the whole viewport for the farm. The farm name, seasonal resources, and menu sit over its top edge. Selected seeds, placement cancellation, folded camera controls, and brief action feedback sit at the bottom. The seed button opens the basket after the farmer reaches its service. Save status and export/import live inside the farm menu. Building menus open when the farmer reaches their entrance. On phones, keep the calendar, coins, and menu in one row. Open services in a sheet sized to its content, with a fixed close button and one scrolling body. Landscape sheets leave the balance visible beside them. Keep buttons and form controls at least 44px high. Keep development tools below the game.
 
 Keep the field at the center with buildings, trees, paths, and water around it. Empty plots must remain recognizable. Scenery is decorative until a game system gives it behavior; avoid buttons that imply unavailable actions.
 
@@ -32,7 +32,7 @@ The scene combines a detailed sprite atlas with deterministic terrain textures. 
 
 ## Interface
 
-Use parchment panels with two-pixel timber borders, a small inset highlight, and a restrained offset shadow. Corners stay nearly square. Use Georgia for names and short story headings, system sans-serif for resources, controls, and longer text. Keep labels at least 12px, with visible keyboard focus and native controls where practical. Use an 8px spacing rhythm, with 12–18px panel padding.
+Use thin timber frames around parchment panels and a restrained offset shadow. Corners stay nearly square. Use the readable pixel font throughout the player controls. Keep labels at least 12px, with visible keyboard focus and native controls where practical. Use crop and building artwork with short numeric facts for prices, growth, harvests, and production benefits. Put unlock goals and character notes behind disclosures. Use an 8px spacing rhythm, with 12–18px panel padding.
 
 Reserve motion for useful feedback: crop growth, harvest rewards, selected plots, and subtle environmental life. Honor reduced-motion preferences when adding animation. Never rely on color alone to communicate available actions or crop readiness.
 

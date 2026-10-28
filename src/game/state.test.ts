@@ -276,7 +276,7 @@ it("reserves and saves paid construction, activating benefits only next season",
       ).state,
     );
   }
-  expect(state.coins).toBe(7280);
+  expect(state.coins).toBe(16280);
   expect(seedCost(state, "turnip")).toBe(4);
   expect(harvestValue(state, "turnip")).toBe(9);
   expect(seasonalIncome(state)).toBe(0);
@@ -303,14 +303,14 @@ it("reserves and saves paid construction, activating benefits only next season",
   );
   expect(moved.structures[1].pendingConstruction).toBe(true);
   const next = advanceSeason(moved).state;
-  expect(next.coins).toBe(7430);
+  expect(next.coins).toBe(16430);
   expect(seedCost(next, "turnip")).toBe(3);
   expect(harvestValue(next, "turnip")).toBe(11);
   expect(next.structures.every((s) => !s.pendingConstruction)).toBe(true);
   const lost = applyMacroChange(saved, saved, {
     removeStructureIds: [2, 3, 4, 5],
   }).state;
-  expect(advanceSeason(lost).state.coins).toBe(7280);
+  expect(advanceSeason(lost).state.coins).toBe(16280);
   expect(() =>
     actOnFarm(
       next,

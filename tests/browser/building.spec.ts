@@ -117,10 +117,12 @@ test("explores distant land and drag panning does not plant or spend", async ({
   const farm = page.locator("#farm");
   await clickCamera(page, "#home-view");
   const before = await farm.evaluate((el) => el.scrollLeft);
-  await page.getByRole("button", { name: "Pan right", exact: true }).click();
+  await farm.focus();
+  for (let step = 0; step < 3; step++) await page.keyboard.press("ArrowRight");
   await expect
     .poll(() => farm.evaluate((el) => el.scrollLeft))
     .toBeGreaterThan(before);
+  await page.getByRole("button", { name: "Close view controls" }).click();
   await farm.focus();
   await page.keyboard.press("ArrowDown");
   const top = await farm.evaluate((el) => el.scrollTop);
@@ -169,11 +171,11 @@ test("late progression and the final seasonal income respect the 160-turn bounda
   );
   await expect(page.locator("#next-season")).toBeDisabled();
   await expect(page.locator("#season")).toContainText(
-    "Year 40 · winter · 100,150 coins",
+    "Year 40 · winter · 130,150 coins",
   );
   await page.reload();
   await expect(page.locator("#next-season")).toBeDisabled();
-  await expect(page.locator("#season")).toContainText("100,150 coins");
+  await expect(page.locator("#season")).toContainText("130,150 coins");
 });
 test("repeated builds, plot relocation, and macro land policies remain playable", async ({
   page,
@@ -193,10 +195,10 @@ test("repeated builds, plot relocation, and macro land policies remain playable"
     );
   }
   await expect(page.locator("[data-structure]")).toHaveCount(3);
-  await expect(page.locator("#season")).toContainText("130 coins");
+  await expect(page.locator("#season")).toContainText("70 coins");
   await page.locator("#farm-mode").click();
   await page.locator('[data-plot="0"]').click();
-  await expect(page.locator("#season")).toContainText("126 coins");
+  await expect(page.locator("#season")).toContainText("66 coins");
   await visitBuilding(page, "fields");
   await page.locator("#move-plot").click();
   await page.locator('[data-plot="0"]').click();
@@ -209,7 +211,7 @@ test("repeated builds, plot relocation, and macro land policies remain playable"
     "aria-label",
     /Turnip, growing 0/,
   );
-  await expect(page.locator("#season")).toContainText("126 coins");
+  await expect(page.locator("#season")).toContainText("66 coins");
   await load(page, "restricted");
   await expect(page.locator("#next-season")).toContainText("25/160");
   await buildTool(page, "plot");
@@ -276,7 +278,7 @@ test("construction persists, withholds benefits, and completes next season", asy
   await load(page, "community");
   await buildTool(page, "shed");
   await page.locator('[data-cell="14,18"]').click();
-  await expect(page.locator("#season")).toContainText("2,940 coins");
+  await expect(page.locator("#season")).toContainText("2,880 coins");
   await expect(page.locator('[data-crop="carrot"]')).toHaveAttribute(
     "aria-label",
     /6 coins to plant/,
@@ -294,7 +296,7 @@ test("construction persists, withholds benefits, and completes next season", asy
     "aria-label",
     /5 coins to plant/,
   );
-  await expect(page.locator("#season")).toContainText("2,940 coins");
+  await expect(page.locator("#season")).toContainText("2,880 coins");
 });
 
 test("apple harvests pay on click, persist after picking, and regrow in fall", async ({

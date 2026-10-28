@@ -12,6 +12,7 @@ import { WORLD_CELLS } from "../contracts/world";
 import { parseFarmPolicy, type FarmPolicy } from "../contracts/farm-policy";
 import {
   buildings,
+  constructionCost,
   isTree,
   treeProduct,
   buildingLevel,
@@ -133,7 +134,7 @@ export function actOnFarm(
     message = "You helped with a delivery. +4 coins for fresh seeds.";
   } else if (action.type === "expand") {
     if (state.plots.length >= (policy.maxPlots ?? WORLD_CELLS))
-      throw new Error("All 16384 plots are open.");
+      throw new Error("The current plot limit has been reached.");
     const cost = policyCost(expansionCost(state), policy);
     if (state.coins < cost) throw new Error("Not enough coins to open a plot.");
     const occupied = occupiedCells(state);
@@ -184,9 +185,9 @@ export function actOnFarm(
       throw new Error("The current policy limits this building.");
     if (!canPlace(state, action.cell, item.width, item.height, policy))
       throw new Error("That footprint is occupied or outside the farm.");
-    if (state.coins < policyCost(item.cost, policy))
-      throw new Error("Not enough coins to build this.");
-    state.coins -= policyCost(item.cost, policy);
+    const cost = policyCost(constructionCost(state, action.kind), policy);
+    if (state.coins < cost) throw new Error("Not enough coins to build this.");
+    state.coins -= cost;
     const id = state.nextStructureId++;
     state.structures.push({
       ...action.cell,
@@ -199,7 +200,7 @@ export function actOnFarm(
         kind: action.kind,
       }),
     });
-    message = `${item.name} ${isTree(action.kind) ? "planted" : "construction started"}. Ready next season. −${policyCost(item.cost, policy)} coins.`;
+    message = `${item.name} ${isTree(action.kind) ? "planted" : "construction started"}. Ready next season. −${cost} coins.`;
   } else if (action.type === "movePlot") {
     const index = state.plotIds.indexOf(action.id);
     if (index < 0) throw new Error("Choose an existing plot.");

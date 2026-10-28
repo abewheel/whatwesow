@@ -154,7 +154,7 @@ test("completed buildings earn upgrades through harvests and preserve paid work"
   );
   await page.locator('[data-structure="2"]').click();
   await expect(page.locator("#selected-building")).toContainText(
-    "earned its keep",
+    "Ready to upgrade",
   );
   await page.locator("#upgrade-building").click();
   await expect(page.locator("#upgrade-building")).toContainText("underway");

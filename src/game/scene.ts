@@ -430,14 +430,9 @@ export class FarmScene extends Phaser.Scene {
           );
         }
       }
-    for (const s of [...this.farm.structures].sort(
-      (a, b) =>
-        a.row +
-        a.col +
-        buildings[a.kind].width +
-        buildings[a.kind].height -
-        (b.row + b.col + buildings[b.kind].width + buildings[b.kind].height),
-    )) {
+    // Phaser sorts by the depth below; equal depths retain placement order,
+    // which the artwork hit test also uses.
+    for (const s of this.farm.structures) {
       const item = buildings[s.kind];
       const location = projectCell(s);
       if (!visible(location.x, location.y)) continue;
