@@ -10,17 +10,33 @@ test("zoom controls preserve a centered land cell and clamp at their limits", as
   await setCameraCell(page, "row", "32");
   await setCameraCell(page, "column", "32");
   await clickCamera(page, "#go-to-cell");
-  const target = page.locator('[data-cell="32,32"]'),
-    before = await target.boundingBox();
+  const target = page.locator('[data-cell="32,32"]');
+  // Development tools make the outer page scrollable. The camera invariant is
+  // the land cell's position inside the farm, independent of document scrolling.
+  const centerInFarm = () =>
+    target.evaluate((cell) => {
+      const bounds = cell.getBoundingClientRect();
+      const farm = document.querySelector("#farm")!.getBoundingClientRect();
+      return {
+        x: bounds.x + bounds.width / 2 - farm.x,
+        y: bounds.y + bounds.height / 2 - farm.y,
+      };
+    });
+  const before = await centerInFarm();
   await page.getByRole("button", { name: "Zoom in", exact: true }).click();
   await expect(page.locator("#zoom-level")).toHaveText("125%");
-  const after = await target.boundingBox();
-  expect(
-    Math.abs(before!.x + before!.width / 2 - after!.x - after!.width / 2),
-  ).toBeLessThan(2);
-  expect(
-    Math.abs(before!.y + before!.height / 2 - after!.y - after!.height / 2),
-  ).toBeLessThan(2);
+  const after = await centerInFarm();
+  expect(Math.abs(before.x - after.x)).toBeLessThan(2);
+  expect(Math.abs(before.y - after.y)).toBeLessThan(2);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  const settled = await centerInFarm();
+  expect(Math.abs(before.x - settled.x)).toBeLessThan(2);
+  expect(Math.abs(before.y - settled.y)).toBeLessThan(2);
   for (let i = 0; i < 2; i++)
     await page.getByRole("button", { name: "Zoom in", exact: true }).click();
   await expect(page.locator("#zoom-level")).toHaveText("200%");
