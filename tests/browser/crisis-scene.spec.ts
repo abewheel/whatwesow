@@ -37,8 +37,8 @@ async function capture(page: Page, name: string, cells: string[]) {
   await clickCamera(page, "#zoom-reset");
   await page.locator("#camera-controls summary").click();
 }
-// How much bluer than red the centre of a cell is on screen: water is, grass and snow are not.
-async function blueness(page: Page, cell: string) {
+// Sample the rendered ground to compare ruined and untouched cells.
+async function groundColor(page: Page, cell: string) {
   await page.locator(`[data-cell="${cell}"]`).scrollIntoViewIfNeeded();
   // The playtest tools sit below the farm.
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -68,9 +68,10 @@ async function blueness(page: Page, cell: string) {
     const context = canvas.getContext("2d")!;
     context.drawImage(image, 0, 0);
     const pixels = context.getImageData(0, 0, image.width, image.height).data;
-    let sum = 0;
-    for (let i = 0; i < pixels.length; i += 4) sum += pixels[i + 2] - pixels[i];
-    return sum / (pixels.length / 4);
+    const sum = [0, 0, 0];
+    for (let i = 0; i < pixels.length; i += 4)
+      for (let c = 0; c < 3; c++) sum[c] += pixels[i + c];
+    return sum.map((value) => value / (pixels.length / 4));
   }, png.toString("base64"));
 }
 async function applyGame(page: Page, state: GameState) {
@@ -86,6 +87,10 @@ async function applyGame(page: Page, state: GameState) {
 async function open(page: Page, instance: string) {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("requestfailed", (request) => errors.push(request.url()));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`/?instance=validation-${instance}`);
   await expect(page.locator("#save-status")).toHaveText(
@@ -147,16 +152,14 @@ const takenFarm = () => {
   return answerCrisis(fired, "E-SOC").state;
 };
 
-test("land the county took lies under the reservoir's water in every season", async ({
-  page,
-}) => {
+test("seized land shows barren ruins in every season", async ({ page }) => {
   const errors = await open(page, "crisis-scene-taken");
   const state = takenFarm();
   const taken = state.crises!.at(-1)!.cells!;
   expect(taken).toHaveLength(4);
   const cells = [...field, ...taken.map((c) => `${c.row},${c.col}`)];
   for (const season of ["spring", "summer", "fall", "winter"] as const) {
-    // Winter frost clears the field crops; the water stays.
+    // Winter frost clears the field crops; the ruins stay.
     await applyGame(page, {
       ...state,
       season,
@@ -171,9 +174,9 @@ test("land the county took lies under the reservoir's water in every season", as
       await expect(
         page.locator(`[data-cell="${c.row},${c.col}"]`),
       ).toHaveAttribute("aria-label", /taken by the county$/);
-    // The same cell is drawn as water when taken and as plain ground when not.
+    // Compare the ruined artwork with the same cell before seizure.
     const cell = `${taken[0].row},${taken[0].col}`;
-    const water = await blueness(page, cell);
+    const ruined = await groundColor(page, cell);
     await capture(page, `taken-${season}`, cells);
     await applyGame(page, {
       ...state,
@@ -185,39 +188,53 @@ test("land the county took lies under the reservoir's water in every season", as
       "data-scene-taken",
       "0",
     );
-    expect(water - (await blueness(page, cell))).toBeGreaterThan(20);
+    const untouched = await groundColor(page, cell);
+    expect(
+      Math.hypot(...ruined.map((value, c) => value - untouched[c])),
+    ).toBeGreaterThan(8);
   }
   expect(errors).toEqual([]);
 });
 
-test.describe("touch phone 390x844", () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
-  test("land the county took reads as water on a phone", async ({ page }) => {
-    const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto("/?instance=validation-crisis-scene-taken-phone");
-    await expect(page.locator("#save-status")).toHaveText(
-      "Saved on this browser",
-    );
-    const state = takenFarm();
-    await applyGame(page, state);
-    await expect(page.locator("canvas")).toHaveAttribute(
-      "data-scene-taken",
-      "4",
-    );
-    const [first] = state.crises!.at(-1)!.cells!;
-    await page
-      .locator(`[data-cell="${first.row},${first.col}"]`)
-      .scrollIntoViewIfNeeded();
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await expect(
-      page.locator(`[data-cell="${first.row},${first.col}"]`),
-    ).toBeInViewport();
-    const dir = process.env.SCENE_SCREENSHOTS_DIR;
-    if (dir) await page.screenshot({ path: `${dir}/scene-taken-390x844.png` });
-    expect(errors).toEqual([]);
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 667, height: 375 },
+])
+  test.describe(`touch phone ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport, hasTouch: true });
+    test("seized land shows ruins on a phone", async ({ page }) => {
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      page.on("requestfailed", (request) => errors.push(request.url()));
+      page.on("console", (message) => {
+        if (message.type() === "error") errors.push(message.text());
+      });
+      await page.goto("/?instance=validation-crisis-scene-taken-phone");
+      await expect(page.locator("#save-status")).toHaveText(
+        "Saved on this browser",
+      );
+      const state = takenFarm();
+      await applyGame(page, state);
+      await expect(page.locator("canvas")).toHaveAttribute(
+        "data-scene-taken",
+        "4",
+      );
+      const [first] = state.crises!.at(-1)!.cells!;
+      await page
+        .locator(`[data-cell="${first.row},${first.col}"]`)
+        .scrollIntoViewIfNeeded();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(
+        page.locator(`[data-cell="${first.row},${first.col}"]`),
+      ).toBeInViewport();
+      const dir = process.env.SCENE_SCREENSHOTS_DIR;
+      if (dir)
+        await page.screenshot({
+          path: `${dir}/scene-taken-${viewport.width}x${viewport.height}.png`,
+        });
+      expect(errors).toEqual([]);
+    });
   });
-});
 
 test("a sealed well fades to grey and the council office stands while permits are required", async ({
   page,

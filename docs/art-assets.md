@@ -79,3 +79,9 @@ The wooden hive artwork is now used only for paid 2 × 2 structures. Constructio
 ## Clearable debris
 
 Starting farms contain seasonal berry bushes, weeds, stones, logs, boulders, rocky outcrops, and L-shaped fallen trees. The debris renderer uses detailed transparent woodland sprites, with one-, two-, four-, five-, and nine-tile footprints. [Asset layout, rendering contract, and generation prompt](art/debris-generation.md).
+
+## Seized land
+
+`public/art/seized-land.png` is a transparent 2 × 2 atlas of cracked fields, ruined stone foundations, collapsed timber, and dead orchard remnants. All county-taken cells use these scars in both eminent-domain events, replacing the former water overlay. Variants follow stable cell coordinates and stay through seasonal changes, with cooler winter and faded autumn tints. This is symbolic disrepair artwork; removed structures are not retained in the save. `seized-artwork.ts` trims each cell's transparent gutters and shares the farm's projection and depth order.
+
+Created with the built-in image generation tool, using `farm-atlas.png` as a style reference. Prompt: four isolated low diamond ground patches in an evenly spaced 2 × 2 transparent atlas; cracked stripped earth and dead stubble, crumbling stone foundation with terracotta fragments and splintered beams, collapsed timber shed with broken slate, and dead orchard stump with roots and broken fence. Match the detailed warm painted pixel art, 2:1 isometric camera and upper-left light. Use dusty earth, weathered stone, faded terracotta and grey timber, generous gutters, no living plants, water, people or text.

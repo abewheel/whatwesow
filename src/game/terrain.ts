@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import type { FarmPolicy } from "../contracts/farm-policy";
-import { mix } from "../contracts/world";
 import type { MacroState } from "../macro/state";
 import { cellAllowed, type Cell } from "../micro/world";
 
@@ -39,104 +38,16 @@ const tileWidth = 128,
 const strideX = tileWidth + gutter * 2,
   strideY = tileHeight + gutter * 2;
 
-/** Land the county took for its reservoir; the scene draws it as water over the ground. */
+/** Land taken by the county; the scene covers it with barren earth and ruins. */
 export const takenCell = (cell: Cell, policy: FarmPolicy = {}) =>
   !!policy.takenCells?.some((c) => c.row === cell.row && c.col === cell.col);
-/** Multiply tint: land outside the grant turns grey-green. Taken land is drawn as water instead. */
+/** Multiply tint: land outside the grant turns grey-green. Taken land receives its own ruined ground artwork. */
 export const outsideTint = 0x879777;
 export function groundTint(cell: Cell, policy: FarmPolicy = {}) {
   return takenCell(cell, policy) || cellAllowed(cell, policy)
     ? undefined
     : outsideTint;
 }
-/** The river's water in each season, with a darker bank where the reservoir meets the farm. */
-export const reservoirColors: Record<
-  Season,
-  { water: number; shallow: number; ripple: number; bank: number }
-> = {
-  spring: {
-    water: 0x539da6,
-    shallow: 0x79beb6,
-    ripple: 0xc6e7d0,
-    bank: 0x5e4a2c,
-  },
-  summer: {
-    water: 0x408d9b,
-    shallow: 0x66b1aa,
-    ripple: 0xb7e1cf,
-    bank: 0x5e4a2c,
-  },
-  fall: {
-    water: 0x648e96,
-    shallow: 0x85ada3,
-    ripple: 0xc7d9c7,
-    bank: 0x5a4329,
-  },
-  // Frozen over, and edged in slate so the ice stands out from the snow.
-  winter: {
-    water: 0x8fb6c4,
-    shallow: 0xb8d6da,
-    ripple: 0xf4f8f4,
-    bank: 0x4f6f7c,
-  },
-};
-/**
- * Which sides of a taken cell meet land that is not taken, and so get a bank:
- * up-right, down-right, down-left and up-left on screen.
- */
-export function shoreSides(cell: Cell, policy: FarmPolicy = {}) {
-  return [
-    { row: cell.row - 1, col: cell.col },
-    { row: cell.row, col: cell.col + 1 },
-    { row: cell.row + 1, col: cell.col },
-    { row: cell.row, col: cell.col - 1 },
-  ].map((side) => !takenCell(side, policy));
-}
-/** One cell of reservoir water centred on `point`: shallows and a bank on its shore sides, and ripples. */
-export function drawReservoir(
-  g: Phaser.GameObjects.Graphics,
-  cell: Cell,
-  point: { x: number; y: number },
-  season: Season,
-  shore: boolean[],
-) {
-  const c = reservoirColors[season],
-    { x, y } = point;
-  // Top, right, bottom and left corners of the 64 × 32 diamond.
-  const corners = [
-    [x, y - 16],
-    [x + 32, y],
-    [x, y + 16],
-    [x - 32, y],
-  ].map(([cx, cy]) => new Phaser.Math.Vector2(cx, cy));
-  g.fillStyle(c.water).fillPoints(corners, true);
-  for (const [side, open] of shore.entries()) {
-    if (!open) continue;
-    const a = corners[side],
-      b = corners[(side + 1) % 4];
-    // Shallows run along the bank, shifted inward so a shore across cells stays unbroken.
-    const dx = (x - (a.x + b.x) / 2) * 0.18,
-      dy = (y - (a.y + b.y) / 2) * 0.18;
-    g.lineStyle(5, c.shallow).lineBetween(
-      a.x + dx,
-      a.y + dy,
-      b.x + dx,
-      b.y + dy,
-    );
-    g.lineStyle(3, c.bank).lineBetween(a.x, a.y, b.x, b.y);
-  }
-  // Two short ripples, or cracks in the ice, placed the same way every draw.
-  const seed = mix(cell.row, cell.col);
-  for (const k of [0, 1]) {
-    const dx = (((seed >>> (k * 8)) & 0xff) / 255 - 0.5) * 24,
-      dy = (k ? 5 : -5) + (((seed >>> (k * 8 + 4)) & 0xf) / 15 - 0.5) * 4,
-      length = 8 + ((seed >>> (k * 4 + 16)) & 0x7);
-    g.lineStyle(2, c.ripple, 0.9)
-      .lineBetween(x + dx - length / 2, y + dy, x + dx, y + dy - 1)
-      .lineBetween(x + dx, y + dy - 1, x + dx + length / 2, y + dy);
-  }
-}
-
 /** Contiguous samples keep the material stable across cells and camera changes. */
 export function groundFrame(cell: Cell, material: GroundMaterial) {
   const wrap = (n: number) => ((n % 4) + 4) % 4;
