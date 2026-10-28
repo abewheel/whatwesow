@@ -1,5 +1,28 @@
 # What We Sow
 
+## Hackathon audience, thesis, and goals
+
+This framing guides game design, narrative, and the demo video.
+
+The audience: Our hackathon judges at the Principled Business Summit.
+
+The thesis of the summit: Capitalism's next 250 years won't be defended in a panel. Build the case.
+
+The hackathon prompt: Build something that makes free enterprise work better for owners, workers, customers or the broader business ecosystem.
+
+Our thesis: Capitalism is being attacked on moral grounds and must be defended on moral grounds.
+
+Our goals are to make a game that:
+
+1. Makes the moral case for capitalism.
+2. Equips players with winning moral arguments for capitalism.
+
+Our approach:
+
+1. The game must first be fun, attractive, and have broad-based appeal to deliver any message at all.
+2. Adversity in the game comes from anti-capitalist angles so that players can feel and empathize with the capitalist position.
+3. Players defend and grow their farm based on their ability to choose strong moral arguments for capitalist policies, and feel the results when they can't.
+
 ## Project Overview
 
 **What We Sow** is a single-player, browser-based farming game combining the accessible, addictive gameplay of classic FarmVille with a morally consequential narrative spanning 40 in-game years, or 160 seasonal turns, as a lone farm grows into a small farming community.
@@ -20,7 +43,7 @@ Players build and expand a farm through simple, satisfying farming mechanics whi
 2. **FarmVille, not Stardew Valley.** Gameplay centers on managing a farm from a fixed isometric perspective, not walking a character around an RPG world. Players click to plant, harvest, build, arrange, and expand.
 3. **Simple to learn, rewarding to optimize.** Keep individual actions intuitive while allowing increasingly interesting decisions about crops, land, resources, and investments.
 4. **Choices have consequences.** Moral decisions must meaningfully affect gameplay, relationships, the environment, and future events—not merely change dialogue or abstract morality scores.
-5. **Make the case through consequences, not lectures.** The game has a point of view: individual rights to your land, your labor, and the fruits of your work are what let people and communities flourish. Express it only through how the world responds to choices. Collectivist options must be genuinely tempting, often paying off in the moment; their costs emerge over years. Avoid simplistic good-versus-evil choices.
+5. **Make the case through arguments and consequences, not lectures.** The game has a point of view: individual rights to your land, your labor, and the fruits of your work are what let people and communities flourish. Let players learn to recognize and choose strong moral arguments, then experience how the world responds. Collectivist options must be genuinely tempting, often paying off in the moment; their costs emerge over years. Avoid simplistic good-versus-evil choices.
 6. **A lifetime of consequences.** Decisions should compound across decades. The world, characters, and farm evolve visibly over time.
 7. **Accessible and approachable.** Favor broad appeal, intuitive controls, short feedback loops, and minimal friction over complicated simulation mechanics.
 8. **Show, don't tell.** Let changing landscapes, buildings, relationships, farm productivity, and the community's fortunes communicate the consequences of decisions.
@@ -66,7 +89,7 @@ The narrative unfolds primarily through **mandatory character dialogues** at imp
 - The central theme is individual rights versus collective control: owning your land and harvest, trading freely, and choosing whom to work with, versus pooling, sharing, or handing decisions to the group.
 - Supporting themes: ambition, responsibility, greed, generosity, environmental stewardship, family, and legacy.
 - Allow decisions made early in life to create unexpected consequences decades later.
-- Characters never state the game's moral, and the game never judges the player. Give each side its strongest case in its own voice; collectivist characters are sincere and sympathetic, not villains.
+- Characters make moral arguments in their own voices about the conflict at hand. Keep them in character rather than delivering an authorial lecture, and let consequences show what the arguments mean. Give each side its strongest case; collectivist characters are sincere and sympathetic, not villains. The game never judges the player.
 - The player is free to choose either way. Let outcomes, not speeches, show which choices let people flourish.
 - Support branching consequences without requiring entirely separate storylines for every choice.
 - Integrate narrative decisions into the farming systems wherever possible.

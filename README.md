@@ -2,9 +2,9 @@
 
 ### Grow a farm. Shape a lifetime.
 
-![Pixel-art farm concept with colorful crops, animals, cozy buildings, neighbors, and four changing seasons.](docs/images/art-direction.png)
+![In-game farm with a farmhouse, seed storehouse, chicken coop, apple tree, and ripe crops, with open space between the buildings.](docs/images/gameplay-farm.png)
 
-*Concept art. Game in development.*
+*Actual gameplay from a development save. Game in development.*
 
 Plant, harvest, and build a farm of your own across 40 in-game years.
 
@@ -15,6 +15,10 @@ Plant, harvest, and build a farm of your own across 40 in-game years.
 🤝 **Make hard choices.** What you gain, and what you give up, shapes the years ahead.
 
 A single-player farming game for your browser.
+
+![An in-game council meeting about taking farmland for a reservoir, with five characters offering different arguments.](docs/images/gameplay-council.png)
+
+*Choose your argument at the council. The policy that passes changes your farm.*
 
 **What will you leave behind?**
 
@@ -29,3 +33,7 @@ pnpm dev --instance validation-my-task
 ```
 
 Use the printed URL, including its query string. Run `pnpm validate` before handing over substantive changes.
+
+[Video preparation](videos/README.md) covers isolated gameplay recording and the separate HyperFrames tools for the planned demo.
+
+Watch the one-minute demo at [/video](https://whatwesow.com/video), or use its Play button to open the game. The video starts muted and includes playback controls.

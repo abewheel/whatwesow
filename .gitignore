@@ -6,3 +6,9 @@ test-results/
 !.env.example
 .DS_Store
 artifacts/playthrough/
+videos/output/
+videos/projects/*/assets/local/
+videos/projects/*/renders/
+videos/projects/*/.hyperframes/
+
+videos/projects/*/.thumbnails/

@@ -85,3 +85,7 @@ Sources: [Pages Git integration](https://developers.cloudflare.com/pages/configu
 CI runs development browser tests across 19 timing-balanced shards alongside unit, build, and production checks. Every job must pass the aggregate `validate` gate. `scripts/browser-timings.json` contains scheduling estimates only; new tests default to ten seconds and remain included.
 
 Failed jobs retain reports, screenshots, and traces for seven days. Inspect traces with `pnpm exec playwright show-trace path/to/trace.zip`. DOM snapshots and continuous trace screenshots are disabled to avoid copying the estate's 4,096 targets; failure screenshots remain enabled. Follow the CI rules in `AGENTS.md`.
+
+## Video page
+
+`/video` is a separate Vite HTML entry, with no game bundle loaded until Play opens `/`. `public/media/what-we-sow-demo.mp4` is the web copy of the current film; keep it below Cloudflare Pages’ 25 MiB per-file limit. Replace its matching JPEG poster when refreshing the film. Native controls allow pause and sound; playback starts muted and inline. The desktop and phone route checks are in tests/browser/video-page.spec.ts, with a separate production route/media-range check.

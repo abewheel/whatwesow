@@ -1,0 +1,108 @@
+{
+  "sourceCommit": "b716c41",
+  "renderer": "hyperframes@0.8.214",
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "fps": 30,
+  "seconds": 60,
+  "assets": [
+    {
+      "path": "assets/fonts/OFL.txt",
+      "bytes": 4394,
+      "sha256": "62247d172c6173c3deaa58dc9e5e77d7942977048281a40e68fd766c4168e582",
+      "source": "Game typography; SIL Open Font License"
+    },
+    {
+      "path": "assets/fonts/farm-readable.ttf",
+      "bytes": 3004,
+      "sha256": "42624bc1df07667c82ee21714a485039429990018787119cbcda40c09c5eb20a",
+      "source": "Game typography; SIL Open Font License"
+    },
+    {
+      "path": "assets/fonts/pixelify-sans.ttf",
+      "bytes": 79160,
+      "sha256": "9ba86cd010a4de309d263ceff8e8044092c9db7efda869620cb9ff1c4389e8a5",
+      "source": "Game typography; SIL Open Font License"
+    },
+    {
+      "path": "assets/gsap.min.js",
+      "bytes": 72925,
+      "sha256": "c3a03a345e45bc954cd48c43f11572891f5dca7a5d99348d5bc14753a728618c",
+      "source": "GSAP 3.15.0, original header retained"
+    },
+    {
+      "path": "assets/local/click.mp3",
+      "bytes": 11702,
+      "sha256": "075e17bdac5c13662a1c9530050e0046f81d4138e00eb3bf30427a7b4404103d",
+      "source": "HyperFrames bundled click-soft"
+    },
+    {
+      "path": "assets/local/score.m4a",
+      "bytes": 1475829,
+      "sha256": "0c3802fb6a1ed5dbadcd55cea853ab18c48da96bf00dd73930495b0f4325b2b1",
+      "source": "CC0 Holizna, Quiet Village 1; excerpt, gain automation, normalized"
+    },
+    {
+      "path": "assets/local/v2/dirty.mp4",
+      "bytes": 4284742,
+      "sha256": "336c8969300e45b17ca82f106c2d5165fbb2a2157bafde54debcf88a478a0a83",
+      "source": "What We Sow gameplay at b716c41"
+    },
+    {
+      "path": "assets/local/v2/estate-work.mp4",
+      "bytes": 1886066,
+      "sha256": "70fba1f074f6cdd6ed5e4a59897236779609fbfe360d30af21edda643630a5a7",
+      "source": "What We Sow estate capture: 96 plots, 13 buildings, 11 oaks; filming-only tree nameplates suppressed"
+    },
+    {
+      "path": "assets/local/v2/estate.mp4",
+      "bytes": 4249781,
+      "sha256": "5a1f2ba771b4186d4ad004bdb9fa199cdd65d7573f2baa36ca3010054789f7e0",
+      "source": "What We Sow estate capture: 96 plots, 13 buildings, 11 oaks; filming-only tree nameplates suppressed"
+    },
+    {
+      "path": "assets/local/v2/medium.mp4",
+      "bytes": 3209031,
+      "sha256": "c8cc861f57f6a43d1e89e26bcccb01bc7f00f2859100b021fa41052b9285a70d",
+      "source": "What We Sow gameplay at b716c41"
+    },
+    {
+      "path": "assets/local/v2/right-choice.mp4",
+      "bytes": 1750056,
+      "sha256": "bc87004166c5ab56e2ec9bb3fbbf6cc0c0c283df809a54ac7f838c870e8b5d7d",
+      "source": "What We Sow gameplay at b716c41"
+    },
+    {
+      "path": "assets/local/v2/rights-council.png",
+      "bytes": 2786799,
+      "sha256": "89d2639903355a2a59acb2d3d733acb3407c6801457286fbe9e2f08d5bb1262e",
+      "source": "What We Sow gameplay at b716c41"
+    },
+    {
+      "path": "assets/local/v2/small.mp4",
+      "bytes": 5624402,
+      "sha256": "c2b673a0321289af331ec6d4bde5cd3564cdb07c1e023ae59c0548f5807e9e96",
+      "source": "What We Sow gameplay at b716c41"
+    },
+    {
+      "path": "assets/local/v2/start-background.jpg",
+      "bytes": 775298,
+      "sha256": "9c1046a2ab503c3b0c8ca1a68788b85e3b97eaf848a4125d6f0195972e429848",
+      "source": "What We Sow public/art/starter-landscape.jpg, actual start-menu background"
+    },
+    {
+      "path": "assets/local/v3/confiscation-after.png",
+      "bytes": 2821277,
+      "sha256": "5417aee9cc9ae334ef55c0805c3909b68ff3830e53714bb349e2ee31ce74cf31",
+      "source": "Requested cinematic fixture rendered in What We Sow: 2560 plots, 400-plot square loss at the property boundary; production rule unchanged"
+    },
+    {
+      "path": "assets/local/v3/confiscation-before.png",
+      "bytes": 2946998,
+      "sha256": "0f0b06bec3ae332970af7e19eb9e6604e9ad08f40e44ef4089b8c9e1bb5e3c57",
+      "source": "Requested cinematic fixture rendered in What We Sow: 2560 plots, 400-plot square loss at the property boundary; production rule unchanged"
+    }
+  ]
+}

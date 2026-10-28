@@ -7,6 +7,10 @@ export default tseslint.config(
       "node_modules/**",
       "test-results/**",
       "playwright-report/**",
+      "videos/output/**",
+      "videos/projects/*/assets/**",
+      "videos/projects/*/.media/**",
+      "videos/projects/*/.hyperframes/**",
       // Self-contained prototype with its own tests; the game imports it as data.
       "crisis-layer/**",
     ],
