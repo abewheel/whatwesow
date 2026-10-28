@@ -21,7 +21,7 @@ ESLint blocks imports from the other domain, integration, storage, development t
 
 ## Integration contract
 
-`GameState` is the version 3 save envelope. Integration migrates version 1 and 2 saves while preserving coins and calendar. Do not persist separate domain saves. `readDomain` projects a domain, and `replaceDomain` validates an edit and merges only owned fields into the latest whole state. Neither mutates its input.
+`GameState` is the version 3 save envelope. Its optional `buildingLayout` revision migrates older building reservations once; individual structure footprints preserve compact historical lots when a fully occupied estate cannot expand them. Integration migrates version 1 and 2 saves while preserving coins and calendar. Do not persist separate domain saves. `readDomain` projects a domain, and `replaceDomain` validates an edit and merges only owned fields into the latest whole state. Neither mutates its input.
 
 The scene receives micro state and calendar for drawing. UI and storage coordinate through integration. When a feature spans both domains, add an explicit typed input/output in the integration layer and test the resulting whole-state transition. Use `farmContext` to project the calendar and policy into pure farming rules. Use `advanceSeason` for seasonal income and `applyMacroChange` to commit macro policy, land revocation, and object losses together. Read [the macro contract](macro-farm-contract.md) before implementing consequences. Do not let narrative code directly edit farming fields or let a scene advance the calendar.
 

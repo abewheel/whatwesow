@@ -14,6 +14,8 @@ import {
   buildings,
   constructionCost,
   isTree,
+  isAnimal,
+  animalProducts,
   treeProduct,
   buildingLevel,
   canPlace,
@@ -43,6 +45,7 @@ export type FarmAction =
   | { type: "harvest"; plot: number }
   | { type: "harvestFruit"; id: number }
   | { type: "harvestTree"; id: number }
+  | { type: "collectAnimal"; id: number }
   | { type: "work" }
   | { type: "expand"; cell?: Cell }
   | { type: "build"; kind: BuildingKind; cell: Cell }
@@ -101,6 +104,22 @@ export function actOnFarm(
       state.plots[action.plot] = null;
       message = `${crops[plot.crop].name} harvested! +${value} coins.`;
     }
+  } else if (action.type === "collectAnimal") {
+    const animal = state.structures.find((s) => s.id === action.id);
+    if (
+      !animal ||
+      !isAnimal(animal.kind) ||
+      animal.pendingConstruction ||
+      !animal.product
+    )
+      throw new Error("No animal products ready. Return next season.");
+    if (!cellAllowed(animal, policy))
+      throw new Error("This building is outside the current land grant.");
+    const product = animalProducts[animal.kind];
+    const value = policyProduction(product.value * animal.level, policy);
+    animal.product = false;
+    state.coins += value;
+    message = `${product.product} collected! +${value} coins.`;
   } else if (action.type === "harvestTree") {
     const tree = state.structures.find((s) => s.id === action.id);
     if (
@@ -193,6 +212,7 @@ export function actOnFarm(
       ...action.cell,
       id,
       kind: action.kind,
+      footprint: { width: item.width, height: item.height },
       level: 1,
       pendingConstruction: true,
       ...(isTree(action.kind) ? { age: 0, product: false } : {}),
@@ -234,7 +254,9 @@ export function actOnFarm(
         )
       )
         throw new Error("That footprint is occupied or outside the farm.");
-      Object.assign(building, action.cell);
+      Object.assign(building, action.cell, {
+        footprint: { width: item.width, height: item.height },
+      });
       message = `${item.name} moved. No coins spent.`;
     } else {
       if (building.pendingConstruction)

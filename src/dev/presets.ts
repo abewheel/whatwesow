@@ -30,7 +30,7 @@ export function presetState(id: string): GameState {
     state.plots.push({ crop: "corn", growth: 2 });
     state.plotCells.push({ row: 63, col: 63 });
     state.plotIds.push(state.nextPlotId++);
-    return parseState(state);
+    return parseState({ ...state, buildingLayout: undefined });
   }
   if (id === "restricted") {
     const base = presetState("community");
@@ -122,7 +122,7 @@ export function presetState(id: string): GameState {
         level: 1,
       });
     state.nextStructureId = Math.max(...state.structures.map((s) => s.id)) + 1;
-    return parseState(state);
+    return parseState({ ...state, buildingLayout: undefined });
   }
   if (id === "mid" || id === "late")
     return {
@@ -149,5 +149,5 @@ export function presetState(id: string): GameState {
       corn: 0,
     };
   }
-  return parseState(state);
+  return parseState({ ...state, buildingLayout: undefined });
 }

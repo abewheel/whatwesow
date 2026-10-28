@@ -94,7 +94,7 @@ test("farming, multi-cell building previews and distant placements work at both 
     "data-valid",
     "true",
   );
-  await expect(page.locator("#placement-preview")).toHaveCSS("width", "256px");
+  await expect(page.locator("#placement-preview")).toHaveCSS("width", "384px");
   await page.locator('[data-cell="14,18"]').click();
   await expect(page.locator("#season")).toContainText("45 coins");
   await visitBuilding(page, "seeds");

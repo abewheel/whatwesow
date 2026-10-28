@@ -36,55 +36,61 @@ export function distinctBuildingRect(
     height: Math.round((height * sourceHeight) / 1280),
   };
 }
-const distinctGroundBounds: Record<
-  number,
-  readonly [number, number, number, number]
-> = {
-  0: [0.695, 1.709, 1.796, 2.815],
-  1: [0.718, 1.734, 1.642, 2.649],
-  2: [0.759, 1.805, 1.608, 2.615],
-  3: [0.686, 1.701, 1.764, 2.901],
-  4: [0.689, 1.684, 1.821, 2.713],
-  5: [0.74, 1.78, 1.638, 2.638],
-  6: [0.703, 1.74, 1.629, 2.725],
-};
-
 type Lot = Cell & { width: number; height: number };
 type Point = { x: number; y: number };
-// Atlas coordinates in isometric axes: row = 2v-u, column = 2v+u.
-// The lower ground apron (v >= .84) supplies the back bounds; all visible
-// pixels supply the front bounds. These envelopes include every season and
-// the construction atlas, so roofs may rise behind a lot but never spill in front.
-const groundBounds: Record<number, readonly [number, number, number, number]> =
-  {
-    0: [0.706, 1.716, 1.708, 2.778],
-    1: [0.685, 1.7, 1.792, 2.786],
-    3: [0.806, 1.868, 1.569, 2.577],
-    4: [0.81, 1.862, 1.522, 2.587],
-  };
-
-/** Square atlas placement with its ground apron inside the occupied cells. */
+// Measured source pixels, using a single scale on both axes.
+const atlasMetrics = {
+  farm0: { bounds: [0.70703, 1.7168, 1.70703, 2.77734], ratio: 1.0 },
+  farm1: { bounds: [0.68555, 1.70117, 1.79102, 2.78516], ratio: 1.0 },
+  farm3: { bounds: [0.80664, 1.86914, 1.56836, 2.57617], ratio: 1.0 },
+  farm4: { bounds: [0.81055, 1.86328, 1.52148, 2.58594], ratio: 1.0 },
+  distinct0: {
+    bounds: [0.90223, 1.9162, 2.01955, 3.03911],
+    ratio: 1.1229050279329609,
+  },
+  distinct1: {
+    bounds: [0.50469, 1.52113, 1.42019, 2.43897],
+    ratio: 0.8732394366197183,
+  },
+  distinct2: {
+    bounds: [0.48956, 1.53596, 1.35035, 2.34571],
+    ratio: 0.839907192575406,
+  },
+  distinct3: {
+    bounds: [0.66499, 1.6801, 1.74055, 2.87657],
+    ratio: 0.9874055415617129,
+  },
+  distinct4: {
+    bounds: [0.34152, 1.33661, 1.44472, 2.34152],
+    ratio: 0.7936117936117936,
+  },
+  distinct5: {
+    bounds: [0.43619, 1.47564, 1.34107, 2.33179],
+    ratio: 0.8190255220417634,
+  },
+  distinct6: {
+    bounds: [0.39516, 1.4328, 1.31989, 2.40323],
+    ratio: 0.8172043010752689,
+  },
+} as const;
 export function buildingArtwork(lot: Lot, frame: number, distinct = false) {
-  const [minRow, minCol, maxRow, maxCol] = (
-    distinct ? distinctGroundBounds : groundBounds
-  )[frame];
-  // Smaller utility buildings should not rival the barn or farmhouse.
-  // Keep the same ground anchor for every season and construction state.
-  const proportion = distinct
-    ? [1, 0.92, 0.8, 1, 0.88, 0.9, 0.82][frame]
-    : ({ 0: 1, 1: 1, 3: 0.62, 4: 0.78 }[frame] ?? 1);
+  const key =
+    `${distinct ? "distinct" : "farm"}${frame}` as keyof typeof atlasMetrics;
+  const {
+    bounds: [minRow, minCol, maxRow, maxCol],
+    ratio,
+  } = atlasMetrics[key];
   const inset = 0.08;
-  const size =
-    proportion *
-    Math.min(
-      (lot.width + lot.height) * 32 * 0.94,
-      ((lot.height - inset * 2) * 64) / (maxRow - minRow),
-      ((lot.width - inset * 2) * 64) / (maxCol - minCol),
-    );
+  const size = Math.min(
+    (lot.width + lot.height) * 32 * 0.94,
+    ((lot.height - inset * 2) * 64) / (maxRow - minRow),
+    ((lot.width - inset * 2) * 64) / (maxCol - minCol),
+  );
   return {
     row: lot.row + (lot.height - 1) / 2 - ((minRow + maxRow) * size) / 128,
     col: lot.col + (lot.width - 1) / 2 - ((minCol + maxCol) * size) / 128,
     size,
+    height: size * ratio,
   };
 }
 
@@ -105,7 +111,7 @@ export function hitsBuildingArtwork(
     point.x >= top.x &&
     point.x <= top.x + art.size &&
     point.y >= top.y &&
-    point.y <= top.y + art.size &&
+    point.y <= top.y + art.height &&
     row <= lot.height - 0.5 &&
     col <= lot.width - 0.5
   );

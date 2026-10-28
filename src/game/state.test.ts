@@ -55,15 +55,22 @@ describe("domain integration", () => {
 });
 
 it("migrates a legacy save without losing money or calendar", () => {
-  expect(
-    parseState({ version: 1, coins: 77, year: 20, season: "fall" }),
-  ).toEqual({
-    ...initialState(),
+  const next = parseState({ version: 1, coins: 77, year: 20, season: "fall" });
+  expect(next).toMatchObject({
+    version: 3,
+    buildingLayout: 2,
     coins: 77,
     year: 20,
     season: "fall",
   });
+  expect(next.structures[0]).toMatchObject({
+    id: 1,
+    kind: "home",
+    footprint: { width: 5, height: 4 },
+  });
+  expect(next.plotCells).toEqual(initialState().plotCells);
 });
+
 it("requires complete farm data in version 2", () => {
   expect(() =>
     parseState({ version: 2, coins: 77, year: 20, season: "fall" }),
@@ -285,7 +292,7 @@ it("reserves and saves paid construction, activating benefits only next season",
       "micro",
       actOnFarm(
         state,
-        { type: "build", kind, cell: { row: 0, col: index * 4 } },
+        { type: "build", kind, cell: { row: 0, col: index * 6 } },
         farmContext(state),
       ).state,
     );

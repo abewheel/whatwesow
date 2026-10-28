@@ -33,23 +33,23 @@ test("places plots, trees and structures with footprints, moves and upgrades the
   );
   await load(page, "reinvesting");
   await buildTool(page, "shed");
-  await page.getByRole("button", { name: "Land 14,18", exact: true }).hover();
+  await page.getByRole("button", { name: "Land 14,23", exact: true }).hover();
   await expect(page.locator("#placement-preview")).toHaveAttribute(
     "data-valid",
     "true",
   );
-  await page.getByRole("button", { name: "Land 14,18", exact: true }).click();
+  await page.getByRole("button", { name: "Land 14,23", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText(
     "Seed storehouse construction started",
   );
   await expect(page.locator("#season")).toContainText("190 coins");
   await buildTool(page, "oak");
-  await page.locator('[data-cell="14,18"]').hover();
+  await page.locator('[data-cell="14,23"]').hover();
   await expect(page.locator("#placement-preview")).toHaveAttribute(
     "data-valid",
     "false",
   );
-  await page.locator('[data-cell="14,18"]').click();
+  await page.locator('[data-cell="14,23"]').click();
   await expect(page.locator("#farm-message")).toContainText("occupied");
   await expect(page.locator("#season")).toContainText("190 coins");
   await page.getByRole("button", { name: "Land 20,17", exact: true }).click();
@@ -66,7 +66,7 @@ test("places plots, trees and structures with footprints, moves and upgrades the
     "Ready next season",
   );
   await page.locator("#move-building").click();
-  await page.getByRole("button", { name: "Land 13,21", exact: true }).click();
+  await page.getByRole("button", { name: "Land 19,23", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText("moved");
   await expect(page.locator("#season")).toContainText("145 coins");
 
@@ -97,7 +97,7 @@ test("places plots, trees and structures with footprints, moves and upgrades the
   await page.reload();
   await expect(page.locator("#next-season")).toContainText("10/160");
   await expect(page.locator("#farm-summary")).toContainText("10 plots");
-  await expect(page.locator('[data-cell="13,21"]')).toHaveAttribute(
+  await expect(page.locator('[data-cell="19,23"]')).toHaveAttribute(
     "aria-label",
     /Seed storehouse 2, level 2/,
   );
@@ -187,7 +187,7 @@ test("repeated builds, plot relocation, and macro land policies remain playable"
     "Saved on this browser",
   );
   await load(page, "reinvesting");
-  for (const cell of ["14,18", "19,18"]) {
+  for (const cell of ["14,23", "19,18"]) {
     await buildTool(page, "shed");
     await page.locator('[data-cell="' + cell + '"]').click();
     await expect(page.locator("#farm-message")).toContainText(
@@ -258,9 +258,9 @@ test("switching from plot relocation to building relocation clears the previous 
   await visitBuilding(page, "builder");
   await page.locator("#structure-target").selectOption("1");
   await page.locator("#move-building").click();
-  await page.getByRole("button", { name: "Land 25,25", exact: true }).click();
+  await page.getByRole("button", { name: "Land 28,28", exact: true }).click();
   await expect(page.locator("#farm-message")).toContainText("Farmhouse moved");
-  await expect(page.locator('[data-cell="25,25"]')).toHaveAttribute(
+  await expect(page.locator('[data-cell="28,28"]')).toHaveAttribute(
     "data-structure",
     "1",
   );
@@ -277,20 +277,20 @@ test("construction persists, withholds benefits, and completes next season", asy
   );
   await load(page, "community");
   await buildTool(page, "shed");
-  await page.locator('[data-cell="14,18"]').click();
+  await page.locator('[data-cell="14,23"]').click();
   await expect(page.locator("#season")).toContainText("2,880 coins");
   await expect(page.locator('[data-crop="carrot"]')).toHaveAttribute(
     "aria-label",
     /6 coins to plant/,
   );
   await page.reload();
-  await page.locator('[data-cell="14,18"]').click();
+  await page.locator('[data-cell="14,23"]').click();
   await expect(page.locator("#selected-building")).toContainText(
     "Ready next season",
   );
   await expect(page.locator("#upgrade-building")).toBeDisabled();
   await endTurn(page);
-  await page.locator('[data-cell="14,18"]').click();
+  await page.locator('[data-cell="14,23"]').click();
   await expect(page.locator("#selected-building")).toContainText("Level 1/3");
   await expect(page.locator('[data-crop="carrot"]')).toHaveAttribute(
     "aria-label",

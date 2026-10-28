@@ -147,7 +147,7 @@ describe("estate construction", () => {
     ).entries())
       state = actOnFarm(
         state,
-        { type: "build", kind, cell: { row: 0, col: i * 4 } },
+        { type: "build", kind, cell: { row: 0, col: i * 6 } },
         159,
       ).state;
     state = completeUpgrades(state);
@@ -187,10 +187,10 @@ it("supports the full 64-square estate and rejects footprints beyond it", () => 
   const start = { ...establishedFarm(), coins: 100000 };
   const far = actOnFarm(
     start,
-    { type: "build", kind: "barn", cell: { row: 61, col: 61 } },
+    { type: "build", kind: "barn", cell: { row: 60, col: 59 } },
     159,
   ).state;
-  expect(far.structures.at(-1)).toMatchObject({ row: 61, col: 61 });
+  expect(far.structures.at(-1)).toMatchObject({ row: 60, col: 59 });
   expect(() =>
     actOnFarm(
       start,
@@ -233,7 +233,7 @@ it("keeps services at reachable roadside entrances when dense farms fill every l
   const locations = serviceLocations(dense);
   expect(locations.map((s) => s.id)).toContain("home");
   for (const service of locations) {
-    expect(service.row).toBe(-2);
+    expect(service.row).toBe(-service.height);
     expect(
       farmerWorkRoute(
         { row: 0, col: 1 },

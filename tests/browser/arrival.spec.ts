@@ -43,8 +43,8 @@ test("menus stay closed while approaching a building and open once at its entran
     .split(",")
     .map(Number);
   expect(
-    (row === 9 && col >= 19 && col <= 20) ||
-      (col === 21 && row >= 7 && row <= 8),
+    (row === 10 && col >= 19 && col <= 21) ||
+      (col === 22 && row >= 7 && row <= 9),
   ).toBe(true);
   await expect(page.locator("#service-title")).toHaveText("Builder's workshop");
 });
@@ -170,16 +170,12 @@ test("unreachable buildings do not open their menus", async ({ page }) => {
   );
   const state = initialState();
   // Block every entrance around the builder while leaving the service footprint clear.
-  const cells = [
-    [6, 19],
-    [6, 20],
-    [7, 18],
-    [8, 18],
-    [9, 19],
-    [9, 20],
-    [7, 21],
-    [8, 21],
-  ];
+  const cells = Array.from({ length: 3 }, (_, i) => [
+    [6, 19 + i],
+    [10, 19 + i],
+    [7 + i, 18],
+    [7 + i, 22],
+  ]).flat();
   for (const [row, col] of cells)
     state.structures.push({
       id: state.nextStructureId++,
@@ -197,6 +193,10 @@ test("unreachable buildings do not open their menus", async ({ page }) => {
     "data-cell",
     "7,19",
   );
+  // Wait until imported blockers are present.
+  await expect(
+    page.locator(`[data-structure="${state.nextStructureId - 1}"]`),
+  ).toBeAttached();
   await expect(page.locator("main")).toHaveJSProperty("inert", false);
   await page.locator("[data-service=builder]").focus();
   await page.keyboard.press("Enter");

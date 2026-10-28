@@ -18,16 +18,19 @@ Definitions live in `src/micro/world.ts`. The first facility costs its base pric
 
 | Build | Milestone | Base cost | Footprint | Effect per level |
 | --- | --- | --- | --- | --- |
-| Farmhouse | Available at start | 120 | 3 × 2 | Home, calendar, and farm services |
-| Seed storehouse | 3 harvests | 60 | 2 × 2 | Seeds cost 1 less, minimum 1 before policy |
+| Farmhouse | Available at start | 120 | 5 × 4 | Home, calendar, and farm services |
+| Chicken coop | 3 harvests | 240 | 4 × 4 | Collect eggs for 30 coins per level each season |
+| Dairy barn | 12 harvests | 750 | 5 × 5 | Collect milk for 75 coins per level each season |
+| Sheepfold | 24 harvests | 1,200 | 5 × 5 | Collect wool for 120 coins per level each season |
+| Seed storehouse | 3 harvests | 60 | 3 × 3 | Seeds cost 1 less, minimum 1 before policy |
 | Oak tree | Available at start | 15 | 1 × 1 | Acorns each fall after ten years |
 | Apple tree | 6 harvests | 60 | 1 × 1 | 24 coins per level per fall harvest after three years |
-| Irrigation well | 12 harvests and 10 plots | 180 | 2 × 2 | 1 extra grow step and 1 extra harvest coin |
-| Harvest barn | 24 harvests | 600 | 3 × 2 | 2 extra harvest coins |
-| Grain mill | 12 corn harvests | 1,800 | 3 × 3 | 15 extra coins per corn harvest |
-| Greenhouse | 80 harvests and soil level 1 | 2,400 | 3 × 2 | 10 extra harvest coins |
-| Farm market | 160 harvests, including all three crops | 3,000 | 3 × 3 | 150 coins on each season transition |
-| Legacy hall | 300 harvests and a farm market | 10,000 | 3 × 3 | 50 extra harvest coins |
+| Irrigation well | 12 harvests and 10 plots | 180 | 3 × 3 | 1 extra grow step and 1 extra harvest coin |
+| Harvest barn | 24 harvests | 600 | 5 × 4 | 2 extra harvest coins |
+| Grain mill | 12 corn harvests | 1,800 | 5 × 5 | 15 extra coins per corn harvest |
+| Greenhouse | 80 harvests and soil level 1 | 2,400 | 5 × 4 | 10 extra harvest coins |
+| Farm market | 160 harvests, including all three crops | 3,000 | 5 × 5 | 150 coins on each season transition |
+| Legacy hall | 300 harvests and a farm market | 10,000 | 5 × 5 | 50 extra harvest coins |
 
 Turnips and carrots are available at the start. Harvest one of each to receive Eli's corn seed offer. Opportunities arrive as short character notes in the farming status and **Build → Farm news**. Locked items explain their milestones in the existing controls. Offers remain available once earned, even after land or building losses. There is no research currency or separate progression screen.
 
@@ -61,3 +64,9 @@ Whole-game presets cover **Building · turn 1**, **Community · turn 25**, **Ind
 Run `pnpm test:micro` for construction, repeated effects, losses, relocation, and policies; `pnpm test:integration` for migration and macro consequences; `pnpm test:browser` for placement, panning, repeated builds, upgrades, and persistence. Finish with `pnpm validate`.
 
 Trees start as saplings and grow only when the calendar advances. Apples first bear after 12 seasons (three years); oaks bear acorns after 40 seasons (ten years). Mature trees produce each fall. Click a tree with visible product to harvest apples for 24 coins per level or acorns for 8 coins. Trees and unpicked product persist through winter. Older completed trees without ages load as mature, preserving any saved fruit readiness. Newly planted trees start at age zero.
+
+## Animals
+
+Chicken coops, dairy barns, and sheepfolds include visible animated animals and seasonal pens, including snow in winter. Click a ready building to send the farmer to collect eggs, milk, or wool and receive coins. Each completed building produces one batch per season, including its completion season. Uncollected batches keep without stacking. Collection state survives saves and moving. Animal buildings have three levels, use the normal construction and upgrade rules, and never pay automatic seasonal income. Reduced motion keeps animals still.
+
+Building sprites keep their native proportions and use larger physical lots. Old saves enlarge buildings once, preserving crops and paid work; a building moves to nearby clear ground if its old site is too small. A fully packed historical building can retain its compact lot until moved. New construction and movement always reserve the full catalog footprint.

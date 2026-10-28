@@ -1,5 +1,5 @@
 import {
-  buildings,
+  structureSize,
   cellAllowed,
   cellKey,
   footprint,
@@ -16,7 +16,7 @@ const blocker = (world: FarmerWorld) => {
   const occupied = new Set(
     [
       ...world.layout.structures.flatMap((s) =>
-        footprint(s, buildings[s.kind].width, buildings[s.kind].height),
+        footprint(s, structureSize(s).width, structureSize(s).height),
       ),
       ...serviceLocations(world.layout).flatMap((s) =>
         footprint(s, s.width, s.height),

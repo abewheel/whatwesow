@@ -7,7 +7,10 @@ test("building hover follows its complete footprint across cells and zoom", asyn
   await page.goto("/?instance=validation-footprint-hover");
   const preview = page.locator("#placement-preview");
   const tooltip = page.getByRole("tooltip");
-  for (const cell of ["7,14", "7,15", "8,14", "8,15"]) {
+  for (const cell of Array.from(
+    { length: 9 },
+    (_, i) => `${7 + Math.floor(i / 3)},${14 + (i % 3)}`,
+  )) {
     await page.locator(`[data-cell="${cell}"]`).hover();
     await expect(preview).toBeVisible();
     await expect(tooltip).toHaveText("Seed shop & nursery");
@@ -19,7 +22,7 @@ test("building hover follows its complete footprint across cells and zoom", asyn
         width: el.style.width,
         height: el.style.height,
       })),
-    ).toEqual({ left: "2464px", top: "480px", width: "128px", height: "64px" });
+    ).toEqual({ left: "2432px", top: "480px", width: "192px", height: "96px" });
     await expect(page.locator(`[data-cell="${cell}"]`)).not.toHaveAttribute(
       "title",
     );
@@ -27,7 +30,7 @@ test("building hover follows its complete footprint across cells and zoom", asyn
   await clickCamera(page, "#zoom-out");
   await page.locator("#camera-controls summary").click();
   await page.locator('[data-cell="8,15"]').hover();
-  expect(await preview.evaluate((el) => el.style.width)).toBe("96px");
+  expect(await preview.evaluate((el) => el.style.width)).toBe("144px");
   await page.locator('[data-cell="20,20"]').hover();
   await expect(preview).toBeHidden();
   await expect(tooltip).toBeHidden();

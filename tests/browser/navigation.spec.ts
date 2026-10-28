@@ -32,8 +32,8 @@ test("the HUD stays compact and clicks walk to ground and building entrances", a
           .split(",")
           .map(Number);
         return (
-          (row === 9 && col >= 14 && col <= 15) ||
-          (col === 16 && row >= 7 && row <= 8)
+          (row === 10 && col >= 14 && col <= 16) ||
+          (col === 17 && row >= 7 && row <= 9)
         );
       },
       { timeout: 30000 },

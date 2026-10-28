@@ -1,5 +1,13 @@
 import { createBuildingShadow } from "./building-shadow";
 import {
+  animalArtwork,
+  animalFrame,
+  penFrameRects,
+  livestockFrames,
+  withinAnimalFront,
+} from "./animal-layout";
+import { drawAnimalPen } from "./animal-artwork";
+import {
   buildingArtwork,
   hitsBuildingArtwork,
   distinctStructures,
@@ -33,8 +41,10 @@ import type { MacroState } from "../macro/state";
 import { initialMicroState, type MicroState } from "../micro/state";
 import {
   buildings,
+  structureSize,
   serviceLocations,
   isTree,
+  isAnimal,
   cellAllowed,
   cellKey,
   WORLD_SIZE,
@@ -106,14 +116,19 @@ export class FarmScene extends Phaser.Scene {
     return (
       this.textures.getPixelAlpha(
         Math.floor(((point.x - top.x) / art.size) * source.cutWidth),
-        Math.floor(((point.y - top.y) / art.size) * source.cutHeight),
+        Math.floor(((point.y - top.y) / art.height) * source.cutHeight),
         atlas,
         selectedFrame,
       ) > 32
     );
   }
   private drawBuildingShadow(
-    art: { row: number; col: number; size: number },
+    art: {
+      row: number;
+      col: number;
+      size: number;
+      height?: number;
+    },
     atlas: string,
     frame: number,
   ) {
@@ -136,9 +151,33 @@ export class FarmScene extends Phaser.Scene {
       this.add
         .image(top.x, top.y, key)
         .setOrigin(0, 0)
-        .setDisplaySize(art.size * 1.5, art.size * 1.25)
+        .setDisplaySize(art.size * 1.5, (art.height ?? art.size) * 1.25)
         .setAlpha(this.season === "winter" ? 0.24 : 0.2)
         .setDepth(-1),
+    );
+  }
+  hitsAnimal(
+    point: { x: number; y: number },
+    lot: Cell & {
+      kind: import("../micro/world").AnimalKind;
+      width: number;
+      height: number;
+    },
+  ) {
+    const art = animalArtwork(lot),
+      top = projectCell(art);
+    if (!withinAnimalFront(point, projectCell(lot), lot.width, lot.height))
+      return false;
+    const px = ((point.x - top.x) / art.size) * 418,
+      py = ((point.y - top.y) / art.height) * 314;
+    if (px < 0 || px >= 418 || py < 0 || py >= 314) return false;
+    return (
+      this.textures.getPixelAlpha(
+        Math.floor(px),
+        Math.floor(py),
+        "animal-buildings",
+        animalFrame(lot.kind, this.season),
+      ) > 32
     );
   }
   private get buildingAtlas() {
@@ -157,6 +196,9 @@ export class FarmScene extends Phaser.Scene {
     this.load.on("loaderror", () => this.onLoadError?.());
     this.load.on("progress", (value: number) => this.onProgress?.(value));
     this.load.image("lane-source", "/art/lane-seasons.png");
+
+    this.load.image("animal-buildings", "/art/animal-buildings-seasons.png");
+    this.load.image("livestock", "/art/livestock-sprites.png");
     this.load.image("ground-materials", "/art/ground-materials.png");
     this.load.image("border-details", "/art/border-details-seasons.png");
     this.load.image("tree-apple", "/art/apple-stages.png");
@@ -179,6 +221,14 @@ export class FarmScene extends Phaser.Scene {
   }
   create() {
     prepareLaneArtwork(this);
+
+    for (const [key, rects] of [
+      ["animal-buildings", penFrameRects],
+      ["livestock", livestockFrames],
+    ] as const)
+      for (const [i, [x, y, width, height]] of rects.entries())
+        this.textures.get(key).add(i, 0, x, y, width, height);
+
     const details = this.textures.get("border-details");
     const detailSource = details.getSourceImage();
     for (let frame = 0; frame < 16; frame++) {
@@ -442,9 +492,47 @@ export class FarmScene extends Phaser.Scene {
     // Phaser sorts by the depth below; equal depths retain placement order,
     // which the artwork hit test also uses.
     for (const s of this.farm.structures) {
-      const item = buildings[s.kind];
+      const item = { ...buildings[s.kind], ...structureSize(s) };
       const location = projectCell(s);
       if (!visible(location.x, location.y)) continue;
+      if (isAnimal(s.kind)) {
+        const art = animalArtwork({
+          ...s,
+          kind: s.kind,
+          width: item.width,
+          height: item.height,
+        });
+        const top = projectCell(art),
+          front = projectCell({
+            row: s.row + item.height - 0.5,
+            col: s.col + item.width - 0.5,
+          });
+        this.buildingOccluders.push({
+          ...top,
+          y: top.y,
+          size: art.size,
+          height: art.height,
+          front,
+        });
+        this.drawBuildingShadow(
+          art,
+          "animal-buildings",
+          animalFrame(s.kind, this.season),
+        );
+        scenery.add(
+          drawAnimalPen(
+            this,
+            { ...s, kind: s.kind },
+            this.season,
+            top.x,
+            top.y,
+            art.size,
+            art.height,
+            front.y,
+          ),
+        );
+        continue;
+      }
       if (isTree(s.kind)) {
         const { x, y } = location;
         const kind = s.kind as "apple" | "oak";
@@ -494,7 +582,13 @@ export class FarmScene extends Phaser.Scene {
         row: s.row + item.height - 0.5,
         col: s.col + item.width - 0.5,
       });
-      this.buildingOccluders.push({ ...top, size: art.size, front });
+      this.buildingOccluders.push({
+        ...top,
+        y: top.y,
+        size: art.size,
+        height: art.height,
+        front,
+      });
       const working = !!(s.pendingConstruction || s.pendingUpgrade);
       const stateAtlas = working && distinctFrame === undefined;
       const frame = item.frame;
@@ -520,7 +614,7 @@ export class FarmScene extends Phaser.Scene {
             distinctFrame ?? frame,
           )
           .setOrigin(0, 0)
-          .setDisplaySize(art.size, art.size)
+          .setDisplaySize(art.size, art.height)
           .setAlpha(working && distinctFrame !== undefined ? 0.72 : 1)
           .setDepth(front.y),
       );
@@ -629,7 +723,13 @@ export class FarmScene extends Phaser.Scene {
         row: service.row + service.height - 0.5,
         col: service.col + service.width - 0.5,
       });
-      this.buildingOccluders.push({ ...top, size: art.size, front });
+      this.buildingOccluders.push({
+        ...top,
+        y: top.y,
+        size: art.size,
+        height: art.height,
+        front,
+      });
       scenery.add(
         this.add
           .image(
@@ -639,7 +739,7 @@ export class FarmScene extends Phaser.Scene {
             distinctServices[service.id] ?? service.frame,
           )
           .setOrigin(0, 0)
-          .setDisplaySize(art.size, art.size)
+          .setDisplaySize(art.size, art.height)
           .setDepth(front.y),
       );
     }

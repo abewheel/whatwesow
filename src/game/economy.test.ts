@@ -53,7 +53,7 @@ it("earns the complete farming progression within a lifetime from the bare start
           return { row, col };
     throw new Error("No building site");
   };
-  act({ type: "build", kind: "home", cell: { row: 11, col: 18 } });
+  act({ type: "build", kind: "home", cell: { row: 5, col: 25 } });
   for (let turn = 1; turn <= 160; turn++) {
     for (let plot = 0; plot < state.plots.length; plot++) {
       const crop = state.plots[plot];

@@ -6,7 +6,10 @@ import {
 import { WORLD_CELLS } from "../contracts/world";
 import {
   buildings,
+  structureSize,
+  compactBuildingSizes,
   isTree,
+  isAnimal,
   treeMaturity,
   buildingLevel,
   cellKey,
@@ -206,7 +209,34 @@ export function parseMicroState(value: unknown): MicroState {
         Number(b.harvestsAtLevel) < 0)
     )
       throw new Error("Invalid upgrade harvest baseline.");
+    if (
+      isAnimal(kind) &&
+      b.product !== undefined &&
+      (typeof b.product !== "boolean" || (b.pendingConstruction && b.product))
+    )
+      throw new Error("Invalid animal product readiness.");
+    if (b.footprint !== undefined) {
+      const f = b.footprint as { width: number; height: number };
+      const old = compactBuildingSizes[kind],
+        current = buildings[kind];
+      if (
+        !f ||
+        !(
+          (f.width === old.width && f.height === old.height) ||
+          (f.width === current.width && f.height === current.height)
+        )
+      )
+        throw new Error("Invalid building footprint.");
+    }
     return {
+      ...(b.footprint
+        ? {
+            footprint: {
+              ...(b.footprint as { width: number; height: number }),
+            },
+          }
+        : {}),
+      ...(isAnimal(kind) ? { product: b.product === true } : {}),
       ...(b.harvestsAtLevel === undefined
         ? {}
         : { harvestsAtLevel: b.harvestsAtLevel as number }),
@@ -243,7 +273,7 @@ export function parseMicroState(value: unknown): MicroState {
   const cells = [
     ...plotCells,
     ...structures.flatMap((b) =>
-      footprint(b, buildings[b.kind].width, buildings[b.kind].height),
+      footprint(b, structureSize(b).width, structureSize(b).height),
     ),
   ];
   if (

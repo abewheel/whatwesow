@@ -123,7 +123,7 @@ test("imported farms keep their plots and relocated shops work with the keyboard
   });
   await expect(page.locator("[data-service=seeds]")).toHaveAttribute(
     "data-cell",
-    "0,0",
+    "7,15",
   );
   await expect(page.locator("[data-plot='0']")).toHaveAttribute(
     "data-cell",
@@ -258,7 +258,7 @@ test("dense imported farms can visit roadside services without losing plots", as
   });
   await expect(page.locator('[data-service="fields"]')).toHaveAttribute(
     "data-cell",
-    "-2,24",
+    "-3,24",
   );
   await visitBuilding(page, "fields");
   await expect(page.locator("#move-plot")).toBeVisible();

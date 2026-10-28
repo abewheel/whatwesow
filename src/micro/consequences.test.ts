@@ -23,7 +23,7 @@ function establishedFarm() {
 }
 it("allows repeated builds and aggregates benefits without one-per-type caps", () => {
   let state = { ...establishedFarm(), coins: 10000 };
-  for (const row of [1, 4, 7, 20])
+  for (const row of [1, 6, 20, 26])
     state = actOnFarm(
       state,
       { type: "build", kind: "barn", cell: { row, col: 1 } },

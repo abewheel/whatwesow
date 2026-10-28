@@ -27,7 +27,10 @@ import { WORLD_CELLS } from "./contracts/world";
 import { turnNumber } from "./macro/state";
 import {
   buildings,
+  structureSize,
   constructionCost,
+  isAnimal,
+  animalProducts,
   serviceLocations,
   canPlace,
   cellKey,
@@ -279,8 +282,7 @@ document.querySelector("#seed-selection")!.addEventListener("click", () => {
     store ??
     (home && {
       ...home,
-      width: buildings.home.width,
-      height: buildings.home.height,
+      ...structureSize(home),
     }) ??
     tent;
   if (destination) visit("seeds", destination);
@@ -570,6 +572,34 @@ viewport.addEventListener(
       pickingPlot
     )
       return;
+    // Explicit crop, building, and service ground targets keep their own interactions under roof overhangs.
+    if (
+      e.target instanceof Element &&
+      e.target.closest("[data-plot], [data-service], [data-structure]")
+    )
+      return;
+    const groundButton =
+      e.target instanceof Element
+        ? e.target.closest<HTMLButtonElement>("[data-cell]")
+        : null;
+    if (groundButton && !groundButton.hasAttribute("data-building")) {
+      const [row, col] = groundButton.dataset.cell!.split(",").map(Number);
+      // An open front path remains walkable even beneath another building's roof.
+      if (
+        state.structures.some((s) => {
+          const item = { ...buildings[s.kind], ...structureSize(s) };
+          return (
+            (row === s.row + item.height &&
+              col >= s.col &&
+              col < s.col + item.width) ||
+            (col === s.col + item.width &&
+              row >= s.row &&
+              row < s.row + item.height)
+          );
+        })
+      )
+        return;
+    }
     const bounds = viewport.getBoundingClientRect();
     const x = (e.clientX - bounds.left + viewport.scrollLeft) / zoom;
     const y = (e.clientY - bounds.top + viewport.scrollTop) / zoom;
@@ -578,7 +608,12 @@ viewport.addEventListener(
       scene.hitsBuilding({ x, y }, s, s.frame, false, distinctServices[s.id]),
     );
     const structures = state.structures.filter((s) => {
-      const item = buildings[s.kind];
+      const item = { ...buildings[s.kind], ...structureSize(s) };
+      if (isAnimal(s.kind))
+        return scene.hitsAnimal(
+          { x, y },
+          { ...s, kind: s.kind, width: item.width, height: item.height },
+        );
       if (!isTree(s.kind))
         return scene.hitsBuilding(
           { x, y },
@@ -587,8 +622,8 @@ viewport.addEventListener(
           !!(s.pendingConstruction || s.pendingUpgrade),
           distinctStructures[s.kind],
         );
-      const point = projectCell(s);
-      const size = 64 * 1.08;
+      const point = projectCell(s),
+        size = 64 * 1.08;
       return (
         Math.abs(x - point.x) < size * 0.32 &&
         y > point.y + 14 - size * 0.8 &&
@@ -603,8 +638,8 @@ viewport.addEventListener(
           isTree(s.kind)
             ? s
             : {
-                row: s.row + buildings[s.kind].height - 0.5,
-                col: s.col + buildings[s.kind].width - 0.5,
+                row: s.row + structureSize(s).height - 0.5,
+                col: s.col + structureSize(s).width - 0.5,
               },
         ).y,
         select: () => inspectBuilding(s.id),
@@ -631,10 +666,14 @@ viewport.addEventListener(
 function inspectBuilding(id: number) {
   const building = state.structures.find((s) => s.id === id);
   if (!building) return;
-  if (isTree(building.kind) && Boolean(building.product)) {
+  if (
+    (isTree(building.kind) || isAnimal(building.kind)) &&
+    Boolean(building.product) &&
+    !building.pendingConstruction
+  ) {
     closeService();
     const request = ++navigationVersion;
-    const item = buildings[building.kind];
+    const item = { ...buildings[building.kind], ...structureSize(building) };
     const reached = scene.travelTo(
       building,
       item.width,
@@ -643,19 +682,22 @@ function inspectBuilding(id: number) {
       "rear",
       () => {
         if (request === navigationVersion)
-          void act({ type: "harvestTree", id });
+          void act({
+            type: isAnimal(building.kind) ? "collectAnimal" : "harvestTree",
+            id,
+          });
       },
     );
     message.textContent = reached
-      ? "Walking to harvest this tree."
-      : "No walking path to this tree.";
+      ? "Walking to collect produce."
+      : "No walking path to this building.";
     return;
   }
   inspectedId = id;
   visit(inspectionService(building.kind), {
     ...building,
-    width: buildings[building.kind].width,
-    height: buildings[building.kind].height,
+    width: structureSize(building).width,
+    height: structureSize(building).height,
   });
 }
 function clearBuild() {
@@ -752,11 +794,17 @@ function act(action: FarmAction | { type: "season" }) {
           : replaceDomain(state, "micro", result.state),
         false,
         false,
-        action.type === "harvest" || action.type === "harvestTree",
+        action.type === "harvest" ||
+          action.type === "harvestTree" ||
+          action.type === "collectAnimal",
       );
       if (action.type !== "season" && requestedNavigation === navigationVersion)
         scene.performAction(action, previous);
-      if (action.type === "harvest" || action.type === "harvestTree") {
+      if (
+        action.type === "harvest" ||
+        action.type === "harvestTree" ||
+        action.type === "collectAnimal"
+      ) {
         const cell =
           action.type === "harvest"
             ? previous.plotCells[action.plot]
@@ -807,7 +855,7 @@ scene.onLayout = (targets) => {
   const plotMap = new Map(state.plotCells.map((c, i) => [cellKey(c), i]));
   const structureMap = new Map(
     state.structures.flatMap((s) =>
-      footprint(s, buildings[s.kind].width, buildings[s.kind].height).map(
+      footprint(s, structureSize(s).width, structureSize(s).height).map(
         (c) => [cellKey(c), s] as const,
       ),
     ),
@@ -882,7 +930,7 @@ scene.onLayout = (targets) => {
           return;
         }
         const building = state.structures.find((s) =>
-          footprint(s, buildings[s.kind].width, buildings[s.kind].height).some(
+          footprint(s, structureSize(s).width, structureSize(s).height).some(
             (c) => cellKey(c) === key,
           ),
         );
@@ -935,7 +983,7 @@ scene.onLayout = (targets) => {
       index !== undefined
         ? `Plot ${index + 1}: ${!plot ? "empty" : `${crops[plot.crop].name}, ${plot.growth === crops[plot.crop].steps ? "ready to harvest" : `growing ${plot.growth}/${crops[plot.crop].steps}`}`}`
         : structure
-          ? `${buildings[structure.kind].name} ${structure.id}, ${isTree(structure.kind) ? treeStatus(structure) : structure.pendingConstruction ? "under construction, ready next season" : `level ${structure.level}`}`
+          ? `${buildings[structure.kind].name} ${structure.id}, ${isAnimal(structure.kind) ? `${structure.pendingConstruction ? "under construction" : structure.product ? `${animalProducts[structure.kind].product} ready to collect` : "collected, return next season"}` : isTree(structure.kind) ? treeStatus(structure) : structure.pendingConstruction ? "under construction, ready next season" : `level ${structure.level}`}`
           : service
             ? `Visit ${service.name}`
             : `Land ${target.row},${target.col}`;
@@ -958,7 +1006,7 @@ function showPreview(cell: Cell) {
   const kind = moving?.kind ?? (movingPlotId !== null ? "plot" : buildMode);
   const hovered = !kind
     ? state.structures.find((s) =>
-        footprint(s, buildings[s.kind].width, buildings[s.kind].height).some(
+        footprint(s, structureSize(s).width, structureSize(s).height).some(
           (c) => cellKey(c) === cellKey(cell),
         ),
       )
@@ -982,7 +1030,7 @@ function showPreview(cell: Cell) {
       : kind
         ? buildings[kind]
         : hovered
-          ? buildings[hovered.kind]
+          ? { ...buildings[hovered.kind], ...structureSize(hovered) }
           : service!;
   const anchor = kind ? cell : (hovered ?? service)!;
   preview.dataset.mode = kind ? "placement" : "hover";
@@ -1012,7 +1060,7 @@ function showPreview(cell: Cell) {
   const total = item.width + item.height;
   if (!kind && (hovered || service)) {
     buildingTooltip.textContent = hovered
-      ? buildings[hovered.kind].name
+      ? { ...buildings[hovered.kind], ...structureSize(hovered) }.name
       : service!.name;
     buildingTooltip.hidden = false;
     Object.assign(buildingTooltip.style, {

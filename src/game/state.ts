@@ -1,3 +1,4 @@
+import { enlargeBuildingLots } from "../micro/building-layout";
 import { growCrops, completeUpgrades } from "../micro/rules";
 import {
   applyFarmConsequences,
@@ -20,14 +21,17 @@ import {
 export { seasons } from "../macro/state";
 
 // Only integration joins domains and migrates older save envelopes.
-export type GameState = { version: 3 } & MicroState & MacroState;
+export type GameState = { version: 3; buildingLayout?: 2 } & MicroState &
+  MacroState;
 export const initialState = (): GameState => ({
   version: 3,
+  buildingLayout: 2,
   ...initialMicroState(),
   ...initialMacroState(),
 });
 export const homesteadState = (): GameState => ({
   version: 3,
+  buildingLayout: 2,
   ...initialMacroState(),
   ...homesteadMicroState(),
 });
@@ -36,12 +40,12 @@ export function parseState(value: unknown): GameState {
     throw new Error("State must be an object.");
   const saved = value as Record<string, unknown>;
   if (saved.version === 1) {
-    return {
+    return parseState({
       version: 3,
       ...homesteadMicroState(),
       coins: parseLegacyCoins(saved.coins),
       ...parseMacroState(saved),
-    };
+    });
   }
   if (saved.version === 2) {
     if (
@@ -50,7 +54,7 @@ export function parseState(value: unknown): GameState {
       saved.plots.length > 49
     )
       throw new Error("Legacy saves need 9–49 plots.");
-    return {
+    return parseState({
       version: 3,
       ...parseMicroState({
         ...saved,
@@ -61,10 +65,21 @@ export function parseState(value: unknown): GameState {
         structures: homesteadMicroState().structures,
       }),
       ...parseMacroState(saved),
-    };
+    });
   }
   if (saved.version !== 3) throw new Error("Use version 1, 2 or 3.");
-  return { version: 3, ...parseMicroState(value), ...parseMacroState(value) };
+  if (saved.buildingLayout !== undefined && saved.buildingLayout !== 2)
+    throw new Error("Invalid building layout version.");
+  const macro = parseMacroState(value),
+    farm = parseMicroState(value);
+  return {
+    version: 3,
+    buildingLayout: 2,
+    ...(saved.buildingLayout === 2
+      ? farm
+      : enlargeBuildingLots(farm, macro.farmPolicy)),
+    ...macro,
+  };
 }
 export type Domain = "micro" | "macro";
 export function readDomain(

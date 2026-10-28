@@ -68,8 +68,8 @@ test("seasonal, construction and distinct sprite bases stay inside occupied tile
           for (let x = 0; x < width; x++) {
             if (pixels[((y + oy) * image.width + x + ox) * 4 + 3] <= 32)
               continue;
-            const row = (2 * y) / height - x / width,
-              col = (2 * y) / height + x / width;
+            const row = (2 * y) / width - x / width,
+              col = (2 * y) / width + x / width;
             maxRow = Math.max(maxRow, row);
             maxCol = Math.max(maxCol, col);
             if (y / height >= 0.84) {

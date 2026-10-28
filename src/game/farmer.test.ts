@@ -154,11 +154,11 @@ it("treats village service footprints as obstacles and visits their front perime
     { row: 13, col: 15 },
     target,
     world,
-    2,
-    2,
+    3,
+    3,
     "front",
   )!;
-  expect(plan.stance.row === 9 || plan.stance.col === 16).toBe(true);
+  expect(plan.stance.row === 10 || plan.stance.col === 17).toBe(true);
   expect(plan.route.every((cell) => !farmerBlocked(cell, world))).toBe(true);
 });
 it("refuses physically enclosed ground and locations outside the map", () => {

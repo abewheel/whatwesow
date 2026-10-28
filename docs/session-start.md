@@ -6,9 +6,10 @@ Read this after the repository's `AGENTS.md` and `README.md`. It describes the i
 
 - Start on bare land with a tent and 240 coins. Use the tent for house plans, fields, seeds, and End turn. The house takes one season to build and replaces the tent; the same services then live in the farmhouse menu. Existing developed saves retain their village services.
 - Plant turnips, carrots, corn, radishes, tomatoes, and pumpkins in their allowed seasons; end a turn to grow crops across seasons; harvest crops and ripe fruit for coins; buy plots and soil improvements. All field crops die when winter begins; trees survive.
-- Place, repeat, move, and upgrade structures on a 64 × 64 estate. Pan in four directions and zoom from 50% to 200%.
+- Place, repeat, move, and upgrade structures on a 64 × 64 estate. Buildings scale proportionally and reserve larger lots, up to 5 × 5 tiles. Older farms migrate once without losing crops or progress. Pan in four directions and zoom from 50% to 200%.
 - Advance through four seasons across 40 years, ending at turn 160. Construction and upgrades charge immediately, complete next season, and then apply their benefits. Apple trees mature after three years and oaks after ten; mature trees produce harvestable apples or acorns each fall. Markets pay seasonal income. Authored construction unlocks work, with a tested earning path through the complete construction track over 160 turns.
-- Apply macro farm policies and explicit losses through integration. Narrative dialogue, authored community decisions, relationships, animals, and the legacy ending are still future work.
+- Build chicken coops, dairy barns, and sheepfolds with animated animals and seasonal pens. Click to collect eggs, milk, or wool once each season; coins arrive after the farmer reaches the building.
+- Apply macro farm policies and explicit losses through integration. Narrative dialogue, authored community decisions, relationships, and the legacy ending are still future work.
 - See seasonal scenery, exterior woodland and river, and an animated farmer who walks to adjacent work positions. Clicking ground sends the farmer there. Building menus open on arrival, and planting and harvesting commit only after reaching the plot or tree. A new destination or Escape cancels unfinished travel actions.
 - Autosave locally, export/import saves, and edit development-only playtest states. Current saves are version 3; versions 1 and 2 migrate.
 

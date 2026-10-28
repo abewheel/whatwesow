@@ -1,7 +1,7 @@
 import type { FarmPolicy } from "../contracts/farm-policy";
 import { parseFarmPolicy } from "../contracts/farm-policy";
 import { parseMicroState, type MicroState } from "./state";
-import { buildings, cellAllowed, footprint } from "./world";
+import { structureSize, cellAllowed, footprint } from "./world";
 export type FarmConsequences = {
   removeStructureIds?: number[];
   removePlotIds?: number[];
@@ -30,7 +30,7 @@ export function applyFarmConsequences(
   const lostStructures = state.structures.filter(
     (s) =>
       effects.removeStructureIds?.includes(s.id) ||
-      footprint(s, buildings[s.kind].width, buildings[s.kind].height).some(
+      footprint(s, structureSize(s).width, structureSize(s).height).some(
         (c) => !cellAllowed(c, policy),
       ),
   );
