@@ -1,28 +1,21 @@
 import {
+  buildingArtwork,
   distinctStructures,
   distinctServices,
-  distinctBuildingRects,
 } from "./game/building-artwork";
+import { animalArtwork } from "./game/animal-layout";
 import { SeasonTransition } from "./game/season-transition";
 import { HarvestFeedback } from "./game/harvest-feedback";
-import { treeFrames } from "./game/tree-sprites";
 import { treeStatus } from "./micro/world";
 import {
   canBuild,
   canPlant as cropUnlocked,
   hasOpportunity,
   opportunities,
-  totalHarvests,
   upgradeRemaining,
   type Opportunity,
 } from "./micro/progression";
-import {
-  serviceMenus,
-  isTree,
-  constructionService,
-  inspectionService,
-  type ServiceId,
-} from "./game/services";
+import { serviceMenus, isTree, type ServiceId } from "./game/services";
 import { WORLD_CELLS } from "./contracts/world";
 import { turnNumber } from "./macro/state";
 import {
@@ -76,9 +69,9 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div>
 <header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><div class="farm-overview"><output id="season"></output><section id="farm-status" aria-label="Farm status"><span id="empty-plots" role="img"></span><span id="growing-plots" role="img"></span><span id="harvest-ready" role="img"></span></section></div><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
-<div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Click a building to visit, or an empty plot to plant.</strong><span id="farm-summary" class="sr-only"></span></div>
-<section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><button id="seed-selection" aria-label="Choose seeds"></button><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
-<div id="service-controls" hidden><div class="seed-shop"><div id="crop-options"></div><p id="crop-opportunity"></p></div><button id="next-season">End turn</button><p id="progression"></p><p id="frost-warning"></p><button id="work" hidden>Unload a seed delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><button id="move-plot">Move a plot</button><details id="build-shop"><summary>Building plans</summary><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></details><p id="selected-building"></p><button id="upgrade-building" hidden></button><button id="move-building" hidden></button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span></div>
+<div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Tap land to plant or build. Tap a building for its actions.</strong><span id="farm-summary" class="sr-only"></span></div>
+<section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
+<div id="service-controls" hidden><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span></div>
 <dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><button id="resume">Back to the farm</button></dialog>
 
 </section></main>`;
@@ -94,61 +87,18 @@ document
   .addEventListener("click", () =>
     document.querySelector<HTMLInputElement>("#import")!.click(),
   );
-// Keep only field work and view controls on the HUD. Services own their menus.
 const servicePanel = document.createElement("section");
 servicePanel.id = "service-panel";
 servicePanel.hidden = true;
 servicePanel.setAttribute("aria-labelledby", "service-title");
-servicePanel.innerHTML = `<div class="service-heading"><h2 id="service-title"></h2><button id="close-service" aria-label="Close building menu">×</button></div><div class="service-body"><p id="service-description" class="sr-only"></p><div id="home-actions" hidden></div><div id="seed-actions" hidden></div><div id="builder-actions" hidden></div><div id="field-actions" hidden></div></div>`;
+servicePanel.innerHTML = `<div class="service-heading"><h2 id="service-title"></h2><button id="close-service" aria-label="Close actions">×</button></div><p id="service-feedback" role="alert" hidden></p><div class="service-body"><div id="tile-actions"></div></div>`;
 document.querySelector(".farm-card")!.append(servicePanel);
-const serviceFeedback = document.createElement("p");
-serviceFeedback.id = "service-feedback";
-serviceFeedback.hidden = true;
-serviceFeedback.setAttribute("role", "alert");
-document.querySelector(".service-heading")!.after(serviceFeedback);
+const serviceFeedback =
+  document.querySelector<HTMLElement>("#service-feedback")!;
 function moveControls(target: string, selectors: string[]) {
   for (const selector of selectors)
     document.querySelector(target)!.append(document.querySelector(selector)!);
 }
-moveControls("#home-actions", [
-  "#next-season",
-  "#progression",
-  "#frost-warning",
-]);
-const seasonGuide = document.createElement("p");
-seasonGuide.id = "season-guide";
-const nextOpportunity = document.createElement("p");
-nextOpportunity.id = "next-opportunity";
-const goals = document.createElement("details");
-goals.innerHTML = "<summary>Next unlocks</summary>";
-goals.append(nextOpportunity);
-document.querySelector("#home-actions")!.append(seasonGuide, goals);
-
-moveControls("#seed-actions", [".seed-shop", "#work"]);
-moveControls("#field-actions", ["#expand", "#improve", "#move-plot"]);
-moveControls("#builder-actions", ["#build-shop"]);
-document.querySelector<HTMLButtonElement>("#expand")!.dataset.build = "plot";
-const saplings = document.createElement("div");
-saplings.innerHTML = `<h3>Saplings & shade trees</h3><div id="sapling-options"></div>`;
-document.querySelector("#seed-actions")!.append(saplings);
-const inspection = document.createElement("section");
-inspection.id = "structure-inspection";
-inspection.innerHTML = `<h3 id="inspection-heading" class="sr-only">Your buildings</h3><label for="structure-target" id="inspection-label" class="sr-only">Choose a building</label><select id="structure-target"></select>`;
-document.querySelector("#builder-actions")!.append(inspection);
-moveControls("#structure-inspection", [
-  "#selected-building",
-  "#upgrade-building",
-  "#move-building",
-]);
-document
-  .querySelector("#structure-target")!
-  .addEventListener("change", (event) => {
-    const value = (event.target as HTMLSelectElement).value;
-    inspectedId = value ? Number(value) : null;
-    render();
-  });
-document.querySelector("#build-shop summary")!.textContent = "Building plans";
-
 const cameraControls = document.createElement("details");
 cameraControls.id = "camera-controls";
 cameraControls.addEventListener("toggle", () => {
@@ -164,145 +114,477 @@ cameraControls.querySelector("#close-camera")!.addEventListener("click", () => {
 document.querySelector(".hud-top")!.append(cameraControls);
 moveControls(".camera-panel", ["#home-view", ".zoom-controls"]);
 document.querySelector("#farm-mode")!.textContent = "Cancel placement";
+const tileActions = document.querySelector<HTMLElement>("#tile-actions")!;
+type ContextTarget =
+  | { type: "cell"; cell: Cell }
+  | { type: "building"; id: number }
+  | { type: "service"; id: ServiceId; cell: Cell };
+let contextTarget: ContextTarget | null = null;
 function closeService() {
+  if (contextTarget) navigationVersion++;
+  contextTarget = null;
+  document.querySelector("[data-context]")?.removeAttribute("data-context");
   if (!servicePanel.hidden) viewport.focus({ preventScroll: true });
   servicePanel.hidden = true;
 }
-const campActions = document.createElement("div");
-campActions.className = "camp-actions";
-for (const [service, label] of [
-  ["builder", "Build your house"],
-  ["fields", "Prepare fields"],
-  ["seeds", "Choose seeds"],
-] as const) {
-  const button = document.createElement("button");
-  button.innerHTML = `${icon(service === "builder" ? "build" : service === "fields" ? "expand" : "seeds")}<span>${service === "builder" ? "Build" : service === "fields" ? "Fields" : "Seeds"}</span>`;
-  button.setAttribute("aria-label", label);
-  button.addEventListener("click", () => openService(service));
-  campActions.append(button);
+function contextCell(): Cell | undefined {
+  const target = contextTarget;
+  if (!target) return;
+  return target.type === "building"
+    ? state.structures.find((s) => s.id === target.id)
+    : target.cell;
 }
-document.querySelector("#home-actions")!.prepend(campActions);
-const backToCamp = document.createElement("button");
-backToCamp.textContent = "Back to your tent";
-backToCamp.addEventListener("click", () => openService("home"));
-document.querySelector(".service-body")!.append(backToCamp);
-let activeService: ServiceId | null = null;
-let clearingAccess = false;
-function openService(service: ServiceId, recovery = false) {
+function positionContext() {
+  if (servicePanel.hidden) return;
+  const cell = contextCell();
+  if (!cell) {
+    closeService();
+    return;
+  }
+  const bounds = viewport.getBoundingClientRect();
+  const card = document.querySelector(".farm-card")!.getBoundingClientRect();
+  const point = projectCell(cell);
+  const x = bounds.left - card.left + point.x * zoom - viewport.scrollLeft;
+  const y = bounds.top - card.top + point.y * zoom - viewport.scrollTop;
+  let anchor = {
+    left: x - 32 * zoom,
+    right: x + 32 * zoom,
+    top: y - 16 * zoom,
+    bottom: y + 16 * zoom,
+  };
+  const target = contextTarget;
+  const building =
+    target?.type === "building"
+      ? state.structures.find((s) => s.id === target.id)
+      : undefined;
+  const service =
+    target?.type === "service"
+      ? serviceLocations(state).find((s) => s.id === target.id)
+      : undefined;
+  if (building && isTree(building.kind)) {
+    anchor = {
+      left: x - 35 * zoom,
+      right: x + 35 * zoom,
+      top: y - 56 * zoom,
+      bottom: y + 16 * zoom,
+    };
+  } else if (service?.tent) {
+    anchor = {
+      left: x - 80 * zoom,
+      right: x + 80 * zoom,
+      top: y + (24 - 160 * (2 / 3)) * zoom,
+      bottom: y + 24 * zoom,
+    };
+  } else if (building || service) {
+    const lot = building
+      ? {
+          ...building,
+          ...structureSize(building),
+        }
+      : service!;
+    const distinct = building
+      ? distinctStructures[building.kind]
+      : distinctServices[service!.id];
+    const frame =
+      distinct ?? (building ? buildings[building.kind].frame : service!.frame);
+    const art =
+        building && isAnimal(building.kind)
+          ? animalArtwork({
+              ...building,
+              kind: building.kind,
+              ...structureSize(building),
+            })
+          : buildingArtwork(lot, frame, distinct !== undefined),
+      top = projectCell(art);
+    const left = bounds.left - card.left + top.x * zoom - viewport.scrollLeft;
+    const upper = bounds.top - card.top + top.y * zoom - viewport.scrollTop;
+    anchor = {
+      left,
+      right: left + art.size * zoom,
+      top: upper,
+      bottom: upper + art.height * zoom,
+    };
+  }
+  const visual = window.visualViewport;
+  const margin = 8,
+    gap = 14;
+  const leftEdge = Math.max(
+    margin,
+    (visual?.offsetLeft ?? 0) - card.left + margin,
+  );
+  const rightEdge = Math.min(
+    card.width - margin,
+    (visual?.offsetLeft ?? 0) +
+      (visual?.width ?? window.innerWidth) -
+      card.left -
+      margin,
+  );
+  const topEdge = Math.max(
+    margin,
+    (visual?.offsetTop ?? 0) - card.top + margin,
+  );
+  const bottomEdge = Math.min(
+    card.height - margin,
+    (visual?.offsetTop ?? 0) +
+      (visual?.height ?? window.innerHeight) -
+      card.top -
+      margin,
+  );
+  if (bottomEdge - topEdge < 100 || rightEdge - leftEdge < 100) {
+    closeService();
+    return;
+  }
+  const width = Math.min(300, rightEdge - leftEdge);
+  servicePanel.style.width = `${width}px`;
+  servicePanel.style.maxHeight = `${Math.min(440, bottomEdge - topEdge)}px`;
+  const height = servicePanel.getBoundingClientRect().height;
+  const rightFits = anchor.right + gap + width <= rightEdge;
+  const leftFits = anchor.left - gap - width >= leftEdge;
+  let left: number, top: number;
+  if (rightFits || leftFits) {
+    left = rightFits ? anchor.right + gap : anchor.left - gap - width;
+    top = (anchor.top + anchor.bottom) / 2 - Math.min(height / 2, 80);
+  } else {
+    left = x - width / 2;
+    const below = bottomEdge - anchor.bottom - gap,
+      above = anchor.top - topEdge - gap;
+    const available = Math.max(
+      Math.min(240, bottomEdge - topEdge),
+      Math.max(below, above),
+    );
+    servicePanel.style.maxHeight = `${Math.min(440, available)}px`;
+    const actualHeight = servicePanel.getBoundingClientRect().height;
+    top =
+      below >= above ? anchor.bottom + gap : anchor.top - gap - actualHeight;
+  }
+  const actualHeight = servicePanel.getBoundingClientRect().height;
+  servicePanel.style.left = `${Math.max(leftEdge, Math.min(rightEdge - width, left))}px`;
+  servicePanel.style.top = `${Math.max(topEdge, Math.min(bottomEdge - actualHeight, top))}px`;
+}
+window.addEventListener("resize", positionContext);
+window.addEventListener("scroll", positionContext, { passive: true });
+window.visualViewport?.addEventListener("scroll", positionContext);
+window.visualViewport?.addEventListener("resize", positionContext);
+function tileButton(
+  label: string,
+  action: () => void,
+  disabled = false,
+  id?: string,
+) {
+  const button = document.createElement("button");
+  button.textContent = label;
+  button.disabled = disabled;
+  if (id) button.id = id;
+  button.addEventListener("click", action);
+  tileActions.append(button);
+  return button;
+}
+function note(text: string) {
+  const p = document.createElement("p");
+  p.textContent = text;
+  tileActions.append(p);
+}
+function workPlot(cell: Cell, crop?: CropId) {
+  closeService();
+  const index = state.plotCells.findIndex((c) => cellKey(c) === cellKey(cell));
+  if (index < 0) return;
+  const plotId = state.plotIds[index],
+    request = ++navigationVersion;
+  const reached = scene.travelTo(cell, 1, 1, true, "rear", () => {
+    if (request !== navigationVersion) return;
+    const current = state.plotIds.indexOf(plotId);
+    if (current < 0 || cellKey(state.plotCells[current]) !== cellKey(cell))
+      return;
+    void act(
+      crop
+        ? { type: "plant", plot: current, crop }
+        : { type: "harvest", plot: current },
+    );
+  });
+  message.textContent = reached
+    ? `Walking to ${crop ? "plant" : "harvest"} this plot.`
+    : "No walking path to this plot.";
+}
+function openTile(cell: Cell) {
+  openContext({ type: "cell", cell });
+}
+function openContext(target: ContextTarget) {
+  closeService();
+  cameraControls.open = false;
+  clearBuild();
+  navigationVersion++;
+  contextTarget = target;
   serviceFeedback.hidden = true;
-  clearingAccess = recovery;
-  activeService = service;
-  const inspected = state.structures.find((s) => s.id === inspectedId);
-  if (
-    (service === "fields" && inspected && !isTree(inspected.kind)) ||
-    (service === "builder" && inspected && isTree(inspected.kind))
-  )
-    inspectedId = null;
-  if (service === "fields")
-    document.querySelector("#field-actions")!.append(inspection);
-  else document.querySelector("#builder-actions")!.prepend(inspection);
-  render();
+  refreshContext();
   servicePanel.hidden = false;
-  document.querySelector(".service-body")!.scrollTop = 0;
-  updateServiceDetails(service);
-  for (const [id, entry] of Object.entries(serviceMenus))
-    document.getElementById(entry.container)!.hidden = id !== service;
+  positionContext();
   document
     .querySelector<HTMLButtonElement>("#close-service")!
     .focus({ preventScroll: true });
-  if (service === "builder")
-    document.querySelector<HTMLDetailsElement>("#build-shop")!.open = true;
 }
-function updateServiceDetails(service: ServiceId) {
-  const menu = serviceMenus[service];
-  const camping = !state.structures.some(
-    (s) => s.kind === "home" && !s.pendingConstruction,
-  );
-  campActions.hidden = !camping && !state.selfBuilt;
-  const homePlan = campActions.querySelector<HTMLButtonElement>("button")!;
-  const buildingHome = state.structures.some(
-    (s) => s.kind === "home" && s.pendingConstruction,
-  );
-  const homePlanLabel = buildingHome
-    ? "House ready next season"
-    : camping
-      ? "Build your house"
-      : "Building plans";
-  homePlan.setAttribute("aria-label", homePlanLabel);
-  homePlan.querySelector("span:last-child")!.textContent = buildingHome
-    ? "Building…"
-    : "Build";
-  homePlan.disabled = buildingHome;
-  backToCamp.hidden = (!camping && !state.selfBuilt) || service === "home";
-  backToCamp.textContent = camping
-    ? "Back to your tent"
-    : "Back to the farmhouse";
-  document.querySelector("#service-title")!.textContent =
-    camping && service === "home" ? "Your tent" : menu.name;
-  document.querySelector("#service-description")!.textContent =
-    camping && service === "home"
-      ? "Your first shelter on this land. Prepare fields, plant your first crop, and commission a house. Construction takes one season. Rest here to end the turn."
-      : menu.description;
+function refreshContext() {
+  const target = contextTarget,
+    cell = contextCell();
+  if (!target || !cell) {
+    closeService();
+    return;
+  }
+  const scroll = tileActions.parentElement!.scrollTop;
+  const hadFocus = servicePanel.contains(document.activeElement);
+  const focused =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement.id
+      : "";
+  tileActions.replaceChildren();
+  document.querySelector("[data-context]")?.removeAttribute("data-context");
+  cellButtons.get(cellKey(cell))?.setAttribute("data-context", "true");
+  const policy = state.farmPolicy ?? {},
+    final = turnNumber(state) === 160;
+  const title = document.querySelector("#service-title")!;
+  const home =
+    target.type === "service"
+      ? target.id === "home"
+      : target.type === "building" &&
+        state.structures.find((s) => s.id === target.id)?.kind === "home";
+  if (target.type === "building") {
+    const building = state.structures.find((s) => s.id === target.id);
+    if (!building) {
+      closeService();
+      return;
+    }
+    const item = buildings[building.kind],
+      remaining = upgradeRemaining(state, building),
+      cost = policyCost(upgradeCost(building), policy);
+    title.textContent = item.name;
+    note(`${item.benefit} · Level ${building.level}/${item.levels}`);
+    if (building.pendingConstruction)
+      note("Under construction · ready next season");
+    if (building.pendingUpgrade) note("Upgrade underway · ready next season");
+    if (isAnimal(building.kind)) {
+      const product = animalProducts[building.kind];
+      if (!building.pendingConstruction)
+        note(
+          building.product
+            ? `${product.product} ready · ${policyProduction(product.value * building.level, policy)} coins`
+            : "Collected · returns next season",
+        );
+      if (building.product && !building.pendingConstruction)
+        tileButton(
+          `Collect ${product.product.toLowerCase()}`,
+          () => harvestSelectedTree(building.id),
+          false,
+          "collect-animal",
+        );
+    }
+    if (isTree(building.kind)) {
+      note(treeStatus(building));
+      if (building.product)
+        tileButton(
+          "Harvest tree",
+          () => harvestSelectedTree(building.id),
+          false,
+          "harvest-tree",
+        );
+    }
+    if (item.levels > 1)
+      tileButton(
+        building.pendingUpgrade
+          ? "Upgrade underway · ready next season"
+          : building.level === item.levels
+            ? "Fully upgraded"
+            : `${isTree(building.kind) ? "Improve tree care" : "Upgrade"} · ${cost} coins${remaining ? ` · Harvest ${remaining} more ${building.kind === "mill" ? "corn crops" : "crops"}` : ""}`,
+        () => void act({ type: "upgrade", id: building.id }),
+        !!building.pendingConstruction ||
+          !!building.pendingUpgrade ||
+          final ||
+          building.level === item.levels ||
+          remaining > 0 ||
+          state.coins < cost ||
+          policy.blockedBuildings?.includes(building.kind) === true,
+        "upgrade-building",
+      );
+    tileButton(
+      isTree(building.kind) ? "Transplant tree" : "Move building",
+      () => {
+        closeService();
+        movingId = building.id;
+        render();
+      },
+      false,
+      "move-building",
+    );
+  } else if (target.type === "service") {
+    title.textContent =
+      serviceLocations(state).find((s) => s.id === target.id)?.name ??
+      serviceMenus[target.id].name;
+    if (!home) note("Choose a field to plant, or open land to build.");
+  } else {
+    const index = state.plotCells.findIndex(
+      (c) => cellKey(c) === cellKey(cell),
+    );
+    const plot = index < 0 ? null : state.plots[index];
+    title.textContent =
+      index < 0
+        ? "Open land"
+        : plot
+          ? crops[plot.crop].name
+          : "Plant this plot";
+    if (index >= 0) {
+      if (plot)
+        tileButton(
+          plot.growth >= crops[plot.crop].steps
+            ? "Harvest crop"
+            : `Growing · ${plot.growth}/${crops[plot.crop].steps}`,
+          () => workPlot(cell),
+          plot.growth < crops[plot.crop].steps,
+        );
+      else {
+        let choices = 0;
+        for (const id of Object.keys(crops) as CropId[]) {
+          if (!cropUnlocked(state, id) || !canPlant(id, turnNumber(state)))
+            continue;
+          choices++;
+          const price = policyCost(seedCost(state, id), policy),
+            seasons = growthSeasons(state, id);
+          const button = tileButton(
+            `${crops[id].name} · ${price} coins`,
+            () => workPlot(cell, id),
+            state.coins < price || final,
+          );
+          button.dataset.crop = id;
+          button.innerHTML = `${icon(id)}<span><strong>${crops[id].name} · ${price} coins</strong><small>${seasons} season${seasons === 1 ? "" : "s"} · harvest ${policyProduction(harvestValue(state, id), policy)} coins</small></span>`;
+        }
+        if (!choices) note("No planting this season.");
+      }
+      tileButton("Move this plot", () => {
+        closeService();
+        movingPlotId = state.plotIds[index];
+        render();
+      });
+      const offer = `soil${state.soilLevel + 1}` as Opportunity;
+      const available = state.soilLevel < 3 && hasOpportunity(state, offer);
+      tileButton(
+        state.pendingSoilUpgrade
+          ? "Soil improvement underway · next season"
+          : state.soilLevel === 3
+            ? "Soil fully improved"
+            : `Improve soil · ${policyCost(soilCost(state), policy)} coins · +3 per harvest on all plots${!available ? ` · ${opportunities[offer].need}` : ""}`,
+        () => void act({ type: "improve" }),
+        !!state.pendingSoilUpgrade ||
+          final ||
+          !available ||
+          state.coins < policyCost(soilCost(state), policy),
+        "improve",
+      );
+    } else {
+      const cost = policyCost(expansionCost(state), policy);
+      tileButton(
+        `Prepare crop plot · ${cost} coins`,
+        () => void act({ type: "expand", cell }),
+        final ||
+          state.coins < cost ||
+          state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
+          !canPlace(state, cell, 1, 1, policy),
+        "expand",
+      );
+      for (const kind of Object.keys(buildings) as BuildingKind[]) {
+        const item = buildings[kind],
+          count = state.structures.filter((s) => s.kind === kind).length,
+          cost = policyCost(constructionCost(state, kind), policy),
+          limit = policy.buildingLimits?.[kind];
+        if (!canBuild(state, kind) || (kind === "home" && count > 0)) continue;
+        const button = tileButton(
+          `${item.name} · ${cost} coins · ${item.width}×${item.height} · ${item.benefit} · next season`,
+          () => void act({ type: "build", kind, cell }),
+          final ||
+            state.coins < cost ||
+            policy.blockedBuildings?.includes(kind) === true ||
+            (limit !== undefined && count >= limit) ||
+            !canPlace(state, cell, item.width, item.height, policy),
+        );
+        button.dataset.build = kind;
+      }
+    }
+    tileButton("Walk here", () => {
+      closeService();
+      navigationVersion++;
+      scene.travelTo(cell);
+    });
+  }
+  if (home) {
+    const button = tileButton(
+      final ? "Final season · 160/160" : `End turn · ${turnNumber(state)}/160`,
+      () => {
+        const request = ++navigationVersion;
+        const building =
+          target.type === "building"
+            ? state.structures.find((s) => s.id === target.id)
+            : undefined;
+        const item = building
+          ? structureSize(building)
+          : (serviceLocations(state).find((s) => s.id === "home") ?? {
+              width: 2,
+              height: 2,
+            });
+        const reached = scene.travelTo(
+          cell,
+          item.width,
+          item.height,
+          true,
+          "front",
+          () => {
+            if (request === navigationVersion) void act({ type: "season" });
+          },
+        );
+        if (!reached) {
+          serviceFeedback.textContent =
+            "No walking path home. Move nearby buildings to clear access.";
+          serviceFeedback.hidden = false;
+          positionContext();
+        }
+      },
+      final ||
+        (target.type === "building" &&
+          !!state.structures.find((s) => s.id === target.id)
+            ?.pendingConstruction),
+      "next-season",
+    );
+    button.setAttribute("aria-label", button.textContent!);
+    if (state.season === "fall")
+      note(
+        `Winter is next. All ${state.plots.filter(Boolean).length} field crops will die. Harvest first.`,
+      );
+    note(
+      `${state.plots.length} plots · +${policyProduction(seasonalIncome(state), policy)} coins / season`,
+    );
+    if (
+      policy.allowWork !== false &&
+      !state.plots.some(Boolean) &&
+      state.coins <
+        (state.plots.length
+          ? Math.max(1, policyCost(seedCost(state, "turnip"), policy))
+          : policyCost(expansionCost(state), policy) +
+            Math.max(1, policyCost(seedCost(state, "turnip"), policy)))
+    )
+      tileButton(
+        "Unload a seed delivery · +4 coins",
+        () => void act({ type: "work" }),
+        false,
+        "work",
+      );
+  }
+  tileActions.parentElement!.scrollTop = scroll;
+  if (hadFocus)
+    (
+      document.getElementById(focused) ??
+      document.querySelector<HTMLButtonElement>("#close-service")
+    )?.focus({ preventScroll: true });
+  positionContext();
 }
-
-function visit(
-  service: ServiceId,
-  destination: Cell & { width: number; height: number },
-) {
-  cameraControls.open = false;
-  closeService();
-  clearBuild();
-  const request = ++navigationVersion;
-  const menu = serviceMenus[service];
-  const reached = scene.travelTo(
-    destination,
-    destination.width,
-    destination.height,
-    true,
-    "front",
-    () => {
-      if (request !== navigationVersion) return;
-      openService(service);
-      message.textContent = menu.name;
-    },
-  );
-  message.textContent = reached
-    ? `Walking to ${menu.name}.`
-    : `No walking path to ${menu.name}.`;
-}
-document
-  .querySelector("#seed-selection")!
-  .setAttribute("aria-label", "Open seed basket");
-document.querySelector("#seed-selection")!.addEventListener("click", () => {
-  const store = serviceLocations(state).find((s) => s.id === "seeds");
-  const home = state.structures.find(
-    (s) => s.kind === "home" && !s.pendingConstruction,
-  );
-  const tent = serviceLocations(state).find((s) => s.id === "home");
-  const destination =
-    store ??
-    (home && {
-      ...home,
-      ...structureSize(home),
-    }) ??
-    tent;
-  if (destination) visit("seeds", destination);
-});
-document
-  .querySelector("#close-service")!
-  .addEventListener("click", closeService);
-const layoutHelp = document.createElement("button");
-layoutHelp.id = "layout-help";
-layoutHelp.textContent = "Clear blocked access";
-layoutHelp.addEventListener("click", () => {
-  menu.close();
+document.querySelector("#close-service")!.addEventListener("click", () => {
   navigationVersion++;
-  clearBuild();
-  openService("builder", true);
-  message.textContent =
-    "Choose a building and move it for free to clear a walking path.";
+  closeService();
 });
-document.querySelector("#resume")!.before(layoutHelp);
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     navigationVersion++;
@@ -365,7 +647,6 @@ const game = new Phaser.Game({
 });
 let state = initialState();
 const harvestFeedback = new HarvestFeedback(state.coins);
-let selected: CropId = "turnip";
 let saving = false;
 let loadFailed = false;
 let navigationVersion = 0;
@@ -373,7 +654,6 @@ let buildMode: BuildingKind | "plot" | null = null;
 let movingId: number | null = null;
 let movingPlotId: number | null = null;
 let pickingPlot = false;
-let inspectedId: number | null = null;
 let centered = false;
 const zoomLevels = [0.5, 0.75, 1, 1.25, 1.5, 2];
 let zoomIndex = 2;
@@ -410,6 +690,7 @@ function updateViewport() {
   renderer.style.height = `${height}px`;
   if (game.scale.width !== width || game.scale.height !== height)
     game.scale.resize(width, height);
+  positionContext();
   scene.setViewport(
     viewport.scrollLeft / zoom,
     viewport.scrollTop / zoom,
@@ -675,7 +956,7 @@ viewport.addEventListener(
               row: s.row + s.height - 0.5,
               col: s.col + s.width - 0.5,
             }).y,
-        select: () => visit(s.id, s),
+        select: () => openContext({ type: "service", id: s.id, cell: s }),
       })),
     ].sort((a, b) => a.depth - b.depth);
     const hit = hits.at(-1);
@@ -688,6 +969,10 @@ viewport.addEventListener(
   true,
 );
 function inspectBuilding(id: number) {
+  if (!state.structures.some((s) => s.id === id)) return;
+  openContext({ type: "building", id });
+}
+function harvestSelectedTree(id: number) {
   const building = state.structures.find((s) => s.id === id);
   if (!building) return;
   if (
@@ -717,12 +1002,6 @@ function inspectBuilding(id: number) {
       : "No walking path to this building.";
     return;
   }
-  inspectedId = id;
-  visit(inspectionService(building.kind), {
-    ...building,
-    width: structureSize(building).width,
-    height: structureSize(building).height,
-  });
 }
 function clearBuild() {
   buildMode = null;
@@ -732,70 +1011,11 @@ function clearBuild() {
   preview.hidden = true;
   buildingTooltip.hidden = true;
   document.querySelector("#placement-hint")!.textContent =
-    "Drag to explore, click ground to walk, or click a building to visit.";
+    "Choose open land as the destination. Escape or Cancel placement cancels.";
   render();
 }
 document.querySelector("#farm-mode")!.addEventListener("click", clearBuild);
-function selectBuild(kind: BuildingKind | "plot") {
-  closeService();
-  buildMode = kind;
-  movingId = null;
-  movingPlotId = null;
-  pickingPlot = false;
-  preview.hidden = true;
-  buildingTooltip.hidden = true;
-  render();
-  document.querySelector<HTMLDetailsElement>("#build-shop")!.open = false;
-  document.querySelector("#placement-hint")!.textContent =
-    `Place ${kind === "plot" ? "a plot" : buildings[kind].name}: choose open land. Green fits; red is blocked. Escape or Cancel placement cancels.`;
-}
-function planIcon(kind: BuildingKind) {
-  if (kind === "apple" || kind === "oak") {
-    const [x, y, width, height] = treeFrames[kind][2];
-    return `<span class="plan-icon" aria-hidden="true" style="background-image:url('/art/${kind}-stages.png');background-size:${125400 / width}% ${125400 / height}%;background-position:${(x / (1254 - width)) * 100}% ${(y / (1254 - height)) * 100}%"></span>`;
-  }
-  const distinct = distinctStructures[kind];
-  if (distinct !== undefined) {
-    const [x, y, width, height] = distinctBuildingRects[distinct];
-    return `<span class="plan-icon" aria-hidden="true" style="background-image:url('/art/distinct-buildings.png');background-size:${128000 / width}% ${128000 / height}%;background-position:${(x / (1280 - width)) * 100}% ${(y / (1280 - height)) * 100}%"></span>`;
-  }
-  const frame = buildings[kind].frame;
-  return `<span class="plan-icon" aria-hidden="true" style="background-image:url('/art/farm-atlas.png');background-size:300% 200%;background-position:${(frame % 3) * 50}% ${Math.floor(frame / 3) * 100}%"></span>`;
-}
-for (const kind of Object.keys(buildings) as BuildingKind[]) {
-  const button = document.createElement("button");
-  button.dataset.build = kind;
-  button.addEventListener("click", () => selectBuild(kind));
-  document
-    .querySelector(
-      constructionService(kind) === "seeds"
-        ? "#sapling-options"
-        : "#build-options",
-    )!
-    .append(button);
-}
-
 const message = document.querySelector<HTMLElement>("#farm-message")!;
-const cropOptions = document.querySelector<HTMLElement>("#crop-options")!;
-for (const [id, crop] of Object.entries(crops)) {
-  const button = document.createElement("button");
-  button.dataset.crop = id;
-  button.innerHTML = `${icon(id as CropId)}<strong>${crop.name}</strong><span class="seed-price" aria-hidden="true">${icon("coin")}${crop.seed}</span><span class="control-detail"></span>`;
-  button.addEventListener("click", () => {
-    buildMode = null;
-    movingId = null;
-    movingPlotId = null;
-    pickingPlot = false;
-    preview.hidden = true;
-    buildingTooltip.hidden = true;
-    selected = id as CropId;
-    closeService();
-    render();
-    const seasons = growthSeasons(state, id as CropId);
-    message.textContent = `${crop.name} · ${seasons} season${seasons === 1 ? "" : "s"} to grow · Harvest ${policyProduction(harvestValue(state, id as CropId), state.farmPolicy ?? {})} coins.`;
-  });
-  cropOptions.append(button);
-}
 const seasonTransition = new SeasonTransition();
 let endingTurn = false;
 let farmQueue: Promise<void> = Promise.resolve();
@@ -842,6 +1062,22 @@ function act(action: FarmAction | { type: "season" }) {
           );
       }
       serviceFeedback.hidden = true;
+      if (contextTarget && requestedNavigation === navigationVersion) {
+        if (action.type === "build") {
+          const built = state.structures.find(
+            (s) =>
+              s.kind === action.kind && cellKey(s) === cellKey(action.cell),
+          );
+          if (built) contextTarget = { type: "building", id: built.id };
+        }
+        if (contextTarget.type === "service" && contextTarget.id === "home") {
+          const home = state.structures.find(
+            (s) => s.kind === "home" && !s.pendingConstruction,
+          );
+          if (home) contextTarget = { type: "building", id: home.id };
+        }
+        refreshContext();
+      }
       message.textContent = result.message;
       if (action.type === "move" || action.type === "movePlot") {
         movingId = null;
@@ -858,6 +1094,7 @@ function act(action: FarmAction | { type: "season" }) {
       if (!servicePanel.hidden) {
         serviceFeedback.textContent = message.textContent;
         serviceFeedback.hidden = false;
+        positionContext();
       }
     } finally {
       if (action.type === "season") {
@@ -924,33 +1161,12 @@ scene.onLayout = (targets) => {
           footprint(s, s.width, s.height).some((c) => cellKey(c) === key),
         );
         if (service) {
-          visit(service.id, service);
+          openContext({ type: "service", id: service.id, cell: service });
           return;
         }
         const index = state.plotCells.findIndex((c) => cellKey(c) === key);
         if (index >= 0) {
-          closeService();
-          const request = ++navigationVersion;
-          const plotId = state.plotIds[index],
-            crop = selected;
-          const actionType = state.plots[index] ? "harvest" : "plant";
-          const reached = scene.travelTo(cell, 1, 1, true, "rear", () => {
-            if (request !== navigationVersion) return;
-            const currentIndex = state.plotIds.indexOf(plotId);
-            if (
-              currentIndex < 0 ||
-              cellKey(state.plotCells[currentIndex]) !== key
-            )
-              return;
-            void act(
-              actionType === "harvest"
-                ? { type: "harvest", plot: currentIndex }
-                : { type: "plant", plot: currentIndex, crop },
-            );
-          });
-          message.textContent = reached
-            ? `Walking to ${actionType === "plant" ? "plant" : "harvest"} this plot.`
-            : "No walking path to this plot.";
+          openTile(cell);
           return;
         }
         const building = state.structures.find((s) =>
@@ -962,12 +1178,7 @@ scene.onLayout = (targets) => {
           inspectBuilding(building.id);
           return;
         }
-        closeService();
-        navigationVersion++;
-        const walking = scene.travelTo(cell);
-        message.textContent = walking
-          ? "Walking to that spot."
-          : "That tile cannot be reached.";
+        openTile(cell);
       });
       button.addEventListener("pointerenter", (event) => {
         if (event.pointerType === "mouse") showPreview(target);
@@ -1100,45 +1311,6 @@ function showPreview(cell: Cell) {
     clipPath: `polygon(${(item.height / total) * 100}% 0,100% ${(item.width / total) * 100}%,${(item.width / total) * 100}% 100%,0 ${(item.height / total) * 100}%)`,
   });
 }
-document.querySelector("#move-plot")!.addEventListener("click", () => {
-  buildMode = null;
-  movingId = null;
-  movingPlotId = null;
-  closeService();
-  pickingPlot = true;
-  preview.hidden = true;
-  buildingTooltip.hidden = true;
-  render();
-  document.querySelector("#placement-hint")!.textContent =
-    "Choose the plot to move, then choose open land.";
-});
-document
-  .querySelector("#next-season")!
-  .addEventListener("click", () => void act({ type: "season" }));
-document.querySelector("#upgrade-building")!.addEventListener("click", () => {
-  if (inspectedId !== null) void act({ type: "upgrade", id: inspectedId });
-});
-document.querySelector("#move-building")!.addEventListener("click", () => {
-  closeService();
-  movingId = inspectedId;
-  movingPlotId = null;
-  pickingPlot = false;
-  buildMode = null;
-  render();
-  document.querySelector<HTMLDetailsElement>("#build-shop")!.open = false;
-  document.querySelector("#placement-hint")!.textContent =
-    "Choose open land for the selected building or tree. Moving is free. Escape or Cancel placement cancels.";
-});
-document
-  .querySelector("#work")!
-  .addEventListener("click", () => void act({ type: "work" }));
-
-document
-  .querySelector("#expand")!
-  .addEventListener("click", () => selectBuild("plot"));
-document
-  .querySelector("#improve")!
-  .addEventListener("click", () => void act({ type: "improve" }));
 const params = new URLSearchParams(location.search);
 const instance = import.meta.env.DEV
   ? (params.get("instance") ?? "default")
@@ -1146,257 +1318,27 @@ const instance = import.meta.env.DEV
 const namespace = import.meta.env.DEV ? `dev-${instance}` : "player";
 let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
 function render() {
-  if (activeService) updateServiceDetails(activeService);
-  if (!cropUnlocked(state, selected)) selected = "turnip";
   document.querySelector("#season")!.innerHTML =
     `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span></span>`;
   scene.setState(state);
   const placing = Boolean(
     buildMode || movingId !== null || movingPlotId !== null || pickingPlot,
   );
+  document.querySelector<HTMLElement>(".farm-tools")!.hidden = !placing;
   document.querySelector<HTMLButtonElement>("#farm-mode")!.hidden = !placing;
   document.querySelector<HTMLElement>("#placement-hint")!.hidden = !placing;
-  document.querySelector("#seed-selection")!.innerHTML =
-    `${icon(selected)}<span>${crops[selected].name}</span>`;
-  const turn = turnNumber(state),
-    policy = state.farmPolicy ?? {};
-  document.querySelector<HTMLButtonElement>("#next-season")!.disabled =
-    turn === 160;
-  document.querySelector("#frost-warning")!.textContent =
-    state.season === "fall"
-      ? `Winter is next. Harvest now: all ${state.plots.filter(Boolean).length} field crops will die, including ripe crops. Trees survive.`
-      : "Field crops die when winter begins. Harvest before ending fall.";
-  document.querySelector("#next-season")!.textContent =
-    turn === 160 ? "Final season · 160/160" : `End turn · ${turn}/160`;
-  document.querySelector("#progression")!.innerHTML =
-    `<span>${icon("expand")}${state.plots.length} plots</span><span>${icon("harvest")}${totalHarvests(state)} harvests</span><span>${icon("coin")}+${policyProduction(seasonalIncome(state), policy)} / season</span>`;
   const ready = state.plots.filter(
     (p) => p && p.growth >= crops[p.crop].steps,
   ).length;
-  const growing = state.plots.filter(
-    (p) => p && p.growth < crops[p.crop].steps,
-  ).length;
-  const planting = (Object.keys(crops) as CropId[])
-    .filter((id) => cropUnlocked(state, id) && canPlant(id, turn))
-    .map((id) => crops[id].name.toLowerCase());
-  seasonGuide.textContent =
-    turn === 160
-      ? `Final winter · ${ready} ready to harvest`
-      : `${ready} ready · ${growing} growing · ${planting.length ? `Plant ${planting.join(" or ")}` : state.season === "winter" ? "Winter · no planting" : "No planting this season"}`;
-  nextOpportunity.textContent =
-    turn === 160
-      ? ""
-      : (Object.keys(opportunities) as Opportunity[])
-          .filter((id) => !hasOpportunity(state, id))
-          .slice(0, 2)
-          .map(
-            (id) =>
-              `${id === "corn" ? "Corn seeds" : id.startsWith("soil") ? "Soil improvement" : buildings[id as BuildingKind].name}: ${opportunities[id].need.toLowerCase()}.`,
-          )
-          .join(" ");
-  document.querySelector("#opportunity-notes")!.replaceChildren(
-    ...state.opportunities.map((id) => {
-      const p = document.createElement("p");
-      p.textContent = opportunities[id].story;
-      return p;
-    }),
-  );
-  for (const button of document.querySelectorAll<HTMLButtonElement>(
-    "[data-build]",
-  )) {
-    const kind = button.dataset.build as BuildingKind | "plot";
-    if (kind === "plot") {
-      button.textContent = `Crop plot · 1×1 · ${policyCost(expansionCost(state), state.farmPolicy)} coins`;
-      button.disabled =
-        state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
-        state.coins < policyCost(expansionCost(state), policy);
-      continue;
-    }
-    const item = buildings[kind],
-      count = state.structures.filter((s) => s.kind === kind).length;
-    const available = canBuild(state, kind),
-      cost = policyCost(constructionCost(state, kind), policy),
-      limit = policy.buildingLimits?.[kind];
-    const payback =
-      kind === "market"
-        ? ` · ${policyProduction(item.income, policy) > 0 ? Math.ceil(cost / policyProduction(item.income, policy)) : "No"} seasons to repay · ${160 - turn} seasons left`
-        : "";
-    const label = `${item.name} · ${item.width}×${item.height} · ${cost} coins · ${!available ? (opportunities[kind as Opportunity]?.need ?? "Complete your farmhouse") : `${count} built`} · ${item.benefit} · ready next season${payback}`;
-    button.setAttribute("aria-label", label);
-    button.title = label;
-    button.innerHTML = `${planIcon(kind)}<span class="plan-copy"><strong>${item.name}</strong><small>${item.benefit}</small><small>${item.width} × ${item.height} · ${count} built · Next season${payback}</small></span><span class="tool-price">${icon("coin")}${cost.toLocaleString()}</span>`;
-    button.hidden = !available || (kind === "home" && count > 0);
-    button.disabled =
-      turn === 160 ||
-      !available ||
-      state.coins < cost ||
-      policy.blockedBuildings?.includes(kind) === true ||
-      (limit !== undefined && count >= limit);
-  }
-  saplings.hidden = !Array.from(
-    document.querySelectorAll<HTMLButtonElement>("#sapling-options button"),
-  ).some((b) => !b.hidden);
-  document.querySelector<HTMLElement>("#build-shop")!.hidden = !Array.from(
-    document.querySelectorAll<HTMLButtonElement>("#build-options button"),
-  ).some((b) => !b.hidden);
-  document.querySelector<HTMLElement>("#farm-news")!.hidden =
-    state.opportunities.length === 0;
-  goals.hidden = !nextOpportunity.textContent;
-  const orchard = activeService === "fields";
-  document.querySelector("#inspection-heading")!.textContent = orchard
-    ? "Your orchard"
-    : "Your buildings";
-  document.querySelector("#inspection-label")!.textContent = orchard
-    ? "Choose a tree to care for or transplant"
-    : "Choose a building to upgrade or move";
-  const target =
-    document.querySelector<HTMLSelectElement>("#structure-target")!;
-  target.replaceChildren(
-    new Option(orchard ? "Select a tree…" : "Select a building…", ""),
-    ...state.structures
-      .filter((s) => clearingAccess || isTree(s.kind) === orchard)
-      .map(
-        (s) =>
-          new Option(
-            `${buildings[s.kind].name} ${s.id} · Level ${s.level}`,
-            String(s.id),
-          ),
-      ),
-  );
-  target.value = inspectedId === null ? "" : String(inspectedId);
-  const inspected = state.structures.find((s) => s.id === inspectedId),
-    upgrade = document.querySelector<HTMLButtonElement>("#upgrade-building")!,
-    move = document.querySelector<HTMLButtonElement>("#move-building")!;
-  inspection.hidden = target.options.length === 1;
-  document.querySelector<HTMLElement>("#selected-building")!.hidden =
-    !inspected;
-  upgrade.hidden = !inspected || buildings[inspected.kind].levels === 1;
-  move.hidden = !inspected;
-  if (!inspected)
-    document.querySelector("#selected-building")!.textContent = orchard
-      ? "Select a planted tree to improve its care or transplant it."
-      : "Select a building to see its facilities, upgrade it, or move it.";
-  if (inspected) {
-    document
-      .querySelector("#selected-building")!
-      .classList.toggle(
-        "pending-building",
-        !!(inspected.pendingConstruction || inspected.pendingUpgrade),
-      );
-    move.textContent = isTree(inspected.kind)
-      ? "Transplant selected tree"
-      : "Move selected building";
-    const item = buildings[inspected.kind],
-      remaining = upgradeRemaining(state, inspected),
-      cost = policyCost(upgradeCost(inspected), policy);
-    const returnHint =
-      inspected.kind === "market" && inspected.level < item.levels
-        ? ` Upgrade repays in ${policyProduction(item.income, policy) > 0 ? Math.ceil(cost / policyProduction(item.income, policy)) : "no"} seasons; ${160 - turn} seasons remain.`
-        : "";
-    document.querySelector("#selected-building")!.textContent =
-      `${item.name} · Level ${inspected.level}/${item.levels}. ${item.benefit}. ${inspected.pendingConstruction ? "Ready next season." : inspected.pendingUpgrade ? `Level ${inspected.level + 1} next season.` : !remaining && inspected.level < item.levels ? "Ready to upgrade." : ""}${returnHint}`;
-    upgrade.textContent = inspected.pendingConstruction
-      ? isTree(inspected.kind)
-        ? "Growing · ready next season"
-        : "⚒ Ready next season"
-      : inspected.pendingUpgrade
-        ? "⚒ Upgrade underway · ready next season"
-        : inspected.level === item.levels
-          ? "Fully upgraded"
-          : `${isTree(inspected.kind) ? "Improve tree care" : "Upgrade"} · ${cost} coins${remaining ? ` · Harvest ${remaining} more ${inspected.kind === "mill" ? "corn crops" : "crops"}` : ""}`;
-    upgrade.disabled =
-      !!inspected.pendingConstruction ||
-      !!inspected.pendingUpgrade ||
-      turn === 160 ||
-      inspected.level === item.levels ||
-      remaining > 0 ||
-      state.coins < cost ||
-      policy.blockedBuildings?.includes(inspected.kind) === true;
-  }
-
-  document.querySelector("#crop-opportunity")!.textContent = cropUnlocked(
-    state,
-    "corn",
-  )
-    ? ""
-    : "Eli is looking for a grower. Harvest a turnip and a carrot to hear his offer.";
-  for (const button of cropOptions.querySelectorAll<HTMLButtonElement>(
-    "button",
-  )) {
-    const id = button.dataset.crop as CropId;
-    button.setAttribute("aria-pressed", String(id === selected));
-    const crop = crops[id];
-    const seasons = growthSeasons(state, id);
-    const detail = !cropUnlocked(state, id)
-      ? `${crop.name}: ${opportunities.corn.need}. Eli can find you seeds.`
-      : `${crop.name}: ${policyCost(seedCost(state, id), policy)} coins to plant, ${seasons} season${seasons === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")}, harvest ${policyProduction(harvestValue(state, id), policy)} coins. Harvest before winter frost.`;
-
-    button.querySelector(".seed-price")!.innerHTML =
-      `${icon("coin")}${policyCost(seedCost(state, id), policy)}`;
-    button.disabled = !cropUnlocked(state, id) || !canPlant(id, turn);
-    button.setAttribute("aria-label", detail);
-    button.querySelector(".control-detail")!.innerHTML = !cropUnlocked(
-      state,
-      id,
-    )
-      ? `<span>${opportunities.corn.need}</span>`
-      : `<span>${icon("grow")}${seasons} season${seasons === 1 ? "" : "s"} to grow</span><span>${icon("harvest")}${policyProduction(harvestValue(state, id), policy)} coins</span><span class="planting-seasons" aria-label="Plant in ${crop.plantingSeasons.join(" or ")}">${crop.plantingSeasons.map((s) => `<span title="${s}">${icon(s === "summer" ? "sun" : (s as "spring" | "fall"))}</span>`).join("")}</span>`;
-  }
-  document.querySelector<HTMLButtonElement>("#work")!.hidden =
-    policy.allowWork === false ||
-    state.coins >=
-      (state.plots.length
-        ? Math.max(1, policyCost(seedCost(state, "turnip"), policy))
-        : policyCost(expansionCost(state), policy) +
-          Math.max(1, policyCost(seedCost(state, "turnip"), policy))) ||
-    state.plots.some(Boolean);
-  const expand = document.querySelector<HTMLButtonElement>("#expand")!;
-  const expandLabel =
-    state.plots.length === WORLD_CELLS
-      ? "All plots open"
-      : `Open a plot · ${policyCost(expansionCost(state), policy)} coins`;
-  expand.setAttribute("aria-label", expandLabel);
-  expand.title = expandLabel;
-  expand.innerHTML = `${icon("expand")}<span>Expand</span><span class="tool-price" aria-hidden="true">${state.plots.length === WORLD_CELLS ? "✓" : `${icon("coin")}${policyCost(expansionCost(state), policy)}`}</span>`;
-  expand.disabled =
-    state.plots.length >= (policy.maxPlots ?? WORLD_CELLS) ||
-    state.coins < policyCost(expansionCost(state), policy);
-  const improve = document.querySelector<HTMLButtonElement>("#improve")!;
-  const improveLabel = state.pendingSoilUpgrade
-    ? "Soil improvement underway · ready next season"
-    : state.soilLevel === 3
-      ? "Soil fully improved"
-      : `Improve soil · ${policyCost(soilCost(state), policy)} coins (+3 / harvest next season)`;
-  const soilOffer = `soil${state.soilLevel + 1}` as Opportunity;
-  const soilAvailable = state.soilLevel < 3 && hasOpportunity(state, soilOffer);
-  improve.disabled =
-    !!state.pendingSoilUpgrade ||
-    turn === 160 ||
-    !soilAvailable ||
-    state.coins < policyCost(soilCost(state), policy);
-  const soilLabel =
-    improveLabel +
-    (state.soilLevel < 3 && !soilAvailable
-      ? ` · ${opportunities[soilOffer].need}`
-      : "");
-  improve.setAttribute("aria-label", soilLabel);
-  improve.title = soilLabel;
-  const soilStatus = state.pendingSoilUpgrade
-    ? "Ready next season"
-    : state.soilLevel === 3
-      ? "Fully improved"
-      : turn === 160
-        ? "No next season"
-        : !soilAvailable
-          ? opportunities[soilOffer].need
-          : "Next season";
-  improve.innerHTML = `${icon("improve")}<span>Soil${state.soilLevel < 3 ? "<small>+3 / harvest</small>" : ""}<small id="soil-status">${soilStatus}</small></span><span class="tool-price" aria-hidden="true">${state.soilLevel === 3 ? "✓" : `${icon("coin")}${policyCost(soilCost(state), policy)}`}</span>`;
   document.querySelector("#farm-summary")!.textContent =
     `${state.plots.length} plots · ${ready} ready to harvest · Soil level ${state.soilLevel}/3`;
   const emptyPlots = document.querySelector("#empty-plots")!;
   const empty = state.plots.filter((plot) => plot === null).length;
   emptyPlots.setAttribute("aria-label", `${empty} empty plots`);
   emptyPlots.innerHTML = `${icon("expand")}<span aria-hidden="true">${empty}</span>`;
+  const growing = state.plots.filter(
+    (plot) => plot && plot.growth < crops[plot.crop].steps,
+  ).length;
   const growingPlots = document.querySelector("#growing-plots")!;
   growingPlots.setAttribute("aria-label", `${growing} growing crops`);
   growingPlots.innerHTML = `${icon("sprout")}<span aria-hidden="true">${growing}</span>`;

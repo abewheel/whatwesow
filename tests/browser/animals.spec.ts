@@ -1,6 +1,7 @@
 import { expect, test } from "./fixtures";
+import { openCell, closeActions } from "./context-helpers";
 import { homesteadMicroState } from "../../src/micro/state";
-import { endTurn, visitBuilding } from "./helpers";
+import { endTurn } from "./helpers";
 
 test("animals require a visit, persist collection, and produce again next season", async ({
   page,
@@ -37,6 +38,7 @@ test("animals require a visit, persist collection, and produce again next season
     [4, 325],
   ]) {
     await page.locator(`[data-structure="${id}"]`).click();
+    await page.locator("#collect-animal").click();
     await expect(page.locator("#coin-count")).toHaveText(String(coins), {
       timeout: 30000,
     });
@@ -73,9 +75,8 @@ test("coop plans reserve land, complete next season, and keep collection state w
   await expect(page.locator("#dev-status")).toHaveText(
     "State applied and saved.",
   );
-  await visitBuilding(page, "builder");
+  await openCell(page, "14,19");
   await page.locator('[data-build="coop"]').click();
-  await page.getByRole("button", { name: "Land 14,19", exact: true }).click();
   await expect(page.locator("#coin-count")).toHaveText("760");
   await expect(page.locator('[data-structure="2"]')).toHaveAttribute(
     "aria-label",
@@ -86,7 +87,9 @@ test("coop plans reserve land, complete next season, and keep collection state w
     "aria-label",
     /Eggs ready/,
   );
+  await closeActions(page);
   await page.locator('[data-structure="2"]').click();
+  await page.locator("#collect-animal").click();
   await expect(page.locator("#coin-count")).toHaveText("790");
   await page.locator('[data-structure="2"]').click();
   await expect(page.locator("#service-panel")).toBeVisible();
@@ -131,17 +134,19 @@ test("seasonal pens leave adjacent crops and buildings clickable", async ({
     const close = page.locator("#close-service");
     if (await close.isVisible()) await close.click();
     await page.locator('[data-cell="14,17"]').click();
+    await page.getByRole("button", { name: "Walk here", exact: true }).click();
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-cell",
       "14,17",
     );
     await page.locator('[data-structure="2"]').click();
+    await page.locator("#collect-animal").click();
     await expect(page.locator('[data-structure="2"]')).toHaveAttribute(
       "aria-label",
       /collected/,
     );
     await page.locator('[data-structure="5"]').click();
-    await expect(page.locator("#selected-building")).toContainText(
+    await expect(page.locator("#service-title")).toContainText(
       "Seed storehouse",
     );
     await close.click();
@@ -149,7 +154,9 @@ test("seasonal pens leave adjacent crops and buildings clickable", async ({
   // The two front-adjacent crop cells must respond to their ground hit targets.
   await page.locator('[data-plot="0"]').click();
   // In winter the failed planting still targets the plot, rather than collecting an animal.
-  await expect(page.locator("#farm-message")).toContainText("plant");
+  await expect(page.locator("#tile-actions")).toContainText(
+    "No planting this season",
+  );
 });
 
 test("new farmhouses reserve a 5 by 4 lot through construction and reload", async ({
@@ -170,17 +177,10 @@ test("new farmhouses reserve a 5 by 4 lot through construction and reload", asyn
   await expect(page.locator("#dev-status")).toHaveText(
     "State applied and saved.",
   );
-  await visitBuilding(page, "home");
-  await page
-    .getByRole("button", { name: "Build your house", exact: true })
-    .click();
+  await openCell(page, "14,14");
+  await expect(page.locator('[data-build="home"]')).toBeDisabled();
+  await openCell(page, "7,8");
   await page.locator('[data-build="home"]').click();
-  await page.locator('[data-cell="14,14"]').hover();
-  await expect(page.locator("#placement-preview")).toHaveAttribute(
-    "data-valid",
-    "false",
-  );
-  await page.locator('[data-cell="7,8"]').click();
   await expect(page.getByRole("button", { name: /^Farmhouse 1,/ })).toHaveCount(
     20,
   );

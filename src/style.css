@@ -1392,3 +1392,65 @@ button.crisis-card {
     height: 20px;
   }
 }
+
+#tile-actions button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  white-space: normal;
+}
+#service-panel:has(#tile-actions:not([hidden])) {
+  width: min(320px, calc(100% - 24px));
+}
+#tile-actions button:has(.pixel-icon) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#tile-actions button strong,
+#tile-actions button small {
+  display: block;
+}
+#tile-actions button small {
+  font-size: 12px;
+  margin-top: 4px;
+}
+@media (max-width: 600px) and (min-height: 501px) {
+  #service-panel:has(#tile-actions:not([hidden])) {
+    max-height: calc(var(--viewport-height, 100dvh) * 0.62);
+  }
+}
+.plot-hit[data-context] {
+  background: #f8df6b66;
+  outline: 3px solid #fff0a4;
+}
+#service-panel.inspecting #structure-target,
+#service-panel.inspecting #build-shop,
+#service-panel.inspecting #expand,
+#service-panel.inspecting #improve,
+#service-panel.inspecting #move-plot {
+  display: none;
+}
+
+/* Context menus follow their farm target; inline coordinates clamp to the viewport. */
+#service-panel {
+  right: auto;
+  bottom: auto;
+  width: 300px;
+  z-index: 12;
+}
+#service-panel:has(#tile-actions:not([hidden])) {
+  width: 300px;
+}
+#tile-actions > p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 6px 0;
+}
+.farm-card:has(#service-panel:not([hidden])) .hud-top {
+  right: 12px;
+}
+.farm-card:has(#service-panel:not([hidden])) #open-menu {
+  display: block;
+}

@@ -124,6 +124,7 @@ test("front neighbor tiles remain walkable while building artwork still opens it
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   for (const cell of ["13,15", "12,17"]) {
     await page.locator(`[data-cell="${cell}"]`).click();
+    await page.getByRole("button", { name: "Walk here", exact: true }).click();
     await expect(canvas).toHaveAttribute("data-farmer-target", cell);
     await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
     await expect(page.locator("#service-panel")).toBeHidden();

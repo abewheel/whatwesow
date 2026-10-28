@@ -1,3 +1,4 @@
+import { choosePlotWork } from "./helpers";
 import { test, expect, type Page } from "@playwright/test";
 
 async function begin(page: Page, instance: string) {
@@ -34,7 +35,7 @@ for (const viewport of [
 ]) {
   test.describe(`touch phone ${viewport.width}x${viewport.height}`, () => {
     test.use({ viewport, hasTouch: true, isMobile: true });
-    test("uses every farm service, plants, builds and advances with readable menus", async ({
+    test("plants, builds and ends turns through anchored farm menus", async ({
       page,
     }) => {
       test.setTimeout(90000);
@@ -55,71 +56,38 @@ for (const viewport of [
       expect(
         (await page.locator(".hud-top").boundingBox())!.height,
       ).toBeLessThan(75);
-      await tent(page);
+      await page.locator('[data-cell="16,16"]').tap();
+      await page.locator("#expand").tap();
+      await expect(page.locator("#improve")).toBeDisabled();
       await fits(page, "#service-panel");
       await fits(page, "#close-service");
-      await expect(page.locator("#next-season")).toBeInViewport();
-      await page
-        .getByRole("button", { name: "Prepare fields", exact: true })
-        .tap();
-      await expect(page.locator("#improve")).toBeDisabled();
-      await expect(page.locator("#improve")).toContainText("+3 / harvest");
-      await expect(page.locator("#soil-status")).toHaveText("Harvest 3 crops");
-      await page.locator("#expand").tap();
-      await page.locator('[data-cell="16,16"]').tap();
-      await expect(page.locator("[data-plot]")).toHaveCount(1);
-      await page.locator("#farm-mode").tap();
-      await page.getByRole("button", { name: "Open seed basket" }).tap();
-      await expect(page.locator("#service-panel")).toBeVisible();
-      await expect(
-        page.locator('[data-crop="turnip"] .control-detail'),
-      ).toContainText("1 season to grow");
-      await fits(page, '[data-crop="turnip"]');
       await page.locator('[data-crop="turnip"]').tap();
-      await page.locator('[data-plot="0"]').tap();
       await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
         "aria-label",
         /growing/,
       );
-      await tent(page);
-      await page
-        .getByRole("button", { name: "Build your house", exact: true })
-        .tap();
-      await expect(page.locator('[data-build="home"]')).toContainText(
-        "Your home",
-      );
-      await expect(page.locator('[data-build="home"]')).toContainText(
-        "Next season",
-      );
-      await fits(page, '[data-build="home"]');
-      await page.locator('[data-build="home"]').tap();
       await page.locator('[data-cell="12,18"]').tap();
-      await expect(page.locator("#farm-message")).toContainText(
-        "construction started",
-      );
+      await page.locator('[data-build="home"]').tap();
+      await expect(page.locator("#service-title")).toHaveText("Farmhouse");
+      await expect(page.locator("#next-season")).toBeDisabled();
       await tent(page);
       await page.locator("#next-season").tap();
       await expect(page.locator("#season")).toContainText("summer");
-      await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
-        "aria-label",
-        /ready/,
-      );
       await page.locator("#close-service").tap();
       await page.locator('[data-plot="0"]').tap();
+      await choosePlotWork(page);
       await expect(page.locator("#season")).toContainText("95 coins");
-      await page.locator('[data-structure="1"]').tap();
-      await expect(page.locator("#service-panel")).toBeVisible();
-      await page
-        .getByRole("button", { name: "Building plans", exact: true })
-        .tap();
-      await page.locator("#structure-target").selectOption("1");
+      await page.locator('[data-structure="1"]').press("Enter");
+      await fits(page, "#service-panel");
       await page.locator("#move-building").tap();
       await page.locator('[data-cell="13,18"]').tap();
       await expect(page.locator('[data-cell="13,18"]')).toHaveAttribute(
         "data-structure",
         "1",
       );
-      await expect(page.locator("#season")).toContainText("95 coins");
+      await expect(
+        page.locator("#seed-selection,#end-turn,#build-shop"),
+      ).toHaveCount(0);
       await page.locator("#camera-controls summary").tap();
       await fits(page, "#close-camera");
       await page.locator("#close-camera").tap();

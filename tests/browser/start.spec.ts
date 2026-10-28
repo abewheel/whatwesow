@@ -20,25 +20,15 @@ test("loads behind a cover, starts bare, builds fields and completes a home next
   await expect(page.locator("[data-plot]")).toHaveCount(0);
   await expect(page.locator("[data-structure]")).toHaveCount(0);
   await expect(page.locator("[data-service]")).toHaveCount(1);
-  await visitBuilding(page, "home");
-  await page
-    .getByRole("button", { name: "Prepare fields", exact: true })
-    .click();
-  await page.locator("#expand").click();
   await page.locator('[data-cell="16,16"]').click();
+  await page.locator("#expand").click();
   await expect(page.locator("[data-plot]")).toHaveCount(1);
-  await page.locator("#farm-mode").click();
-  await visitBuilding(page, "home");
-  await page
-    .getByRole("button", { name: "Build your house", exact: true })
-    .click();
-  await expect(page.locator('[data-build="oak"]')).toBeHidden();
-  await page.locator('[data-build="home"]').click();
+  await page.locator("#close-service").click();
   await page.locator('[data-cell="12,18"]').click();
+  await page.locator('[data-build="home"]').click();
   await expect(page.locator("#farm-message")).toContainText(
     "construction started",
   );
-  await page.locator("#farm-mode").click();
   await expect(page.locator('[data-service="home"]')).toHaveCount(1);
   await page.reload();
   await expect(page.locator("#startup")).toBeHidden();
@@ -52,9 +42,10 @@ test("loads behind a cover, starts bare, builds fields and completes a home next
   );
   await page.locator("#close-service").click();
   await visitBuilding(page, "home");
+  await expect(page.locator("#next-season")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Prepare fields", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

@@ -1,3 +1,4 @@
+import { choosePlotWork } from "./helpers";
 import { expect, test, type Page } from "./fixtures";
 import { homesteadMicroState as initialMicroState } from "../../src/micro/state";
 async function orchard(page: Page) {
@@ -36,6 +37,7 @@ test("harvest rewards animate from the tile, count up, and stay correct across r
   page.on("requestfailed", (r) => errors.push(r.url()));
   await orchard(page);
   await page.locator('[data-structure="2"]').click();
+  await page.locator("#harvest-tree").click();
   await expect(page.locator(".harvest-reward")).toContainText("+24");
   expect(Number(await page.locator("#coin-count").textContent())).toBeLessThan(
     124,
@@ -56,13 +58,16 @@ test("harvest rewards animate from the tile, count up, and stay correct across r
   // Harvest stays in Plant mode so neighbors can be picked without changing tools.
   await expect(page.locator("#service-panel")).toBeHidden();
   await page.locator('[data-structure="3"]').click();
+  await page.locator("#harvest-tree").click();
   await expect(page.locator('[data-structure="3"]')).not.toHaveAttribute(
     "aria-label",
     /ready to harvest/,
   );
   await page.locator('[data-plot="0"]').click();
+  await choosePlotWork(page);
   await expect(page.locator("#season .sr-only")).toContainText("141 coins");
   await page.locator('[data-plot="0"]').click();
+  await choosePlotWork(page);
   await expect(page.locator("#coin-count")).toHaveText("137");
   await expect(page.locator(".harvest-feedback")).toHaveCount(0);
   await page.reload();
@@ -88,6 +93,7 @@ test("failed harvest saves create no reward, and reduced motion settles the coun
     };
   });
   await page.locator('[data-structure="2"]').click();
+  await page.locator("#harvest-tree").click();
   await expect(page.locator("#farm-message")).toContainText(
     /abort|save|transaction/i,
   );
@@ -98,6 +104,7 @@ test("failed harvest saves create no reward, and reduced motion settles the coun
     /ready to harvest/,
   );
   await page.locator('[data-structure="2"]').click();
+  await page.locator("#harvest-tree").click();
   await expect(page.locator("#farm-message")).toContainText("Apples harvested");
   await expect(page.locator("#coin-count")).toHaveText("124");
   await expect(page.locator(".harvest-coin")).toHaveCount(0);

@@ -1,4 +1,6 @@
 import { test, expect } from "./fixtures";
+import { openCell } from "./context-helpers";
+import { visitBuilding } from "./helpers";
 import { homesteadState } from "../../src/game/state";
 
 test("old saves enlarge building reservations once while preserving the farm", async ({
@@ -41,7 +43,7 @@ test("old saves enlarge building reservations once while preserving the farm", a
   });
 });
 
-test("seed basket visits a compact retained farmhouse using its actual lot", async ({
+test("End Turn visits a compact retained farmhouse using its actual lot", async ({
   page,
 }) => {
   await page.goto("/?instance=validation-compact-home-seeds");
@@ -56,12 +58,17 @@ test("seed basket visits a compact retained farmhouse using its actual lot", asy
   await expect(page.getByRole("button", { name: /^Farmhouse 1,/ })).toHaveCount(
     6,
   );
-  await page.locator('[data-cell="13,15"]').press("Enter");
+  await openCell(page, "13,15");
+  await page.getByRole("button", { name: "Walk here", exact: true }).click();
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-farmer-cell",
     "13,15",
   );
-  await page.locator("#seed-selection").click();
-  await expect(page.locator("#service-panel")).toBeVisible();
-  await expect(page.locator("#crop-options")).toBeVisible();
+  await visitBuilding(page, "home");
+  await page.locator("#next-season").click();
+  await expect(page.locator("#season")).toContainText("summer");
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-farmer-cell",
+    "13,15",
+  );
 });
