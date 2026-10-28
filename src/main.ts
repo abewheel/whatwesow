@@ -3,6 +3,7 @@ import {
   distinctServices,
   distinctBuildingRects,
 } from "./game/building-artwork";
+import { SeasonTransition } from "./game/season-transition";
 import { HarvestFeedback } from "./game/harvest-feedback";
 import { treeFrames } from "./game/tree-sprites";
 import { treeStatus } from "./micro/world";
@@ -769,8 +770,12 @@ for (const [id, crop] of Object.entries(crops)) {
   });
   cropOptions.append(button);
 }
+const seasonTransition = new SeasonTransition();
+let endingTurn = false;
 let farmQueue: Promise<void> = Promise.resolve();
 function act(action: FarmAction | { type: "season" }) {
+  if (endingTurn) return farmQueue;
+  if (action.type === "season") endingTurn = true;
   const requestedNavigation = navigationVersion;
   farmQueue = farmQueue.then(async () => {
     try {
@@ -779,6 +784,8 @@ function act(action: FarmAction | { type: "season" }) {
         action.type === "season"
           ? advanceSeason(state)
           : actOnFarm(state, action, farmContext(state));
+      if (action.type === "season" && result.state !== previous)
+        await seasonTransition.cover(result.state as typeof state);
       await apply(
         action.type === "season"
           ? (result.state as typeof state)
@@ -812,12 +819,18 @@ function act(action: FarmAction | { type: "season" }) {
         buildingTooltip.hidden = true;
         render();
       }
+      if (action.type === "season") await seasonTransition.reveal();
     } catch (error) {
       message.textContent =
         error instanceof Error ? error.message : "Could not work the farm.";
       if (!servicePanel.hidden) {
         serviceFeedback.textContent = message.textContent;
         serviceFeedback.hidden = false;
+      }
+    } finally {
+      if (action.type === "season") {
+        seasonTransition.clear();
+        endingTurn = false;
       }
     }
   });

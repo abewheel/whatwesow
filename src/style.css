@@ -1233,3 +1233,80 @@ button.crisis-card {
 .farm-card:has(#service-panel:not([hidden])) #crisis-test {
   display: none;
 }
+
+.season-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  background: #edf0ddeb;
+  color: #33492f;
+  touch-action: none;
+}
+.season-transition-summer {
+  background: #fff0c9eb;
+  color: #72501e;
+}
+.season-transition-fall {
+  background: #f4dfc4eb;
+  color: #754329;
+}
+.season-transition-winter {
+  background: #e4eff5eb;
+  color: #3a5669;
+}
+.season-transition-card {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px;
+}
+.season-transition-card .pixel-icon {
+  width: 48px;
+  height: 48px;
+}
+.season-transition-card strong {
+  font-size: clamp(28px, 7vw, 42px);
+  text-transform: capitalize;
+}
+
+.season-transition-emblem {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 72px;
+}
+.season-confetti {
+  position: absolute;
+  left: calc(50% - 4px);
+  top: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+  opacity: 0;
+  background: #e994ab;
+  border-radius: 7px 0 7px 0;
+}
+.season-transition-summer .season-confetti {
+  background: #eab037;
+  border-radius: 0;
+  clip-path: polygon(
+    50% 0,
+    65% 35%,
+    100% 50%,
+    65% 65%,
+    50% 100%,
+    35% 65%,
+    0 50%,
+    35% 35%
+  );
+}
+.season-transition-fall .season-confetti {
+  background: #bd6b29;
+}
+.season-transition-winter .season-confetti {
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px #b5cfdf;
+}
