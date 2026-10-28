@@ -1674,3 +1674,79 @@ button.crisis-card {
 .farm-card:has(#service-panel:not([hidden])) #open-menu {
   display: block;
 }
+
+/* The calendar and balance fill their row; feedback shares the full right rail. */
+.hud-right {
+  position: relative;
+  margin-left: auto;
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  max-width: 100%;
+  pointer-events: none;
+}
+.hud-right > button,
+.hud-right > details {
+  pointer-events: auto;
+}
+#season {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.calendar,
+.coin-balance {
+  min-width: 0;
+}
+#coin-count {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hud-right .field-note {
+  position: absolute;
+  top: calc(100% + 72px);
+  left: 0;
+  right: 0;
+  max-width: none;
+  padding: 8px;
+}
+#farm-message {
+  display: block;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px), (max-height: 500px) {
+  .hud-right {
+    flex: 1;
+    min-width: 0;
+    gap: 6px;
+  }
+}
+@media (max-width: 420px) {
+  .calendar {
+    gap: 4px;
+  }
+  .calendar .pixel-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .calendar > span {
+    font-size: 12px;
+  }
+  .calendar small {
+    font-size: 10px;
+  }
+  #season .coin-balance {
+    font-size: 14px;
+  }
+}
+
+.hud-right .field-note {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+@media (max-width: 700px), (max-height: 500px) {
+  .hud-right:has(+ #council-meeting:not([hidden])) .field-note {
+    top: calc(100% + 128px);
+  }
+}

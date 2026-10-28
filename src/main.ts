@@ -108,8 +108,8 @@ const councilWaiting = "The council is waiting for your answer.";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div>
-<header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><div class="farm-overview"><output id="season"></output><section id="farm-status" aria-label="Farm status"><span id="empty-plots" role="img"></span><span id="growing-plots" role="img"></span><span id="harvest-ready" role="img"></span></section></div><button id="council-meeting" aria-haspopup="dialog" hidden>Council meeting</button><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
-<div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Tap land to plant or build. Tap a building for its actions.</strong><span id="farm-summary" class="sr-only"></span></div>
+<header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><div class="hud-right"><div class="farm-overview"><output id="season"></output><section id="farm-status" aria-label="Farm status"><span id="empty-plots" role="img"></span><span id="growing-plots" role="img"></span><span id="harvest-ready" role="img"></span></section></div><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button><div class="field-note"><strong id="farm-message" role="status">Tap land to plant or build. Tap a building for its actions.</strong><span id="farm-summary" class="sr-only"></span></div></div><button id="council-meeting" aria-haspopup="dialog" hidden>Council meeting</button></header>
+<div class="hud-bottom">
 <section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
 <div id="service-controls" hidden><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span></div>
 <dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><button id="resume">Back to the farm</button></dialog>
@@ -151,7 +151,7 @@ cameraControls.querySelector("#close-camera")!.addEventListener("click", () => {
     .querySelector<HTMLElement>("summary")!
     .focus({ preventScroll: true });
 });
-document.querySelector(".hud-top")!.append(cameraControls);
+document.querySelector(".hud-right")!.append(cameraControls);
 moveControls(".camera-panel", ["#home-view", ".zoom-controls"]);
 document.querySelector("#farm-mode")!.textContent = "Cancel placement";
 const tileActions = document.querySelector<HTMLElement>("#tile-actions")!;
@@ -1607,7 +1607,7 @@ let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
 function render() {
   const owed = state.owed ?? 0;
   document.querySelector("#season")!.innerHTML =
-    `<span class="sr-only">Year ${state.year} · ${state.season} · ${state.coins.toLocaleString()} coins${owed ? ` · ${owed.toLocaleString()} coins owed` : ""}</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span>${owed ? `<span id="owed">Owed ${owed.toLocaleString()}</span>` : ""}</span>`;
+    `<span class="sr-only">Year ${state.year}/40 · ${state.season} · ${state.coins.toLocaleString()} coins${owed ? ` · ${owed.toLocaleString()} coins owed` : ""}</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}/40</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span>${owed ? `<span id="owed">Owed ${owed.toLocaleString()}</span>` : ""}</span>`;
   // The scene draws the farm under the rules in force, the council's included.
   scene.setState({ ...state, farmPolicy: rules().policy });
   councilMeeting.hidden = pendingCrisis(state) === undefined;

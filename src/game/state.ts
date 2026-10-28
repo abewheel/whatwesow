@@ -13,7 +13,7 @@ import {
 import { charge, credit } from "../micro/money";
 import { seasonTrees, policyProduction } from "../micro/world";
 import { initialPlotCells, seasonalIncome } from "../micro/world";
-import { seasons, nextSeason, turnNumber } from "../macro/state";
+import { nextSeason, turnNumber } from "../macro/state";
 import {
   checkCrisisRecords,
   crisisRules,
@@ -209,7 +209,7 @@ export function advanceSeason(state: GameState): {
   return {
     state: result,
     message: [
-      `Turn ${turnNumber(result)}/160 · Year ${result.year}, ${seasons[(turnNumber(result) - 1) % 4]}. ${winter ? "Winter frost cleared all field crops. Trees remain." : "Crops grew. Harvest before winter frost."} Seasonal income: +${income} coins.`,
+      `${winter ? "Winter frost cleared all field crops. Trees remain." : "Crops grew. Harvest before winter frost."} Seasonal income: +${income} coins.`,
       ...notes,
     ]
       .filter(Boolean)

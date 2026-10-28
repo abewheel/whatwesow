@@ -23,7 +23,7 @@ test("playtest state persists, invalid state is rejected, and instances are isol
   await expect(page.locator("#dev-status")).toContainText("year 1–40");
   await expect(page.locator("#season")).toContainText("Year 20");
   await page.goto("/?instance=validation-other");
-  await expect(page.locator("#season")).toContainText("Year 1 ·");
+  await expect(page.locator("#season")).toContainText("Year 1/40 ·");
   expect(errors).toEqual([]);
 });
 test("imports and exports saves", async ({ page }) => {
@@ -65,14 +65,14 @@ test("isolated domain editors compose, reject invalid edits, and persist", async
   );
   await page.getByRole("button", { name: "Apply state" }).click();
   await expect(page.locator("#season")).toContainText(
-    "Year 1 · spring · 777 coins",
+    "Year 1/40 · spring · 777 coins",
   );
   await page.getByLabel("Work on").selectOption("macro");
   await page.getByLabel("Starting point").selectOption("late");
   await page.getByRole("button", { name: "Load preset" }).click();
   await page.getByRole("button", { name: "Apply state" }).click();
   await expect(page.locator("#season")).toContainText(
-    "Year 40 · winter · 777 coins",
+    "Year 40/40 · winter · 777 coins",
   );
   await page
     .getByLabel("Game state JSON")
@@ -83,6 +83,6 @@ test("isolated domain editors compose, reject invalid edits, and persist", async
   await expect(page.getByLabel("Game state JSON")).toHaveValue(/"year": 40/);
   await page.reload();
   await expect(page.locator("#season")).toContainText(
-    "Year 40 · winter · 777 coins",
+    "Year 40/40 · winter · 777 coins",
   );
 });
