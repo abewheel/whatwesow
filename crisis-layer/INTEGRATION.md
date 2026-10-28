@@ -191,7 +191,7 @@ The prototype's `tilesLost` and `offerTiles` numbers on each policy are stand-in
 | `startCenter`, `halfWidth`, `oppositionShift`, `spacing`, `extreme` | From `params` | The window's start, half-width, the case for control's push, and the policy grid |
 | `acceptOffers` | unset | For headless runs only: `true` or `false` answers every offer |
 
-The farm game should pass whatever it wants fixed and leave the rest. Keep `startCenter` in `content.json` as the designer's setting; it is the main lever for how hard the game is.
+The farm game should pass whatever it wants fixed and leave the rest. What We Sow passes `order: 'shiftThenResolve'`, so an argument moves the council before it votes, except in saves whose first crisis fired before it made that change. Keep `startCenter` in `content.json` as the designer's setting; it is the main lever for how hard the game is.
 
 ## 6. Keeping the two in step
 

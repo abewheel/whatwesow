@@ -208,6 +208,7 @@ export function fireCrisis(state: GameState): GameState {
     id,
     turn: turnNumber(current),
     ...(crop ? { crop } : {}),
+    shiftFirst: true,
   };
   const farm =
     id === "Blight"

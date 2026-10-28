@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import { content, engine } from "./engine";
+import { shiftFirst } from "../game/crisis-rules";
 import { handView, revealView, speakerFor } from "./view";
 
 const personas = [
@@ -45,4 +46,23 @@ it("keeps a deal open until it is taken or refused", () => {
   const after = revealView(engine.replay(picks), outcome, true);
   expect(after.body.split(content.strings.offerDeclined)).toHaveLength(2);
   expect(after.body.endsWith(outcome)).toBe(true);
+});
+
+it("names this meeting when its own arguments closed the door", () => {
+  // Tom Brennan three times takes the council from +50 to +5. June Calloway then asks for the
+  // farmers' group (+40); her argument and the case for control move it to −6 before the vote.
+  const picks = [
+    card("Drought", "SOC"),
+    card("Blight", "SOC"),
+    card("Eminent domain", "SOC"),
+    card("Overproduction", "LIB-M"),
+  ];
+  const record = engine.replay(picks, shiftFirst).ledger[3];
+  expect([record.before, record.after, record.enactedPos]).toEqual([5, -6, 0]);
+  expect(record.attributionCrisis).toBe(4);
+  const view = revealView(engine.replay(picks, shiftFirst));
+  expect(view.body).toContain(
+    "The arguments at this meeting moved the council away from that idea.",
+  );
+  expect(view.body).not.toContain("back in crisis 4");
 });

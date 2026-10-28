@@ -98,7 +98,7 @@ export const records = (picks: string[], turns: number[]): CrisisRecord[] =>
     ...(k === 1 ? { crop: "corn" } : k === 3 ? { crop: "pumpkin" } : {}),
   }));
 // The council leaning to control: Nora Delgado's card, picked every time, passes 0 at
-// crises 2–5 and −40 at crises 6–8. Each check reads a harm her answer passed on the
+// crises 1–4 and −40 at crises 5–8. Each check reads a harm her answer passed on the
 // farm, so each fails if the answer were ignored.
 export const nora = "Nora Delgado";
 export const cropIds = Object.keys(crops) as CropId[];

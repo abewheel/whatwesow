@@ -20,6 +20,7 @@ import {
 import {
   content,
   engine,
+  type CrisisState,
   type Effect,
   type LedgerRecord,
 } from "../crisis/engine";
@@ -112,10 +113,16 @@ export function mergePolicy(a: FarmPolicy, b: FarmPolicy): FarmPolicy {
   return parseFarmPolicy(p);
 }
 
+/** The council's mood moves with each meeting's arguments before it votes. */
+export const shiftFirst = { order: "shiftThenResolve" } as const;
+/** The council's run for the answered records; a save whose first crisis fired before the change votes first. */
+export function councilState(records: CrisisRecord[] = []): CrisisState {
+  const picks = records.flatMap((r) => (r.pick ? [r.pick] : []));
+  return engine.replay(picks, records[0]?.shiftFirst ? shiftFirst : {});
+}
 /** Ledger entries for the answered records, in record order. */
 export function councilLedger(records: CrisisRecord[] = []): LedgerRecord[] {
-  const picks = records.flatMap((r) => (r.pick ? [r.pick] : []));
-  return picks.length ? engine.replay(picks).ledger : [];
+  return records.some((r) => r.pick) ? councilState(records).ledger : [];
 }
 /** The crisis waiting for the player: no answer yet, or a deal not yet taken or refused. */
 export function pendingCrisis(state: Pick<MacroState, "crises">) {

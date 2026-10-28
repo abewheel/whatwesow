@@ -257,8 +257,8 @@ test("a sealed well fades to grey and the council office stands while permits ar
 });
 
 /** A control preset's crisis, fired at End turn and answered with Nora Delgado's argument. */
-const answered = (preset: string) => {
-  const fired = endTurn(presetState(preset)).state;
+const answered = (preset: string, edit = (s: GameState) => s) => {
+  const fired = endTurn(edit(presetState(preset))).state;
   const records = fired.crises!;
   const card = engine
     .hand(records.at(-1)!.id, records.length - 1)
@@ -271,8 +271,15 @@ test("the council's answers seal the farm's well and raise the council office", 
 }) => {
   const errors = await open(page, "crisis-scene-answers");
   const canvas = page.locator("canvas");
-  // The public water company seals the well built after the first drought.
-  await applyGame(page, answered("crisis-5-control"));
+  // Ada Kessler's first answer leaves the well open; the public water company Nora Delgado's
+  // answer passes at the second drought seals it.
+  await applyGame(
+    page,
+    answered("crisis-5-control", (s) => ({
+      ...s,
+      crises: s.crises!.map((r, i) => (i === 0 ? { ...r, pick: "D-OBJ" } : r)),
+    })),
+  );
   await expect(canvas).toHaveAttribute("data-scene-sealed", "1");
   await expect(page.locator('[data-cell="20,20"]')).toHaveAttribute(
     "aria-label",

@@ -50,7 +50,7 @@ const sownIn = (season: string) =>
 for (const { preset, heading, speaker, deal, edit, check } of [
   {
     preset: "crisis-2",
-    heading: "Crisis 2 of 8: Blight",
+    heading: "Crisis 2 of 8: Crop disease",
     speaker: "Ada Kessler",
     check: async (page: Page) => {
       // Ada's answer opens premium seed purchases at the shop.
@@ -88,7 +88,7 @@ for (const { preset, heading, speaker, deal, edit, check } of [
   },
   {
     preset: "crisis-6",
-    heading: "Crisis 6 of 8: Price crash",
+    heading: "Crisis 6 of 8: Prices drop",
     speaker: "Walt Finch",
     check: async (page: Page) => {
       await visitBuilding(page, "home");
@@ -107,7 +107,7 @@ for (const { preset, heading, speaker, deal, edit, check } of [
   },
   {
     preset: "crisis-7",
-    heading: "Crisis 7 of 8: Eminent domain",
+    heading: "Crisis 7 of 8: Land for a dam",
     speaker: "Walt Finch",
     deal: true,
     check: async (page: Page) => {
@@ -121,7 +121,7 @@ for (const { preset, heading, speaker, deal, edit, check } of [
   },
   {
     preset: "crisis-8",
-    heading: "Crisis 8 of 8: Overproduction",
+    heading: "Crisis 8 of 8: Too much of one crop",
     speaker: "Tom Brennan",
     edit: (state: GameState) => ({
       ...state,
@@ -227,7 +227,7 @@ test("Walt Finch's answer to the blight puts a quarter on the price of seed", as
   const before = await pricesWhileWaiting(page, 7);
   await answerWaiting(
     page,
-    "Crisis 2 of 8: Blight",
+    "Crisis 2 of 8: Crop disease",
     "Walt Finch",
     `Passed: ${policyText("Blight", 40).name}.`,
   );
@@ -256,9 +256,9 @@ test("the county seed check's fee, treated seed and crop rotation reach the plot
     value = await earns(page, "turnip", 7);
   await answerWaiting(
     page,
-    "Crisis 2 of 8: Blight",
+    "Crisis 2 of 8: Crop disease",
     nora,
-    "Passed: County seed checks, for a fee.",
+    "Passed: You pay the county to check seed.",
     "blight-0",
   );
   // Checked seed costs a quarter more plus a 2-coin fee, and yields 10% less.

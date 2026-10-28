@@ -4,7 +4,7 @@ Eight council crises from the [crisis layer](../crisis-layer/INTEGRATION.md) fir
 
 ## When each crisis fires
 
-The order is fixed by `content.params.runOrder`. Crisis n belongs to year 2 + 4(n − 1) (`crisisYears` in `src/game/crisis.ts`: 2, 6, 10, 14, 18, 22, 26 and 30), so years 31 to 40 have none. The seasons are data in `crisisTiming`; a drought's `drained` seasons apply once an earlier answer has drained the valley's water (`aquiferDrained`).
+The player sees each crisis's `title` (Drought, Crop disease, Land for a dam, Too much of one crop, Prices drop); code, saves and this guide use its `id` (Drought, Blight, Eminent domain, Overproduction, Price crash). All crisis text is written for a 13-year-old reader, so keep new wording that plain. The order is fixed by `content.params.runOrder`. Crisis n belongs to year 2 + 4(n − 1) (`crisisYears` in `src/game/crisis.ts`: 2, 6, 10, 14, 18, 22, 26 and 30), so years 31 to 40 have none. The seasons are data in `crisisTiming`; a drought's `drained` seasons apply once an earlier answer has drained the valley's water (`aquiferDrained`).
 
 | # | Crisis | Year | Fires in | Turn |
 | --- | --- | --- | --- | --- |
@@ -66,21 +66,21 @@ A standing rule binds from the moment its policy takes effect, and a policy that
 
 | Position | Policy | On the farm |
 | --- | --- | --- |
-| +80 | Water rights you can buy and sell | In every drought season the farmhouse offers to sell water rights, and to buy water unless a working well or water at cost already protects the crops. Buying water costs 12 coins per thirsty growing crop and keeps those crops from drying. It reaches only the crops growing when it is bought: crops planted afterwards need water bought again, charged only for them. Selling water rights earns 6 coins per thirsty growing crop, and then nothing waters them that season, not even a well or water at cost, so they dry. Rights can be sold once a season, and not after buying water. A later Drought 0, −40 or −80 ends water trading. |
-| +40 | Every farm pumps for itself, no price limits | An irrigation well can be built without its milestone, and a finished, unsealed well protects every thirsty crop in a drought. Pumping drains the valley's water: the next drought comes in spring and lasts two seasons, spring and summer. A later Drought 0, −40 or −80 takes the wells back. |
-| 0 | Public water company | Thirsty crops are protected for the rest of this drought, both seasons when the water is drained, for 1 coin each, charged at End turn. From now on, a water bill of 5 coins or 1 per plot, whichever is more, at every End turn. Existing wells are sealed, new wells and well upgrades are blocked, and water can no longer be bought or sold. |
-| −40 | Water board with a rising pumping tax | From now on, at every season change except into winter, only the first 60% of thirsty growing crops by plot order get water, rounded to the nearest whole crop (1 of 1, 1 of 2, 2 of 3, 3 of 5). The rest wither. Watering n crops costs n(n+1)/2 coins of tax. Existing wells are sealed, new wells and well upgrades are blocked, and water can no longer be bought or sold. |
+| +80 | Farms can buy and sell water | In every drought season the farmhouse offers to sell water rights, and to buy water unless a working well or water at cost already protects the crops. Buying water costs 12 coins per thirsty growing crop and keeps those crops from drying. It reaches only the crops growing when it is bought: crops planted afterwards need water bought again, charged only for them. Selling water rights earns 6 coins per thirsty growing crop, and then nothing waters them that season, not even a well or water at cost, so they dry. Rights can be sold once a season, and not after buying water. A later Drought 0, −40 or −80 ends water trading. |
+| +40 | Every farm can build its own well | An irrigation well can be built without its milestone, and a finished, unsealed well protects every thirsty crop in a drought. Pumping drains the valley's water: the next drought comes in spring and lasts two seasons, spring and summer. A later Drought 0, −40 or −80 takes the wells back. |
+| 0 | A public water company does the pumping | Thirsty crops are protected for the rest of this drought, both seasons when the water is drained, for 1 coin each, charged at End turn. From now on, a water bill of 5 coins or 1 per plot, whichever is more, at every End turn. Existing wells are sealed, new wells and well upgrades are blocked, and water can no longer be bought or sold. |
+| −40 | A water board with a rising water tax | From now on, at every season change except into winter, only the first 60% of thirsty growing crops by plot order get water, rounded to the nearest whole crop (1 of 1, 1 of 2, 2 of 3, 3 of 5). The rest wither. Watering n crops costs n(n+1)/2 coins of tax. Existing wells are sealed, new wells and well upgrades are blocked, and water can no longer be bought or sold. |
 | −80 | Water handed out by need | The same cap at 40% (none of 1, 1 of 2, 2 of 5), with no tax. Water can no longer be traded, wells no longer protect crops, new wells and well upgrades are blocked, and existing wells are sealed. |
 
 ### Blight
 
 | Position | Policy | On the farm |
 | --- | --- | --- |
-| +80 | Buy seed from anyone, at your own risk | Empty plots offer premium seed: seed costs 1.5×, a good planting sells for 30% more, and about one planting in eight is diseased and withers at its first growth. The plot and season decide which, so a replay gives the same result. |
-| +40 | Optional 'checked safe' label from seed sellers | From now on, seed costs 1.25×, rounded up: without a seed storehouse, turnip 5, radish 4, carrot 9, tomato 12, corn 15 and pumpkin 18 coins. |
-| 0 | County seed checks, for a fee | The blighted crop recovers after one of its planting seasons instead of two. From now on, every planting costs a 2-coin fee, seed costs 1.25×, and every crop harvest sells for 90%. No crop may follow itself on a plot; breaking that rule costs a fine. |
-| −40 | Required seed checks and planting permits | The blighted crop can be replanted at once. From now on, every planting costs a 2-coin fee, seed costs 1.25×, and every crop harvest sells for 90%. Planting needs a permit for that season, filed free at the council office the season before; the season the rule passes is covered. No crop may follow itself on a plot. Breaking either rule costs a fine. |
-| −80 | A valley seed board controls all seed and picks your crops | Seed is free, and all crop harvests sell for 80%. Each season one crop is named (`assignedCrop`): the season's plantable crops sorted by base sale, cheapest first, moving one step each year. When another rule bans that crop, blocks it while it recovers from blight, caps it, or charges a fee past a cap and holds its sales, the next crop in that order is named instead, so other years keep their crops. Planting anything else costs a fine. |
+| +80 | Buy any seed, safe or not | Empty plots offer premium seed: seed costs 1.5×, a good planting sells for 30% more, and about one planting in eight is diseased and withers at its first growth. The plot and season decide which, so a replay gives the same result. |
+| +40 | Sellers may add a 'checked safe' label | From now on, seed costs 1.25×, rounded up: without a seed storehouse, turnip 5, radish 4, carrot 9, tomato 12, corn 15 and pumpkin 18 coins. |
+| 0 | You pay the county to check seed | The blighted crop recovers after one of its planting seasons instead of two. From now on, every planting costs a 2-coin fee, seed costs 1.25×, and every crop harvest sells for 90%. No crop may follow itself on a plot; breaking that rule costs a fine. |
+| −40 | You need a permit and checked seed | The blighted crop can be replanted at once. From now on, every planting costs a 2-coin fee, seed costs 1.25×, and every crop harvest sells for 90%. Planting needs a permit for that season, filed free at the council office the season before; the season the rule passes is covered. No crop may follow itself on a plot. Breaking either rule costs a fine. |
+| −80 | A valley seed board picks your crops | Seed is free, and all crop harvests sell for 80%. Each season one crop is named (`assignedCrop`): the season's plantable crops sorted by base sale, cheapest first, moving one step each year. When another rule bans that crop, blocks it while it recovers from blight, caps it, or charges a fee past a cap and holds its sales, the next crop in that order is named instead, so other years keep their crops. Planting anything else costs a fine. |
 
 #### Blight recovery
 
@@ -100,11 +100,11 @@ Plot worth is the price of the next new plot plus the sale value of a living cro
 
 | Position | Policy | On the farm |
 | --- | --- | --- |
-| +80 | No taking land. The county builds on its own land. | Nothing changes. |
-| +40 | Only buy from people who want to sell | A deal. Taking it sells the 4 edge plots for 120% of their worth. Saying no changes nothing. |
+| +80 | Build only on land the county owns | Nothing changes. |
+| +40 | Buy only if the owner says yes | A deal. Taking it sells the 4 edge plots for 120% of their worth. Saying no changes nothing. |
 | 0 | Take the land, pay full price | The county takes the 4 edge plots and pays their worth. |
-| −40 | Take the land, pay a set price | The county takes 6 random plots and pays half their worth. From now on, new buildings and building upgrades take one extra season; saplings do not. Planting needs a permit, as under Blight −40, and the council office opens. Seed is free, and each season one crop is named, as under Blight −80. Planting anything else, or without a permit, costs a fine. |
-| −80 | Take the best land for the common good, pay nothing | The county takes the 8 most productive plots and pays nothing. From now on, no building kind can exceed its count when the policy passed, work underway included. Kinds the farm lacks cannot be built; trees are not capped. Permits, free seed, the named crop and the fine as under −40. |
+| −40 | Take the land, pay half price | The county takes 6 random plots and pays half their worth. From now on, new buildings and building upgrades take one extra season; saplings do not. Planting needs a permit, as under Blight −40, and the council office opens. Seed is free, and each season one crop is named, as under Blight −80. Planting anything else, or without a permit, costs a fine. |
+| −80 | Take the best land, pay nothing | The county takes the 8 most productive plots and pays nothing. From now on, no building kind can exceed its count when the policy passed, work underway included. Kinds the farm lacks cannot be built; trees are not capped. Permits, free seed, the named crop and the fine as under −40. |
 
 ### Overproduction
 
@@ -112,21 +112,21 @@ All rules here name the top crop chosen when the crisis fired.
 
 | Position | Policy | On the farm |
 | --- | --- | --- |
-| +80 | Leave it alone | Only the trigger's glut price. |
-| +40 | Farmers' group you can choose to join | A deal. Taking it replaces the glut price with 115% from now on, and limits the crop to 5 plots, a hard limit no fine can break. Saying no leaves the glut price. |
-| 0 | Fee on extra crops | From now on, a fee of 5 coins per plot of the crop above 5 at every End turn. Its sales are held until the next season change while more than 5 plots of it are planted, the harvested one included. The hold is per crop (`sellDelay`), so a second Overproduction 0 on another crop holds that crop too. |
-| −40 | Limits on how much you can plant | Plots of the crop past the first 5, by plot order, are plowed under. From now on, at most 5 plots of it, and one plot in five must stay empty each season. Breaking either rule costs a fine. Each season allows 3 sales or one per two plots, rounded up, whichever is more; sales over it earn nothing and don't count as harvests. Every crop's sale value is frozen at its value when the policy passed, and no price multiplier lifts a crop or fruit sale above 100%, a deal's 115% included. The glut's 75% still runs its two seasons. |
-| −80 | Ban the crop and even things out | Every plot of the crop is plowed under and it is banned; planting it costs a fine. From now on, each crop's base value is capped at its base sale, so soil and building bonuses stop raising crop prices. Sale values are frozen and capped at 100% as under −40; premium seed's yield still applies. Sales are limited as under Price crash −80, an allowance that changes each season. Buildings cannot be upgraded. |
+| +80 | No new rules | Only the trigger's glut price. |
+| +40 | Farmers can choose to grow less together | A deal. Taking it replaces the glut price with 115% from now on, and limits the crop to 5 plots, a hard limit no fine can break. Saying no leaves the glut price. |
+| 0 | A fee for each crop plot over 5 | From now on, a fee of 5 coins per plot of the crop above 5 at every End turn. Its sales are held until the next season change while more than 5 plots of it are planted, the harvested one included. The hold is per crop (`sellDelay`), so a second Overproduction 0 on another crop holds that crop too. |
+| −40 | The farm office limits planting and sales | Plots of the crop past the first 5, by plot order, are plowed under. From now on, at most 5 plots of it, and one plot in five must stay empty each season. Breaking either rule costs a fine. Each season allows 3 sales or one per two plots, rounded up, whichever is more; sales over it earn nothing and don't count as harvests. Every crop's sale value is frozen at its value when the policy passed, and no price multiplier lifts a crop or fruit sale above 100%, a deal's 115% included. The glut's 75% still runs its two seasons. |
+| −80 | Ban the crop and take what's above average | Every plot of the crop is plowed under and it is banned; planting it costs a fine. From now on, each crop's base value is capped at its base sale, so soil and building bonuses stop raising crop prices. Sale values are frozen and capped at 100% as under −40; premium seed's yield still applies. Sales are limited as under Price crash −80, an allowance that changes each season. Buildings cannot be upgraded. |
 
 ### Price crash
 
 | Position | Policy | On the farm |
 | --- | --- | --- |
 | +80 | Leave prices alone | Only the crash. |
-| +40 | Let farmers lock in next year's price now | During the crash's two seasons, summer and fall, the farmhouse offers to lock in 85% for 4 seasons. While the lock runs, every crop, fruit, egg, milk and wool sale is at 85%, whatever prices do. One lock at a time. |
-| 0 | Short-term loans | A loan of 100 coins or 20 per plot, whichever is more. It is repaid in four equal parts at the next four End turns. |
-| −40 | Lowest-price guarantee, paid for by a harvest tax | The crash cuts prices to 90% instead of 60%. From now on, 10% of every crop, fruit, egg, milk and wool sale goes to the relief fund. |
-| −80 | The state buys all crops at set prices | No crash. Each crop's sale value is frozen at its value when the policy passed, and no multiplier lifts it higher. Each season allows only so many sales (`boardQuota`): 3 or one per two plots, rounded up, whichever is more, times 50%, 75%, 100% or 125%, picked afresh each season, rounded down, at least 1. Sales over it earn nothing and don't count as harvests. Seed costs 1.5×. |
+| +40 | Let farmers agree on next year's price with buyers | During the crash's two seasons, summer and fall, the farmhouse offers to lock in 85% for 4 seasons. While the lock runs, every crop, fruit, egg, milk and wool sale is at 85%, whatever prices do. One lock at a time. |
+| 0 | Loans that farmers pay back later | A loan of 100 coins or 20 per plot, whichever is more. It is repaid in four equal parts at the next four End turns. |
+| −40 | A harvest tax pays to hold prices up | The crash cuts prices to 90% instead of 60%. From now on, 10% of every crop, fruit, egg, milk and wool sale goes to the relief fund. |
+| −80 | The government buys all crops at set prices | No crash. Each crop's sale value is frozen at its value when the policy passed, and no multiplier lifts it higher. Each season allows only so many sales (`boardQuota`): 3 or one per two plots, rounded up, whichever is more, times 50%, 75%, 100% or 125%, picked afresh each season, rounded down, at least 1. Sales over it earn nothing and don't count as harvests. Seed costs 1.5×. |
 
 ## Harms
 
@@ -166,33 +166,35 @@ Rules from different crises can meet, so obeying one never costs a fine under an
 
 ## Reachable policies
 
-The engine decides what passes from the council's mood, which starts at `params.startCenter` 50. A walk of every run through the real engine (all five cards at each crisis, each deal both taken and refused: 1,940,871 runs) gives the share of runs that pass each policy:
+The engine decides what passes from the council's mood, which starts at `params.startCenter` 50. The player's argument and the case for control move the mood first, and the council votes from where it lands: the engine's `shiftThenResolve` order, passed as `shiftFirst` by `councilState` in `src/game/crisis-rules.ts`, the one place the game replays the council. So an argument can change its own crisis's result, and the attribution line can name the meeting just held (`attributionNow`). Records record only picks, and every call replays them, so a save keeps the order it started with: each record the game fires carries `shiftFirst: true`, and a save whose first record lacks it fired before the change and still votes first, keeping its past results on load. The development Crisis test always moves first.
+
+A walk of every run through the real engine (all five cards at each crisis, each deal both taken and refused: 1,562,567 runs) gives the share of runs that pass each policy:
 
 | # | Crisis | +80 | +40 | 0 | −40 | −80 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Drought | 26.2% | 73.8% | — | — | — |
-| 2 | Blight | 12.4% | 69.2% | 18.4% | — | — |
-| 3 | Eminent domain | 7.4% | 79.3% | 13.3% | — | — |
-| 4 | Overproduction | 1.9% | 80.5% | 17.6% | — | — |
-| 5 | Drought | 3.1% | 64.4% | 31.6% | 1.0% | — |
-| 6 | Price crash | 1.3% | 59.2% | 35.6% | 3.9% | — |
-| 7 | Eminent domain | 0.5% | 63.1% | 28.4% | 7.9% | Under 0.1% |
-| 8 | Overproduction | 0.2% | 51.0% | 35.2% | 13.5% | 0.1% |
+| 1 | Drought | 22.7% | 40.1% | 37.2% | — | — |
+| 2 | Blight | 22.7% | 44.2% | 33.1% | — | — |
+| 3 | Eminent domain | 6.8% | 71.0% | 22.1% | — | — |
+| 4 | Overproduction | 5.3% | 72.2% | 20.4% | 2.2% | — |
+| 5 | Drought | 3.5% | 57.0% | 32.0% | 7.6% | — |
+| 6 | Price crash | 2.1% | 51.9% | 31.8% | 14.1% | Under 0.1% |
+| 7 | Eminent domain | 0.7% | 54.7% | 27.4% | 16.9% | 0.2% |
+| 8 | Overproduction | 0.5% | 44.5% | 30.7% | 23.1% | 1.2% |
 
-Counted per choice at a crisis rather than per complete run, the shares shift where deals add branches: Eminent domain −40, for example, passes at 10.6% of the choices at crisis 7.
+Counted per choice at a crisis rather than per complete run, the shares shift where deals add branches: Eminent domain −40, for example, passes at 20.9% of the choices at crisis 7.
 
-Drought −80, Blight −40, Blight −80 and Price crash −80 never pass. A lower `startCenter` brings some in: Price crash −80 from 35, Drought −80 from 20, and Blight −40 from 15. Blight −80 stays out of reach even at 0. None of their rules is stranded, though: each also belongs to a policy that passes.
+Drought −80, Blight −40 and Blight −80 never pass. A lower `startCenter` brings some in: Drought −80 from 35 and Blight −40 from 30. Blight −80 stays out of reach even at 0. None of their rules is stranded, though: each also belongs to a policy that passes.
 
 | Rule | Policies that pass | Share of runs | From |
 | --- | --- | --- | --- |
-| Sealed well, no new wells, no water trade | Drought 0, −40 | 32.5% | Year 18 |
-| Seed at 1.25× | Blight +40, 0 | 87.6% | Year 6 |
-| Crop rotation, harvests at 90% | Blight 0 | 18.4% | Year 6 |
-| Planting permits and the council office | Eminent domain −40, −80 | 7.9% | Year 26 |
-| The named crop and free seed | Eminent domain −40, −80 | 7.9% | Year 26 |
-| Sales limit and fixed prices | Overproduction −40, −80 | 13.6% | Year 30 |
+| Sealed well, no new wells, no water trade | Drought 0, −40 | 60.8% | Year 2 |
+| Seed at 1.25× | Blight +40, 0 | 77.3% | Year 6 |
+| Crop rotation, harvests at 90% | Blight 0 | 33.1% | Year 6 |
+| Planting permits and the council office | Eminent domain −40, −80 | 17.2% | Year 26 |
+| The named crop and free seed | Eminent domain −40, −80 | 17.2% | Year 26 |
+| Sales limit and fixed prices | Overproduction −40, −80; Price crash −80 | 25.3% | Year 14 |
 
-Picking Nora Delgado's card every time meets every rule above, and so does picking Tom Brennan's. Walt Finch's and June Calloway's meet only the dearer seed, and Ada Kessler's none; 9.3% of all runs meet none. The never-passing policies keep their own rules, which are unit-tested by stubbing `engine.replay`. The shares come from replaying every pick sequence with `Engine.replay`; recount them after changing policy positions or `startCenter`.
+Picking Nora Delgado's card every time meets every rule above, and so does picking Tom Brennan's. June Calloway's meets the dearer seed and, from her second drought's 0, the sealed well; Walt Finch's meets only the dearer seed, and Ada Kessler's none; 8.3% of all runs meet none. The never-passing policies keep their own rules, which are unit-tested by stubbing `engine.replay`. The shares come from replaying every pick sequence with `Engine.replay`; recount them after changing policy positions or `startCenter`.
 
 ## End turn, step by step
 
@@ -243,18 +245,18 @@ In local development, open **Playtest tools** with **Whole game** scope and load
 | **Crisis · second eminent domain next turn** | Year 25 winter, no crops | Crisis 7 · Eminent domain, in year 26 spring |
 | **Crisis · second overproduction next turn** | Year 30 summer, pumpkins and tomatoes growing | Crisis 8 · Overproduction (pumpkin) |
 
-Ada Kessler's answers keep the council near freedom, so from these presets only +80 and +40 can pass, and only +80 at the second overproduction.
+Ada Kessler's answers keep the council near freedom. From the first drought preset, Nora's or Tom's card passes 0, and from the blight preset Tom's does; from crisis 3 on only +80 and +40 can pass, and at the second overproduction every card but Ada's passes +40, the deal.
 
-The second family, labelled "toward control", answered every earlier crisis with Nora Delgado's card (Drought +40, then 0 at crises 2 to 5 and −40 at crises 6 and 7). Picking her card again passes the policy below, and its rules show on the farm:
+The second family, labelled "toward control", answered every earlier crisis with Nora Delgado's card (0 at crises 1 to 4, then −40 at crises 5 to 7). Picking her card again passes the policy below, and its rules show on the farm:
 
 | Preset | State | End turn fires | Nora Delgado passes | Look for |
 | --- | --- | --- | --- | --- |
 | **Crisis · blight, toward control** | Year 6 spring, corn and carrots growing | Crisis 2 · Blight (corn) | Blight 0 | The planting fee, seed at 1.25×, harvests at 90%, and rotation's fine |
-| **Crisis · second drought, toward control** | Year 17 winter, no crops, a finished well | Crisis 5 · Drought, in year 18 spring | Drought 0 | The well sealed, new wells blocked, no water trade, water at cost through spring and summer, the water bill |
+| **Crisis · second drought, toward control** | Year 18 spring, corn and carrots growing, a well sealed since the first drought | Crisis 5 · Drought | Drought −40 | The rising pumping tax, water for only 60% of the thirsty crops while the rest wither, the well still sealed, no water trade |
 | **Crisis · second eminent domain, toward control** | Year 25 winter, no crops | Crisis 7 · Eminent domain, in year 26 spring | Eminent domain −40 | 6 plots taken at half their worth, the council office and permits, free seed, turnip named for the season, the build delay |
 | **Crisis · second overproduction, toward control** | Year 30 summer, pumpkins and tomatoes growing | Crisis 8 · Overproduction (pumpkin) | Overproduction −40 | A sales limit of 5, prices fixed at their values, pumpkin limited to 5 plots, one plot that must rest |
 
-The presets' crisis turns are `crisisTurns` in `src/dev/presets.ts`, 6, 22, 37, 55, 70, 86, 101 and 119, the on-time turns above. The control family uses `controlTurns`, the same but 69 for the second drought, which Nora's first answer moves to spring. Earlier records fired at those turns, with turnip as the blighted crop and pumpkin as the top crop. They hold only their picks, so standing rules from earlier answers apply, such as Blight 0's fee and rotation in the control presets after the blight, but one-time results do not: the land Eminent domain 0 took at crisis 3 is still on the farm.
+The presets' crisis turns are `crisisTurns` in `src/dev/presets.ts`, 6, 22, 37, 55, 70, 86, 101 and 119, the on-time turns above, for both families: Nora's first answer passes Drought 0, which leaves the water undrained and the second drought in summer. Earlier records fired at those turns, carry `shiftFirst`, with turnip as the blighted crop and pumpkin as the top crop. They hold only their picks, so standing rules from earlier answers apply, such as Blight 0's fee and rotation in the control presets after the blight, but one-time results do not: the land Eminent domain 0 took at crisis 3 is still on the farm.
 
 To reach other outcomes, change the `pick` of each earlier record in the editor before **Apply state**. Integration checks the picks, and rejects a record later than the current season. Card IDs are the crisis initial plus the card key, such as `D-SOC` or `E-LIB-P`. An answered deal needs `:accept` or `:decline`. The same card every time passes, crisis by crisis, whether deals are taken or refused:
 
@@ -262,9 +264,9 @@ To reach other outcomes, change the `pick` of each earlier record in the editor 
 | --- | --- |
 | Ada Kessler (`OBJ`) | +80 every time |
 | Walt Finch (`LIB-P`) | +40 every time |
-| June Calloway (`LIB-M`) | +40, +40, +40, +40, +40, 0, 0, 0 |
-| Nora Delgado (`PRO-M`) | +40, 0, 0, 0, 0, −40, −40, −40 |
-| Tom Brennan (`SOC`) | +40, 0, 0, 0, −40, −40, −80, −80 |
+| June Calloway (`LIB-M`) | +40, +40, +40, +40, 0, 0, 0, 0 |
+| Nora Delgado (`PRO-M`) | 0, 0, 0, 0, −40, −40, −40, −40 |
+| Tom Brennan (`SOC`) | 0, 0, 0, −40, −40, −80, −80, −80 |
 
 For example:
 
@@ -277,7 +279,7 @@ For example:
 | Second eminent domain, either family | `D-SOC`, `B-SOC`, `E-SOC`, `O-SOC`, `D-SOC`, `P-SOC` | Tom Brennan | Eminent domain −80 |
 | Second overproduction, either family | The same, then `E-SOC` | Tom Brennan | Overproduction −80 |
 
-Any first-drought pick but Ada's passes Drought +40, which drains the water and moves the second drought to spring. Ada's second-drought preset already sits in year 18 spring, so with such picks the drought waits for year 19 spring: End turn four times, and it fires at turn 73, after winter has cleared the preset's crops. Edit the control preset instead, which fires it at the next End turn.
+Walt's and June's first-drought picks pass Drought +40, which drains the water and moves the second drought to spring; Nora's and Tom's pass Drought 0, which leaves it in summer. Both second-drought presets already sit in year 18 spring, so with draining picks the drought waits for year 19 spring: End turn four times, and it fires at turn 73, after winter has cleared the preset's crops.
 
 Edited records carry no one-time results either: no taken land, loans, frozen prices or building counts. To try a rule on any farm without its crisis, choose **Macro · lifetime**, read the current state, and add it to `farmPolicy`, such as `{"sealedBuildings":["well"],"permitsRequired":true}`. Keep `crises` in the JSON: a macro edit without them clears them.
 

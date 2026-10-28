@@ -1,10 +1,5 @@
 import { expect, it } from "vitest";
-import {
-  controlTurns,
-  crisisPresets,
-  crisisTurns,
-  presetState,
-} from "./presets";
+import { crisisPresets, crisisTurns, presetState } from "./presets";
 import { farmContext, parseState } from "../game/state";
 import { answerCrisis, endTurn, pendingCrisis } from "../game/crisis";
 import { councilLedger, crisisRules } from "../game/crisis-rules";
@@ -46,7 +41,7 @@ it("fires each crisis of the run order at the next End turn", () => {
     "crisis-8-control",
   ]);
   for (const { id, n, key } of crisisPresets) {
-    const turns = key === "OBJ" ? crisisTurns : controlTurns;
+    const turns = crisisTurns;
     const state = presetState(id);
     expect(parseState(state)).toEqual(state);
     expect(turnNumber(state)).toBe(turns[n] - 1);
@@ -81,25 +76,29 @@ it("shows the council's harsher rules when a control preset is answered with Nor
   // Blight 0: dearer, treated seed and crop rotation on top of the fee.
   const blight = answered("crisis-2-control");
   expect(blight.pos).toBe(0);
-  expect(blight.message).toBe("Passed: County seed checks, for a fee.");
+  expect(blight.message).toBe("Passed: You pay the county to check seed.");
   expect(blight.policy).toMatchObject({
     plantingFee: 2,
     seedMultiplier: 1.25,
     rotation: true,
     yieldMultiplier: 0.9,
   });
-  // Drought 0 in spring: the well built since the first drought is sealed.
+  // Drought −40 in summer: a rising pumping tax, water for only part of the thirsty crops, no well.
   const drought = answered("crisis-5-control");
-  expect(drought.pos).toBe(0);
-  expect(drought.state.season).toBe("spring");
-  expect(drought.message).toBe("Passed: Public water company.");
-  expect(drought.state.structures.some((s) => s.kind === "well")).toBe(true);
+  expect(drought.pos).toBe(-40);
+  expect(drought.state.season).toBe("summer");
+  expect(drought.message).toMatch(
+    /^Passed: A water board with a rising water tax\./,
+  );
   expect(drought.policy.sealedBuildings).toEqual(["well"]);
-  expect(farmContext(drought.state).water?.atCost).toBe(true);
+  expect(crisisRules(drought.state, turnNumber(drought.state)).waterTax).toBe(
+    true,
+  );
+  expect(farmContext(drought.state).water?.irrigationCap).toBeDefined();
   // Eminent domain −40: permits from the council office and the crop you may plant.
   const land = answered("crisis-7-control");
   expect(land.pos).toBe(-40);
-  expect(land.message).toMatch(/^Passed: Take the land, pay a set price\./);
+  expect(land.message).toMatch(/^Passed: Take the land, pay half price\./);
   expect(land.policy).toMatchObject({
     permitsRequired: true,
     seedMultiplier: 0,
@@ -109,7 +108,9 @@ it("shows the council's harsher rules when a control preset is answered with Nor
   // Overproduction −40: a steady sales allowance and fixed prices.
   const glut = answered("crisis-8-control");
   expect(glut.pos).toBe(-40);
-  expect(glut.message).toMatch(/^Passed: Limits on how much you can plant\./);
+  expect(glut.message).toMatch(
+    /^Passed: The farm office limits planting and sales\./,
+  );
   expect(glut.policy.quota).toBe(5);
   expect(glut.state.crises!.at(-1)!.prices).toBeDefined();
   expect(glut.policy.priceCeiling).toBe(1);

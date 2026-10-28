@@ -4,6 +4,7 @@ import {
   type CrisisState,
   type Effect,
 } from "../crisis/engine";
+import { shiftFirst } from "../game/crisis-rules";
 import {
   S,
   esc,
@@ -69,6 +70,7 @@ function reportView(state: CrisisState) {
 }
 
 const storeKey = "whatwesow-crisis-trial";
+const replay = (picks: string[]) => engine.replay(picks, shiftFirst);
 type View = "crisis" | "reveal" | "report";
 function restore(): { picks: string[]; view: View } {
   try {
@@ -77,7 +79,7 @@ function restore(): { picks: string[]; view: View } {
       Array.isArray(saved?.picks) &&
       ["crisis", "reveal", "report"].includes(saved.view)
     ) {
-      engine.replay(saved.picks);
+      replay(saved.picks);
       return saved;
     }
   } catch {
@@ -104,10 +106,10 @@ export function mountCrisisTrial() {
   const render = () => {
     let state: CrisisState;
     try {
-      state = engine.replay(picks);
+      state = replay(picks);
     } catch {
       picks = [];
-      state = engine.replay(picks);
+      state = replay(picks);
     }
     // A deal is answered before play continues. Picks restored after a content
     // edit can land on one earlier in the run, so resume at the first unanswered deal.
@@ -116,7 +118,7 @@ export function mountCrisisTrial() {
     );
     if (unanswered >= 0) {
       picks = picks.slice(0, unanswered + 1);
-      state = engine.replay(picks);
+      state = replay(picks);
       view = "reveal";
     }
     if (view === "reveal" && !state.ledger.length) view = "crisis";
@@ -159,8 +161,7 @@ export function mountCrisisTrial() {
         `${engine.parsePick(picks[picks.length - 1]).cardId}:${offer}`;
       render();
       body.querySelector<HTMLButtonElement>('[data-step="next"]')?.focus();
-    } else if (step === "next")
-      go(engine.replay(picks).done ? "report" : "crisis");
+    } else if (step === "next") go(replay(picks).done ? "report" : "crisis");
     else if (step === "undo") {
       picks.pop();
       go("crisis");

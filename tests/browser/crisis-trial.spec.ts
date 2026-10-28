@@ -31,12 +31,12 @@ test("crisis test plays a crisis, shows the outcome, and moves to the next one",
   await expect(dialog).toContainText("Walt Finch · What works");
   await expect(dialog).toContainText("Tom Brennan · The group comes first");
   await expect(dialog).toContainText(
-    "You asked for: Every farm pumps for itself, no price limits.",
+    "You asked for: Every farm can build its own well.",
   );
   for (const persona of personas)
     await expect(dialog).not.toContainText(persona);
   await dialog.getByRole("button", { name: "Next crisis" }).click();
-  await expect(dialog.locator("h2")).toHaveText("Crisis 2 of 8: Blight");
+  await expect(dialog.locator("h2")).toHaveText("Crisis 2 of 8: Crop disease");
 
   // The third crisis passes a deal; the player answers it before moving on.
   await cards.filter({ hasText: "Walt Finch" }).click();
@@ -55,7 +55,7 @@ test("crisis test plays a crisis, shows the outcome, and moves to the next one",
   await page.reload();
   await page.getByRole("button", { name: "Crisis test" }).click();
   await expect(dialog.locator("h2")).toHaveText(
-    "Crisis 3 of 8: Eminent domain",
+    "Crisis 3 of 8: Land for a dam",
   );
   await dialog.getByRole("button", { name: "Undo pick" }).click();
   await expect(cards).toHaveCount(5);
@@ -84,7 +84,7 @@ test("a restored run stops at the first deal it has not answered", async ({
   await page.getByRole("button", { name: "Crisis test" }).click();
   const dialog = page.locator("#crisis-trial");
   await expect(dialog.locator("h2")).toHaveText(
-    "Crisis 3 of 8: Eminent domain",
+    "Crisis 3 of 8: Land for a dam",
   );
   await expect(
     dialog.getByRole("button", { name: "Next crisis" }),

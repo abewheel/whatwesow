@@ -19,6 +19,8 @@ export type CrisisRecord = {
   /** Building counts frozen when a building cap passed. */
   limits?: Record<string, number>;
   loan?: number;
+  /** Fired once the council's mood moved before its vote; a save whose first record lacks it votes first. */
+  shiftFirst?: true;
 };
 /** The crisis layer's run order has eight crises. */
 export const maxCrises = 8;
@@ -87,6 +89,8 @@ function parseCrises(value: unknown): CrisisRecord[] {
         throw new Error("Crisis picks and crops are short names.");
     if (r.loan !== undefined && !isCount(r.loan))
       throw new Error("A crisis loan is a whole number of coins.");
+    if (r.shiftFirst !== undefined && r.shiftFirst !== true)
+      throw new Error("A crisis record's shiftFirst is true or absent.");
     if (
       r.cells !== undefined &&
       (!Array.isArray(r.cells) ||
@@ -118,6 +122,7 @@ function parseCrises(value: unknown): CrisisRecord[] {
           }),
       ...(r.limits === undefined ? {} : { limits: parseCounts(r.limits) }),
       ...(r.loan === undefined ? {} : { loan: r.loan as number }),
+      ...(r.shiftFirst ? { shiftFirst: true as const } : {}),
     };
   });
 }

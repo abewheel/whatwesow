@@ -1,10 +1,10 @@
 import type { FarmPolicy } from "../contracts/farm-policy";
+import { councilState } from "../game/crisis-rules";
 import type { WaterOutlook } from "../game/state";
 import type { CrisisRecord } from "../macro/state";
 import { salesThisTurn } from "../micro/money";
 import { crops, thirstyPlots, type MicroState } from "../micro/state";
 import { buildings, type BuildingKind } from "../micro/world";
-import { engine } from "./engine";
 
 // The farmhouse's "Council rules": the council's standing rules in its own words, what
 // they mean for the farm this season, and the trades a crisis opens up.
@@ -164,9 +164,7 @@ export function councilFacts(
       : thirsty.length;
   return {
     facts,
-    standing: engine.replay(
-      (state.crises ?? []).flatMap((r) => (r.pick ? [r.pick] : [])),
-    ).standing,
+    standing: councilState(state.crises).standing,
     water: trade && {
       thirsty: thirsty.length,
       /** Thirsty crops that bought water does not reach yet. */

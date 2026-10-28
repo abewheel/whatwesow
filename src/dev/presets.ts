@@ -20,11 +20,9 @@ export const farmPresets = [
 // One End turn before each crisis of the run order fires. In the first family, earlier
 // crises were answered with Ada Kessler's "your rights" argument, which passes each
 // crisis's freest policy. In the second, with Nora Delgado's card: picked every time, it
-// passes 0 at crises 2–5 and −40 at crises 6–8, so the council's harsher rules show.
+// passes 0 at crises 1–4 and −40 at crises 5–8, so the council's harsher rules show.
 const runOrder = content.params.runOrder;
 export const crisisTurns = [6, 22, 37, 55, 70, 86, 101, 119];
-/** Nora Delgado's first answer drains the valley's water, so the second drought comes in spring. */
-export const controlTurns = [6, 22, 37, 55, 69, 86, 101, 119];
 const crisisName = (n: number) =>
   `${runOrder.indexOf(runOrder[n]) < n ? "second " : ""}${runOrder[n].toLowerCase()}`;
 type CrisisPreset = { id: string; label: string; n: number; key: string };
@@ -35,7 +33,7 @@ export const crisisPresets: CrisisPreset[] = [
     n,
     key: "OBJ",
   })),
-  // Blight 0, Drought 0, Eminent domain −40 and Overproduction −40 when answered with her card.
+  // Blight 0, Drought −40, Eminent domain −40 and Overproduction −40 when answered with her card.
   ...[1, 4, 6, 7].map((n) => ({
     id: `crisis-${n + 1}-control`,
     label: `Crisis · ${crisisName(n)}, toward control`,
@@ -49,8 +47,7 @@ const crisisCrops: Record<string, CropId> = {
 };
 function crisisPreset({ n, key }: CrisisPreset): GameState {
   const state = initialState();
-  const turns = key === "OBJ" ? crisisTurns : controlTurns;
-  const turn = turns[n] - 1;
+  const turn = crisisTurns[n] - 1;
   state.year = Math.ceil(turn / 4);
   state.season = seasons[(turn - 1) % 4];
   state.coins = 300 + 200 * n;
@@ -63,7 +60,7 @@ function crisisPreset({ n, key }: CrisisPreset): GameState {
     pumpkin: 2 + n,
   };
   // A shed but no well: a well would ripen corn before a drought could touch it. Before the
-  // second drought leaning to control, a well built since the first, for the council to seal.
+  // second drought leaning to control, a well the first drought's council has sealed.
   state.structures.push({ id: 2, kind: "shed", row: 14, col: 10, level: 1 });
   if (key !== "OBJ" && n === 4)
     state.structures.push({ id: 3, kind: "well", row: 20, col: 20, level: 1 });
@@ -79,9 +76,10 @@ function crisisPreset({ n, key }: CrisisPreset): GameState {
   );
   state.crises = runOrder.slice(0, n).map((id, k): CrisisRecord => ({
     id,
-    turn: turns[k],
+    turn: crisisTurns[k],
     pick: content.cards.find((c) => c.crisis === id && c.key === key)!.id,
     ...(crisisCrops[id] ? { crop: crisisCrops[id] } : {}),
+    shiftFirst: true,
   }));
   state.opportunities = parseState(state).opportunities;
   // Like the other presets, its buildings take today's larger lots.

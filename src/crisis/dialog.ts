@@ -1,5 +1,5 @@
 import type { CrisisRecord } from "../macro/state";
-import { engine } from "./engine";
+import { councilState } from "../game/crisis-rules";
 import { esc, handView, revealView, standing } from "./view";
 
 // The council meeting during play. The save's crisis records decide what it shows:
@@ -13,8 +13,7 @@ const viewKey = (records: CrisisRecord[]) =>
 /** The hand while the latest crisis has no answer; afterwards the state to reveal. */
 function councilView(records: CrisisRecord[]) {
   const record = records.at(-1)!;
-  const picks = records.flatMap((r) => (r.pick ? [r.pick] : []));
-  const state = engine.replay(picks);
+  const state = councilState(records);
   if (record.pick) return { state };
   const hand = handView(state, record.id, records.length - 1);
   return { heading: hand.heading, body: `${hand.body}${standing(state)}` };

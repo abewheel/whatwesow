@@ -174,17 +174,17 @@ test.describe("touch phone 320x568, council leaning to control", () => {
   for (const { preset, heading, name } of [
     {
       preset: "crisis-2-control",
-      heading: "Crisis 2 of 8: Blight",
+      heading: "Crisis 2 of 8: Crop disease",
       name: "blight-0",
     },
     {
       preset: "crisis-5-control",
       heading: "Crisis 5 of 8: Drought",
-      name: "drought-0",
+      name: "drought-40",
     },
     {
       preset: "crisis-8-control",
-      heading: "Crisis 8 of 8: Overproduction",
+      heading: "Crisis 8 of 8: Too much of one crop",
       name: "overproduction-40",
     },
   ])
@@ -201,7 +201,7 @@ test.describe("touch phone 320x568, council leaning to control", () => {
     const errors = await begin(page, "phone-county-crop", "crisis-7-control");
     await answerOnPhone(
       page,
-      "Crisis 7 of 8: Eminent domain",
+      "Crisis 7 of 8: Land for a dam",
       "eminent-domain-40",
     );
     // Spring of year 26 with every plot empty: the first plot offers the spring crops.
@@ -266,13 +266,13 @@ for (const viewport of [
       );
       await answerOnPhone(
         page,
-        "Crisis 8 of 8: Overproduction",
+        "Crisis 8 of 8: Too much of one crop",
         "overproduction-40",
       );
       await visitBuilding(page, "home");
       await page.evaluate(() => window.scrollTo(0, 0));
       const rules = page.locator("#council-standing li");
-      await expect(rules).toHaveCount(6);
+      await expect(rules).toHaveCount(7);
       await page.locator("#council-rules").scrollIntoViewIfNeeded();
       await page.evaluate(() => window.scrollTo(0, 0));
       await fits(page, "#service-panel");

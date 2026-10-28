@@ -95,6 +95,7 @@ For a pure micro test, pass `{turn, policy, drought}` as the third argument to `
 | `cells` | Cells of plots the county took or bought. |
 | `limits` | Building counts frozen when a building cap passed. |
 | `loan` | Coins lent by a loan policy. |
+| `shiftFirst` | `true` on every record the game fires: the council's mood moves with the meeting's arguments before it votes. A save whose first record lacks it fired before that change and replays the old way, voting first. |
 
 Macro validates shapes and bounds: names up to 40 characters, whole numbers, and cells inside the 64 × 64 grid. Integration's `parseState` also requires the run order and farm crops, rejects a record later than the save's current turn or one that follows an unanswered crisis or deal, and replays the picks with the crisis engine to reject any pick that is not one of that crisis's cards.
 

@@ -25,7 +25,18 @@ test("the public water company seals the well, ends water trading and sends a wa
 }) => {
   test.setTimeout(180000);
   await page.setViewportSize({ width: 1280, height: 800 });
-  const errors = await begin(page, "water-company", "crisis-5-control");
+  // Ada Kessler's first answer leaves the well open; Nora Delgado's at the second drought seals it.
+  const errors = await begin(
+    page,
+    "water-company",
+    "crisis-5-control",
+    (state) => ({
+      ...state,
+      crises: state.crises!.map((r, i) =>
+        i === 0 ? { ...r, pick: "D-OBJ" } : r,
+      ),
+    }),
+  );
   const well = page.locator('[data-structure="3"]'),
     canvas = page.locator("canvas");
   await expect(well).toHaveAttribute(
@@ -36,7 +47,7 @@ test("the public water company seals the well, ends water trading and sends a wa
     page,
     "Crisis 5 of 8: Drought",
     nora,
-    "Passed: Public water company.",
+    "Passed: A public water company does the pumping.",
     "drought-0",
   );
   await expect(well).toHaveAttribute(
@@ -54,8 +65,9 @@ test("the public water company seals the well, ends water trading and sends a wa
   await expect(page.locator('[data-build="well"] .plan-rule')).toHaveText(
     "Not allowed by the council",
   );
-  // A thirsty crop is watered at cost; there is no water to buy or sell.
-  await work(page, 0, "corn", /Corn, growing/);
+  // The spring corn has ripened, so plant a thirsty crop: it is watered at cost, and
+  // there is no water to buy or sell.
+  await work(page, 7, "tomato", /Tomato, growing/);
   const watered =
     "Drought this season: your 1 thirsty crop is watered, 1 coin each at End turn.";
   await visitBuilding(page, "home");
@@ -74,9 +86,12 @@ test("the public water company seals the well, ends water trading and sends a wa
   await expect(page.locator("#farm-message")).toContainText(
     /Water at cost: −1 coins?\./,
   );
-  // The drained valley's drought lasts two seasons, and so does the water at cost.
+  // The drought ends with the season; the water bill and the sealed well stay.
   await visitBuilding(page, "home");
-  await expect(page.locator("#council-facts li").first()).toHaveText(watered);
+  await expect(page.locator("#council-facts")).not.toContainText("Drought");
+  await expect(page.locator("#council-standing")).toContainText(
+    policyText("Drought", 0).drag,
+  );
   await expect(well).toHaveAttribute("aria-label", /sealed by the council$/);
   expect(errors).toEqual([]);
 });
@@ -92,9 +107,9 @@ test("the county's set price brings the council office, its permits and the coun
   await expect(office).toHaveCount(0);
   await answerWith(
     page,
-    "Crisis 7 of 8: Eminent domain",
+    "Crisis 7 of 8: Land for a dam",
     nora,
-    /^Passed: Take the land, pay a set price\. The county took 6 plots: \+\d+ coins\.$/,
+    /^Passed: Take the land, pay half price\. The county took 6 plots: \+\d+ coins\.$/,
     "eminent-domain-40",
   );
   await expect(page.locator("#farm-summary")).toContainText("3 plots");
@@ -146,12 +161,24 @@ test("planting limits bring a steady sales allowance and prices that stay put", 
 }) => {
   test.setTimeout(300000);
   await page.setViewportSize({ width: 1280, height: 800 });
-  const errors = await begin(page, "sales-limit", "crisis-8-control");
+  // Walt Finch's second-drought answer keeps out the water board, whose water limit
+  // would wither two of the six summer crops before they could be sold.
+  const errors = await begin(
+    page,
+    "sales-limit",
+    "crisis-8-control",
+    (state) => ({
+      ...state,
+      crises: state.crises!.map((r, i) =>
+        i === 4 ? { ...r, pick: "D-LIB-P" } : r,
+      ),
+    }),
+  );
   await answerWith(
     page,
-    "Crisis 8 of 8: Overproduction",
+    "Crisis 8 of 8: Too much of one crop",
     nora,
-    /^Passed: Limits on how much you can plant\./,
+    /^Passed: The farm office limits planting and sales\./,
     "overproduction-40",
   );
   await visitBuilding(page, "home");

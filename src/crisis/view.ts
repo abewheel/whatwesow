@@ -119,6 +119,13 @@ export function revealView(state: CrisisState, after = "", stated = false) {
   const record = state.ledger[state.ledger.length - 1],
     crisis = engine.crisisById[record.crisisId],
     text = engine.text.reveal(state);
+  // The mood moves before the vote, so the argument that closed the door can be this meeting's.
+  const attribution =
+    record.attributionCrisis === record.n
+      ? fill(S.attributionNow, {
+          tail: S.answerPast[record.premiseType as keyof typeof S.answerPast],
+        })
+      : text.attribution;
   const offer =
     text.offer === "pending"
       ? '<div class="crisis-actions"><button data-offer="accept">Take the deal</button><button data-offer="decline">Say no</button></div>'
@@ -128,6 +135,6 @@ export function revealView(state: CrisisState, after = "", stated = false) {
   return {
     heading: text.heading,
     pending: text.offer === "pending",
-    body: `${speech(engine.cardById[record.cardId], text.argument, "mine")}${text.opposition ? `<p class="crisis-line">${esc(text.opposition.lead)}</p>${speech(engine.opposition(record.crisisId), text.opposition.argument, "opposing")}` : ""}<p class="crisis-line">${esc(text.answer)}</p><p class="crisis-line">${esc(text.shift)}</p><p class="crisis-line">${esc(text.resolution)}</p>${text.attribution ? `<p class="crisis-line crisis-attribution">${esc(text.attribution)}</p>` : ""}${meter(state, crisis, record)}<h3>${esc(text.immediateHeading)}</h3><p>${esc(text.immediate)}</p>${offer}${after}`,
+    body: `${speech(engine.cardById[record.cardId], text.argument, "mine")}${text.opposition ? `<p class="crisis-line">${esc(text.opposition.lead)}</p>${speech(engine.opposition(record.crisisId), text.opposition.argument, "opposing")}` : ""}<p class="crisis-line">${esc(text.answer)}</p><p class="crisis-line">${esc(text.shift)}</p><p class="crisis-line">${esc(text.resolution)}</p>${attribution ? `<p class="crisis-line crisis-attribution">${esc(attribution)}</p>` : ""}${meter(state, crisis, record)}<h3>${esc(text.immediateHeading)}</h3><p>${esc(text.immediate)}</p>${offer}${after}`,
   };
 }

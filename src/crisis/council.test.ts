@@ -335,7 +335,7 @@ describe("council rules in the farmhouse", () => {
         { turn: 13, policy: {} },
       ).standing.map((rule) => `${rule.policy}: ${rule.text}`);
     expect(rules(answered)).toEqual([
-      "County seed checks, for a fee: You pay a fee every time you plant, and checked seed costs about a quarter more. It's treated against the disease, so your crops yield 10% less. To keep the disease out of the soil, you can't plant the same crop twice in a row in one plot. Breaking that rule costs a fine.",
+      "You pay the county to check seed: You pay a fee every time you plant. Checked seed costs about a quarter more. It is treated to stop the disease, so you harvest 10% less. To keep the disease out of the soil, you can't plant the same crop twice in a row on one plot. If you break that rule, you pay a fine.",
     ]);
     // A crisis still waiting for its answer has passed no rule yet.
     expect(rules([answered[0], { ...answered[1], pick: undefined }])).toEqual(

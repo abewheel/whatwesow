@@ -235,7 +235,9 @@ describe("when crises fire", () => {
     expect(advanceSeason(spring).state.crises).toBeUndefined();
     const result = endTurn(spring);
     expect(turnNumber(result.state)).toBe(6);
-    expect(result.state.crises).toEqual([{ id: "Drought", turn: 6 }]);
+    expect(result.state.crises).toEqual([
+      { id: "Drought", turn: 6, shiftFirst: true },
+    ]);
     expect(result.message).toMatch(/Crisis 1 of 8: Drought\.$/);
     expect(() => advanceSeason(result.state)).toThrow(
       "The council is waiting for your answer.",
@@ -250,6 +252,28 @@ describe("when crises fire", () => {
     const next = endTurn(answered);
     expect(turnNumber(next.state)).toBe(7);
     expect(next.state.crises).toHaveLength(1);
+  });
+  it("moves the council's mood before it votes, except in saves whose first crisis came earlier", () => {
+    // Nora Delgado asks for the water board (−40). The council starts at +50, open from +10 to +90.
+    // Her argument and the case for control first move it to +38, so the closest it accepts is 0.
+    const met = endTurn(farmAt(5)).state;
+    const nora = card("Drought", "PRO-M");
+    const passed = (state: GameState) =>
+      councilLedger(answerCrisis(state, nora).state.crises).map(
+        (entry) => entry.enactedPos,
+      );
+    expect(passed(met)).toEqual([0]);
+    // A save whose first crisis fired before the change votes first, so it still gets +40.
+    expect(passed({ ...met, crises: [{ id: "Drought", turn: 6 }] })).toEqual([
+      40,
+    ]);
+    const blight = { id: "Blight", turn: 22, pick: card("Blight", "PRO-M") };
+    expect(
+      councilLedger([
+        { id: "Drought", turn: 6, pick: nora },
+        { ...blight, shiftFirst: true },
+      ]).map((entry) => entry.enactedPos),
+    ).toEqual([40, 0]);
   });
   it("keeps a save's compact building lots through End turn, a crisis and its answer", () => {
     // The homestead's farmhouse keeps its compact lot: it has no saved footprint.
@@ -305,7 +329,7 @@ describe("when crises fire", () => {
       if (record && !record.pick) {
         const n = state.crises!.length - 1;
         state = answerCrisis(state, engine.hand(record.id, n)[0].id).state;
-        const entry = engine.replay(state.crises!.map((r) => r.pick!)).ledger;
+        const entry = councilLedger(state.crises);
         if (entry.at(-1)!.offer) state = answerOffer(state, false).state;
       }
     }
@@ -360,7 +384,7 @@ describe("crisis triggers", () => {
       coins: 1000,
       harvests: { ...homesteadState().harvests, turnip: 1, carrot: 1 },
     });
-    expect(state.crises!.at(-1)).toEqual({ id: "Drought", turn: 69 });
+    expect(state.crises!.at(-1)).toMatchObject({ id: "Drought", turn: 69 });
     state = answerCrisis(state, card("Drought", "OBJ")).state;
     expect([69, 70, 71].map((t) => crisisRules(state, t).drought)).toEqual([
       true,
@@ -388,7 +412,12 @@ describe("crisis triggers", () => {
     expect(crisisDue(state)).toBe("Blight");
     expect(blightCrop(state)).toBe("tomato");
     const next = fireCrisis(state);
-    expect(next.crises![1]).toEqual({ id: "Blight", turn: 22, crop: "tomato" });
+    expect(next.crises![1]).toEqual({
+      id: "Blight",
+      turn: 22,
+      shiftFirst: true,
+      crop: "tomato",
+    });
     expect(next.plots).toEqual(sown(["turnip", 1]));
     expect(next.plotIds).toEqual(state.plotIds);
     // Recovering through its next two planting seasons until answered otherwise:
@@ -1069,8 +1098,11 @@ describe("policies passed twice", () => {
 });
 
 describe("harms on policies that pass, with real answers", () => {
-  // The real schedule. Every card here passes Drought +40 at crisis 1, which drains the
-  // valley's water, so the second drought comes in spring.
+  // These records carry no shiftFirst, so they replay like saves from before the council
+  // moved first: it votes, then its mood moves. The harms depend only on the policy that
+  // passed; the new order is tested above. The real schedule: every card here passes
+  // Drought +40 at crisis 1, which drains the valley's water, so the second drought comes
+  // in spring.
   const schedule = [6, 22, 37, 55, 69, 86, 101, 119];
   /**
    * A farm at `turn` with the first `n` crises answered by the same neighbor (`key`), or
@@ -1127,7 +1159,7 @@ describe("harms on policies that pass, with real answers", () => {
 
   it("Drought 0 seals a built well, takes back wells and water trading, and waters through a drained drought", () => {
     const { council, state, message } = steady(4, "PRO-M", withWell);
-    expect(message).toBe("Passed: Public water company.");
+    expect(message).toBe("Passed: A public water company does the pumping.");
     expect(passed(state).enactedPos).toBe(0);
     expect(farmContext(council).policy).toMatchObject({
       unlockedBuildings: ["well"],
@@ -1173,7 +1205,7 @@ describe("harms on policies that pass, with real answers", () => {
   });
   it("Drought −40 seals a built well and takes back wells and water trading", () => {
     const { state, message } = steady(4, "SOC", withWell);
-    expect(message).toBe("Passed: Water board with a rising pumping tax.");
+    expect(message).toBe("Passed: A water board with a rising water tax.");
     const { policy } = farmContext(state);
     expect(policy).toMatchObject({
       sealedBuildings: ["well"],
@@ -1185,15 +1217,13 @@ describe("harms on policies that pass, with real answers", () => {
   });
   it("Blight +40 makes seed cost a quarter more", () => {
     const { state, message } = steady(1, "LIB-P");
-    expect(message).toBe(
-      "Passed: Optional 'checked safe' label from seed sellers.",
-    );
+    expect(message).toBe("Passed: Sellers may add a 'checked safe' label.");
     expect(crisisPolicy(state, 22).seedMultiplier).toBe(1.25);
     expect(crisisPolicy(state, 140).seedMultiplier).toBe(1.25);
   });
   it("Blight 0 adds dearer, treated seed, crop rotation and its fine to the planting fee", () => {
     const { state, message } = steady(1, "PRO-M");
-    expect(message).toBe("Passed: County seed checks, for a fee.");
+    expect(message).toBe("Passed: You pay the county to check seed.");
     expect(crisisPolicy(state, 22)).toMatchObject({
       plantingFee: 2,
       seedMultiplier: 1.25,
@@ -1226,7 +1256,7 @@ describe("harms on policies that pass, with real answers", () => {
   it("Eminent domain −40 brings permits, the council office and the assigned crop with free seed", () => {
     const { state, message } = steady(6, "PRO-M");
     expect(message).toMatch(
-      /^Passed: Take the land, pay a set price\. The county took 6 plots/,
+      /^Passed: Take the land, pay half price\. The county took 6 plots/,
     );
     expect(state.plots).toHaveLength(3);
     // The council office stands while permits are required; this season's comes with the policy.
@@ -1256,9 +1286,7 @@ describe("harms on policies that pass, with real answers", () => {
   });
   it("Eminent domain −80 brings permits and the assigned crop with free seed", () => {
     const { state, message } = steady(6, "SOC");
-    expect(message).toMatch(
-      /^Passed: Take the best land for the common good, pay nothing\./,
-    );
+    expect(message).toMatch(/^Passed: Take the best land, pay nothing\./);
     expect(state.plots).toHaveLength(1);
     expect(crisisPolicy(state, 101)).toMatchObject({
       permitsRequired: true,
@@ -1284,7 +1312,7 @@ describe("harms on policies that pass, with real answers", () => {
     };
     const { state, message } = steady(7, "PRO-M", fields);
     expect(message).toBe(
-      "Passed: Limits on how much you can plant. 2 pumpkin plots plowed under.",
+      "Passed: The farm office limits planting and sales. 2 pumpkin plots plowed under.",
     );
     const prices = state.crises![7].prices!;
     expect(prices).toEqual(
@@ -1324,7 +1352,9 @@ describe("harms on policies that pass, with real answers", () => {
   });
   it("Overproduction −80 fixes prices and sets a sales allowance that changes every season", () => {
     const { state, message } = steady(7, "SOC");
-    expect(message).toMatch(/^Passed: Ban the crop and even things out\./);
+    expect(message).toMatch(
+      /^Passed: Ban the crop and take what's above average\./,
+    );
     expect(crisisPolicy(state, 119)).toMatchObject({
       bannedCrops: ["pumpkin"],
       fixedPrices: state.crises![7].prices,

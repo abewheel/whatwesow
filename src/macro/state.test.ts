@@ -16,6 +16,7 @@ it("parses crisis records by shape and bounds, dropping unknown fields", () => {
     cells: [{ row: 63, col: 0 }],
     limits: { shed: 1 },
     loan: 180,
+    shiftFirst: true,
   };
   const macro = { year: 10, season: "spring", crises: [record] };
   expect(parseMacroState({ ...macro, crises: [{ ...record, x: 1 }] })).toEqual(
@@ -40,6 +41,7 @@ it("parses crisis records by shape and bounds, dropping unknown fields", () => {
     [{ ...record, limits: { shed: 1.5 } }],
     [{ ...record, cells: [{ row: 64, col: 0 }] }],
     [{ ...record, loan: -5 }],
+    [{ ...record, shiftFirst: false }],
   ])
     expect(() => parseMacroState({ ...macro, crises })).toThrow();
 });

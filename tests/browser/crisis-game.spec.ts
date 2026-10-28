@@ -67,7 +67,7 @@ test("End turn calls the council, which waits for an answer that changes the far
   await expect(dialog).toContainText("What happens to you");
   await expect(dialog).toContainText("Rules you still have to follow");
   await expect(dialog.locator(".crisis-outcome")).toHaveText(
-    "Passed: Water rights you can buy and sell.",
+    "Passed: Farms can buy and sell water.",
   );
   for (const persona of personas)
     await expect(dialog).not.toContainText(persona);
@@ -247,7 +247,7 @@ test("a deal waits through a reload, and taking it sells land to the county", as
   await expect(page.locator("#farm-summary")).toContainText("9 plots");
   const dialog = await callCouncil(page);
   await expect(dialog.locator("h2")).toHaveText(
-    "Crisis 3 of 8: Eminent domain",
+    "Crisis 3 of 8: Land for a dam",
   );
   await card(page, "Walt Finch").click();
   const back = dialog.getByRole("button", { name: "Back to the farm" });
@@ -286,7 +286,7 @@ test("saying no to a deal leaves the farm as it was", async ({ page }) => {
   const errors = await begin(page, "decline", "crisis-4");
   const dialog = await callCouncil(page);
   await expect(dialog.locator("h2")).toHaveText(
-    "Crisis 4 of 8: Overproduction",
+    "Crisis 4 of 8: Too much of one crop",
   );
   await card(page, "Walt Finch").click();
   await dialog.getByRole("button", { name: "Say no" }).click();
