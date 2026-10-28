@@ -40,7 +40,7 @@ Validation runs formatting, lint, types, unit/integration tests, a production bu
 
 ## Mobile checks
 
-`pnpm exec playwright test tests/browser/mobile.spec.ts` checks touch play at 320 × 568, 390 × 844, and 667 × 375, including construction, farming, coordinate validation, on-screen keyboard resizing, zoom, panning, and save import/export. To check the same forms and menus in the iPhone browser engine, install WebKit with `pnpm exec playwright install webkit`, then run `pnpm exec playwright test tests/browser/mobile.spec.ts --browser=webkit --grep-invert "touch panning"`. The native gesture test uses Chromium’s touch protocol.
+`pnpm exec playwright test tests/browser/mobile.spec.ts` checks touch play at 320 × 568, 390 × 844, and 667 × 375, including construction, farming, camera controls, on-screen keyboard resizing, zoom, panning, and save import/export. To check the same forms and menus in the iPhone browser engine, install WebKit with `pnpm exec playwright install webkit`, then run `pnpm exec playwright test tests/browser/mobile.spec.ts --browser=webkit --grep-invert "touch panning"`. The native gesture test uses Chromium’s touch protocol.
 
 ## Structure
 

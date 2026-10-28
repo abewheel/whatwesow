@@ -8,9 +8,9 @@ If structures block a walking path, open the farm menu and choose **Clear blocke
 
 Click a building and the farmer walks to its entrance before its menu opens. The farmhouse ends the season and shows income; the seed shop and nursery supplies crop seeds and trees; the field shed handles plots, soil, plot movement and tree care; the builder handles structures, upgrades and movement. A farmhouse office appears if a saved farm has no home. Dense imported farms use roadside service entrances without moving saved objects.
 
-Choose a plan, then choose land. The menu closes while the placement tool stays active, and the footprint preview marks permitted placements. **Cancel placement** or Escape returns to farming. Click a structure to walk over and inspect it. Click a ripe tree to harvest on arrival; use the field shed's tree selector for care or movement. **Move a plot** moves its growing crop too. Drag, scroll or use arrow keys to explore; folded **View controls** holds zoom, pan, **Center farm**, and coordinate navigation (0–63). The canvas stays viewport-sized and renders nearby terrain.
+Choose a plan, then choose land. The menu closes while the placement tool stays active, and the footprint preview marks permitted placements. **Cancel placement** or Escape returns to farming. Click a structure to walk over and inspect it. Click a ripe tree to harvest on arrival; use the field shed's tree selector for care or movement. **Move a plot** moves its growing crop too. Drag, scroll or use arrow keys to explore; the top-right magnifying-glass **View controls** button opens zoom, four-direction pan, and **Center farm**. The canvas stays viewport-sized and renders nearby terrain.
 
-Use **Zoom out** and **Zoom in** for 25%–200% views, or **100%** to reset. With the farm focused, `+`, `−`, and `0` do the same. Zoom preserves the view center where map edges allow it, scales click targets and placement previews together, and resets on reload without changing the save.
+Use **Zoom out** and **Zoom in** for 50%–200% views, or **100%** to reset. With the farm focused, `+`, `−`, and `0` do the same. Zoom preserves the view center where map edges allow it, scales click targets and placement previews together, and resets on reload without changing the save.
 
 ## Farming opportunities
 

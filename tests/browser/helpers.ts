@@ -36,7 +36,24 @@ export async function setCameraCell(
   value: string,
 ) {
   await openCamera(page);
-  await page.getByLabel(`View ${axis}`, { exact: true }).fill(value);
+  await page.evaluate(
+    ({ axis, value }) => {
+      const farm = document.querySelector<HTMLElement>("#farm")!;
+      farm.dataset[axis] = value;
+      const row = farm.dataset.row ?? "16";
+      const col = farm.dataset.column ?? "16";
+      const cell = document.querySelector<HTMLElement>(
+        `[data-cell="${row},${col}"]`,
+      )!;
+      const bounds = cell.getBoundingClientRect();
+      const view = farm.getBoundingClientRect();
+      farm.scrollBy(
+        bounds.x + bounds.width / 2 - view.x - view.width / 2,
+        bounds.y + bounds.height / 2 - view.y - view.height / 2,
+      );
+    },
+    { axis, value },
+  );
 }
 async function openCamera(page: Page) {
   if (

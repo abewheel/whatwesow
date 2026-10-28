@@ -9,7 +9,6 @@ test("zoom controls preserve a centered land cell and clamp at their limits", as
   );
   await setCameraCell(page, "row", "32");
   await setCameraCell(page, "column", "32");
-  await clickCamera(page, "#go-to-cell");
   const target = page.locator('[data-cell="32,32"]');
   // Development tools make the outer page scrollable. The camera invariant is
   // the land cell's position inside the farm, independent of document scrolling.
@@ -46,9 +45,9 @@ test("zoom controls preserve a centered land cell and clamp at their limits", as
   await page.locator("#farm").focus();
   await page.keyboard.press("+");
   await expect(page.locator("#zoom-level")).toHaveText("200%");
-  for (let i = 0; i < 6; i++)
+  for (let i = 0; i < 5; i++)
     await page.getByRole("button", { name: "Zoom out", exact: true }).click();
-  await expect(page.locator("#zoom-level")).toHaveText("25%");
+  await expect(page.locator("#zoom-level")).toHaveText("50%");
   await expect(
     page.getByRole("button", { name: "Zoom out", exact: true }),
   ).toBeDisabled();
@@ -69,7 +68,7 @@ test("farming, multi-cell building previews and distant placements work at both 
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
-  for (let i = 0; i < 3; i++) await clickCamera(page, "#zoom-out");
+  for (let i = 0; i < 2; i++) await clickCamera(page, "#zoom-out");
   await page.locator('[data-plot="0"]').click();
   await expect(page.locator("#season")).toContainText("96 coins");
   await endTurn(page);
@@ -107,7 +106,6 @@ test("farming, multi-cell building previews and distant placements work at both 
   );
   await setCameraCell(page, "row", "63");
   await setCameraCell(page, "column", "63");
-  await clickCamera(page, "#go-to-cell");
   await page.locator('[data-cell="63,63"]').click();
   await expect(page.locator("#farm-message")).toContainText("Oak tree planted");
   await expect(page.locator("#season")).toContainText("30 coins");

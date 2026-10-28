@@ -23,7 +23,7 @@ import {
   inspectionService,
   type ServiceId,
 } from "./game/services";
-import { WORLD_CELLS, WORLD_SIZE } from "./contracts/world";
+import { WORLD_CELLS } from "./contracts/world";
 import { turnNumber } from "./macro/state";
 import {
   buildings,
@@ -74,7 +74,7 @@ app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><output id="season"></output><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
 <div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Click a building to visit, or an empty plot to plant.</strong><span id="farm-summary" class="sr-only"></span><div id="farm-stats" aria-hidden="true"></div></div>
 <section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><button id="seed-selection" aria-label="Choose seeds"></button><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
-<div id="service-controls" hidden><div class="seed-shop"><div id="crop-options"></div><p id="crop-opportunity"></p></div><button id="next-season">End turn</button><p id="progression"></p><p id="frost-warning"></p><button id="work" hidden>Unload a seed delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><button id="move-plot">Move a plot</button><details id="build-shop"><summary>Building plans</summary><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></details><p id="selected-building"></p><button id="upgrade-building" hidden></button><button id="move-building" hidden></button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="63" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="63" value="16"></label><button id="go-to-cell">Go to land</button></div>
+<div id="service-controls" hidden><div class="seed-shop"><div id="crop-options"></div><p id="crop-opportunity"></p></div><button id="next-season">End turn</button><p id="progression"></p><p id="frost-warning"></p><button id="work" hidden>Unload a seed delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><button id="move-plot">Move a plot</button><details id="build-shop"><summary>Building plans</summary><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></details><p id="selected-building"></p><button id="upgrade-building" hidden></button><button id="move-building" hidden></button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span></div>
 <dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><button id="resume">Back to the farm</button></dialog>
 
 </section></main>`;
@@ -150,28 +150,15 @@ cameraControls.id = "camera-controls";
 cameraControls.addEventListener("toggle", () => {
   if (cameraControls.open) closeService();
 });
-cameraControls.innerHTML = `<summary aria-label="View controls">${icon("grow")}<span>View</span></summary><div class="camera-panel"><div class="camera-heading"><h3>View</h3><button id="close-camera" aria-label="Close view controls">×</button></div><form id="coordinate-form"><p id="camera-error" role="status" hidden></p></form></div>`;
+cameraControls.innerHTML = `<summary aria-label="View controls">${icon("view")}</summary><div class="camera-panel"><div class="camera-heading"><h3>View controls</h3><button id="close-camera" aria-label="Close view controls">×</button></div><div class="pan-controls" role="group" aria-label="Pan farm"><button id="pan-up" aria-label="Pan up">↑</button><button id="pan-left" aria-label="Pan left">←</button><button id="pan-down" aria-label="Pan down">↓</button><button id="pan-right" aria-label="Pan right">→</button></div></div>`;
 cameraControls.querySelector("#close-camera")!.addEventListener("click", () => {
   cameraControls.open = false;
   cameraControls
     .querySelector<HTMLElement>("summary")!
     .focus({ preventScroll: true });
 });
-document.querySelector(".work-tools")!.append(cameraControls);
+document.querySelector(".hud-top")!.append(cameraControls);
 moveControls(".camera-panel", ["#home-view", ".zoom-controls"]);
-for (const input of ["#view-row", "#view-col"])
-  document
-    .querySelector("#coordinate-form")!
-    .append(document.querySelector(input)!.closest("label")!);
-moveControls("#coordinate-form", ["#go-to-cell"]);
-document.querySelector<HTMLButtonElement>("#go-to-cell")!.type = "submit";
-for (const id of ["#view-row", "#view-col"]) {
-  const input = document.querySelector<HTMLInputElement>(id)!;
-  input.required = true;
-  input.step = "1";
-  input.inputMode = "numeric";
-  input.setAttribute("aria-describedby", "camera-error");
-}
 document.querySelector("#farm-mode")!.textContent = "Cancel placement";
 function closeService() {
   if (!servicePanel.hidden) viewport.focus({ preventScroll: true });
@@ -385,8 +372,8 @@ let movingPlotId: number | null = null;
 let pickingPlot = false;
 let inspectedId: number | null = null;
 let centered = false;
-const zoomLevels = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
-let zoomIndex = 3;
+const zoomLevels = [0.5, 0.75, 1, 1.25, 1.5, 2];
+let zoomIndex = 2;
 let zoom = zoomLevels[zoomIndex];
 const viewport = document.querySelector<HTMLElement>("#farm")!;
 function fitScreen() {
@@ -473,7 +460,7 @@ document
   .addEventListener("click", () => setZoom(zoomIndex + 1));
 document
   .querySelector("#zoom-reset")!
-  .addEventListener("click", () => setZoom(3));
+  .addEventListener("click", () => setZoom(2));
 let hoveredCell: Cell | null = null;
 const preview = document.createElement("div");
 preview.id = "placement-preview";
@@ -489,43 +476,16 @@ world.addEventListener("pointerleave", () => {
   preview.hidden = true;
   buildingTooltip.hidden = true;
 });
-const coordinateForm =
-  document.querySelector<HTMLFormElement>("#coordinate-form")!;
-coordinateForm.noValidate = true;
-document.querySelector(".camera-panel")!.append(coordinateForm);
-coordinateForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const inputs = ["#view-row", "#view-col"].map((id) =>
-    document.querySelector<HTMLInputElement>(id)!,
-  );
-  const invalid = inputs.find((input) => !input.validity.valid);
-  const error = document.querySelector<HTMLElement>("#camera-error")!;
-  for (const input of inputs)
-    input.setAttribute("aria-invalid", String(!input.validity.valid));
-  const row = Number(
-      document.querySelector<HTMLInputElement>("#view-row")!.value,
-    ),
-    col = Number(document.querySelector<HTMLInputElement>("#view-col")!.value);
-  if (
-    invalid ||
-    !Number.isInteger(row) ||
-    !Number.isInteger(col) ||
-    row < 0 ||
-    col < 0 ||
-    row >= WORLD_SIZE ||
-    col >= WORLD_SIZE
-  ) {
-    error.hidden = false;
-    error.textContent = "Enter a row and column from 0 to 63.";
-    invalid?.focus();
-    return;
-  }
-  error.hidden = true;
-  const p = projectCell({ row, col });
-  viewport.scrollLeft = p.x * zoom - viewport.clientWidth / 2;
-  viewport.scrollTop = p.y * zoom - viewport.clientHeight / 2;
-  viewport.focus({ preventScroll: true });
-});
+for (const [direction, left, top] of [
+  ["left", -160, 0],
+  ["right", 160, 0],
+  ["up", 0, -160],
+  ["down", 0, 160],
+] as const) {
+  document.querySelector(`#pan-${direction}`)!.addEventListener("click", () => {
+    viewport.scrollBy({ left, top, behavior: "instant" });
+  });
+}
 function centerFarm() {
   const p = projectCell({ row: 16, col: 16 });
   viewport.scrollLeft = p.x * zoom - viewport.clientWidth / 2;
@@ -549,7 +509,7 @@ viewport.addEventListener("keydown", (event) => {
       event.key === "0")
   ) {
     event.preventDefault();
-    setZoom(event.key === "0" ? 3 : zoomIndex + (event.key === "-" ? -1 : 1));
+    setZoom(event.key === "0" ? 2 : zoomIndex + (event.key === "-" ? -1 : 1));
     return;
   }
   if (delta[event.key]) {

@@ -405,8 +405,8 @@ summary {
   display: none;
 }
 #camera-controls > summary .pixel-icon {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
 }
 .camera-panel {
   position: absolute;
@@ -443,28 +443,6 @@ summary {
 #pan-left,
 #pan-right {
   width: 44px;
-}
-#coordinate-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  width: 100%;
-}
-#coordinate-form label {
-  font-size: 13px;
-  display: grid;
-  gap: 4px;
-}
-#coordinate-form input {
-  width: 100%;
-}
-#go-to-cell,
-#camera-error {
-  grid-column: 1 / -1;
-}
-#camera-error {
-  color: #923d28;
-  font-size: 14px;
 }
 input,
 select,
@@ -1309,4 +1287,65 @@ button.crisis-card {
   background: #fff;
   border-radius: 2px;
   box-shadow: 0 0 0 1px #b5cfdf;
+}
+
+/* Keep camera access beside the farm menu at every viewport size. */
+#camera-controls > summary {
+  width: 48px;
+  height: 54px;
+  justify-content: center;
+  padding: 4px;
+  border: 4px solid transparent;
+  border-image: url("/art/hud-frame-detailed.png") 150 fill / 4px / 0 stretch;
+  border-radius: 0;
+  background: none;
+}
+#camera-controls .camera-panel {
+  position: absolute;
+  left: auto;
+  right: 0;
+  top: calc(100% + 8px);
+  bottom: auto;
+  width: min(300px, calc(100vw - 24px));
+  max-height: calc(var(--viewport-height, 100dvh) - 100px);
+}
+.pan-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  gap: 4px;
+  margin: 0 auto;
+}
+#pan-up {
+  grid-column: 2;
+}
+#pan-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+#pan-down {
+  grid-column: 2;
+  grid-row: 2;
+}
+#pan-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.hud-top:has(#camera-controls[open]) {
+  z-index: 8;
+}
+
+@media (max-width: 600px) {
+  #season {
+    gap: 4px;
+    padding-inline: 4px;
+  }
+  #season .coin-balance {
+    font-size: 16px;
+    gap: 3px;
+  }
+  #season .coin-balance .pixel-icon {
+    width: 20px;
+    height: 20px;
+  }
 }
