@@ -1,13 +1,13 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, URL } from "node:url";
 
 // Playwright's built-in shards take consecutive tests, grouping expensive
-// features together. Deal discovered tests across runners instead.
-export function browserShards(report, total) {
+// features together. Schedule estimated longest tests on the least-loaded runner.
+export function browserShards(report, total, timings = {}) {
   if (!Number.isInteger(total) || total < 1)
     throw new Error("Shard total must be a positive integer.");
   const descriptions = [];
@@ -30,7 +30,18 @@ export function browserShards(report, total) {
   if (descriptions.length < total)
     throw new Error("More shards than discovered browser tests.");
   const shards = Array.from({ length: total }, () => []);
-  descriptions.forEach((test, i) => shards[i % total].push(test));
+  const loads = Array(total).fill(0);
+  const weight = (test) => {
+    const estimate = timings[test.replace(/^\[[^\]]*\] › /, "")];
+    return Number.isFinite(estimate) && estimate > 0 ? estimate : 10;
+  };
+  descriptions.sort((a, b) => weight(b) - weight(a));
+  for (const test of descriptions) {
+    let target = 0;
+    for (let i = 1; i < total; i++) if (loads[i] < loads[target]) target = i;
+    shards[target].push(test);
+    loads[target] += weight(test);
+  }
   return shards;
 }
 
@@ -49,7 +60,10 @@ if (
   );
   if (listed.status !== 0)
     throw new Error(listed.stderr || "Browser discovery process failed.");
-  const shards = browserShards(JSON.parse(listed.stdout), total);
+  const { durations } = JSON.parse(
+    readFileSync(new URL("./browser-timings.json", import.meta.url), "utf8"),
+  );
+  const shards = browserShards(JSON.parse(listed.stdout), total, durations);
   const directory = mkdtempSync(join(tmpdir(), "whatwesow-browser-"));
   try {
     const list = join(directory, "tests.txt");

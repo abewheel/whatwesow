@@ -43,3 +43,18 @@ test("fails closed on invalid totals, empty discovery, discovery errors, and dup
     browserShards({ suites: [report.suites[0], report.suites[0]] }, 1),
   ).toThrow();
 });
+
+test("keeps long tests apart while including new tests with unknown timings", () => {
+  const timed = {
+    suites: [{ specs: [spec("a"), spec("b"), spec("c"), spec("new")] }],
+  };
+  const shards = browserShards(timed, 2, {
+    "farm.spec.ts › a": 40,
+    "farm.spec.ts › b": 30,
+    "farm.spec.ts › c": 10,
+  });
+  expect(shards).toEqual([
+    ["[] › farm.spec.ts › a", "[] › farm.spec.ts › new"],
+    ["[] › farm.spec.ts › b", "[] › farm.spec.ts › c"],
+  ]);
+});
