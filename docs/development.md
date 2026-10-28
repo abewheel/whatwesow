@@ -77,3 +77,9 @@ Cloudflare installs dependencies, builds, and deploys on pushes. Enable branch p
 Manage builds and custom domains in Cloudflare → Workers & Pages → whatwesow. Keep the GitHub app authorized for this repository. The apex domain uses a Cloudflare-managed CNAME to `whatwesow.pages.dev`. No deployment credentials belong in this repository or in GitHub secrets.
 
 Sources: [Pages Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/), [build configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/).
+
+## GitHub validation performance
+
+CI runs development browser tests across 19 timing-balanced shards alongside unit, build, and production checks. Every job must pass the aggregate `validate` gate. `scripts/browser-timings.json` contains scheduling estimates only; new tests default to ten seconds and remain included.
+
+Failed jobs retain reports, screenshots, and traces for seven days. Inspect traces with `pnpm exec playwright show-trace path/to/trace.zip`. DOM snapshots and continuous trace screenshots are disabled to avoid copying the estate's 4,096 targets; failure screenshots remain enabled. Follow the CI rules in `AGENTS.md`.

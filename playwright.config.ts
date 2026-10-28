@@ -4,7 +4,9 @@ if (!Number.isInteger(port) || port < 1024 || port > 65535)
   throw new Error("PLAYWRIGHT_PORT must be 1024–65535.");
 const workers =
   process.env.PLAYWRIGHT_WORKERS === undefined
-    ? undefined
+    ? process.env.CI
+      ? 2
+      : undefined
     : Number(process.env.PLAYWRIGHT_WORKERS);
 if (workers !== undefined && (!Number.isInteger(workers) || workers < 1))
   throw new Error("PLAYWRIGHT_WORKERS must be a positive integer.");
@@ -15,7 +17,16 @@ export default defineConfig({
   timeout: 120000,
   expect: { timeout: 15000 },
   workers,
-  use: { baseURL: `http://127.0.0.1:${port}`, headless: true },
+  forbidOnly: Boolean(process.env.CI),
+  reporter: process.env.CI ? [["line"], ["html", { open: "never" }]] : "list",
+  use: {
+    baseURL: `http://127.0.0.1:${port}`,
+    headless: true,
+    // The estate has 4,096 DOM targets. Snapshotting that tree at every
+    // action dominates these tests; retain call/network/timing evidence instead.
+    trace: { mode: "retain-on-failure", snapshots: false, screenshots: false },
+    screenshot: "only-on-failure",
+  },
   webServer: {
     command: `pnpm exec vite --host 127.0.0.1 --port ${port} --strictPort`,
     url: `http://127.0.0.1:${port}`,
