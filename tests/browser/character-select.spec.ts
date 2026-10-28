@@ -68,6 +68,9 @@ test("female farmer plants and harvests with the selected artwork", async ({
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await endTurn(page);
   await expect(canvas).toHaveAttribute("data-farmer-frame", /farmer-female:/);
+  // End turn leaves the home menu open over the farm.
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#service-panel")).toBeHidden();
   await page.getByRole("button", { name: /Plot 1: Turnip, ready/ }).click();
   await choosePlotWork(page);
   await expect(canvas).toHaveAttribute("data-farmer-motion", "harvest");

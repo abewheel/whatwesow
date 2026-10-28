@@ -31,6 +31,9 @@ test("honey rescues an empty farm and can only be collected once until next seas
     "walk",
   );
   await expect(page.locator("#service-panel")).toBeHidden();
+  // A corner visit spans the whole farm; wait for arrival with the same
+  // bounded travel budget as a home visit, rather than the short UI timeout.
+  await expect(page.locator("#service-panel")).toBeVisible({ timeout: 60000 });
   await expect(page.locator("#service-title")).toHaveText("Wild beehive");
   await expect(page.locator("#farm canvas")).toHaveAttribute(
     "data-farmer-cell",
@@ -48,14 +51,22 @@ test("honey rescues an empty farm and can only be collected once until next seas
     "Saved on this browser",
   );
   await expect(page.locator("main")).toHaveJSProperty("inert", false);
-  await hive.press("Enter");
+  await hive.evaluate((target) =>
+    target.scrollIntoView({ block: "center", inline: "center" }),
+  );
+  await hive.click();
+  await expect(page.locator("#service-panel")).toBeVisible({ timeout: 60000 });
   await expect(page.locator("#collect-honey")).toBeDisabled();
   await page
     .getByRole("button", { name: "Close actions", exact: true })
     .click();
   await endTurn(page);
   await expect(page.locator("#season")).toContainText("summer");
-  await hive.press("Enter");
+  await hive.evaluate((target) =>
+    target.scrollIntoView({ block: "center", inline: "center" }),
+  );
+  await hive.click();
+  await expect(page.locator("#service-panel")).toBeVisible({ timeout: 60000 });
   await expect(page.locator("#collect-honey")).toBeEnabled();
   await page.locator("#collect-honey").click();
   await expect(page.locator("#season")).toContainText("24 coins");
