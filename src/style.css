@@ -122,6 +122,7 @@ small {
 }
 .farm-title,
 #season,
+#farm-status,
 .farm-tools,
 .field-note,
 dialog,
@@ -250,12 +251,20 @@ dialog,
 }
 .farm-title {
   padding: 6px 10px;
-  align-self: stretch;
+  align-self: flex-start;
   display: flex;
   align-items: center;
 }
-#season {
+.farm-overview {
+  position: relative;
   margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  pointer-events: none;
+}
+#season {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -330,34 +339,32 @@ dialog,
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
-#farm-stats {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-  font-size: 12px;
-}
-#farm-stats > span {
+#farm-status {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 12px;
+  min-width: 100px;
+  min-height: 56px;
+  justify-content: space-between;
+  padding: 8px;
+  pointer-events: none;
 }
-#farm-stats .pixel-icon {
-  width: 20px;
-  height: 20px;
-}
-.soil-meter {
+#empty-plots,
+#harvest-ready {
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+  white-space: nowrap;
 }
-.soil-meter i {
-  width: 5px;
-  height: 10px;
-  border: 1px solid #937247;
-  background: #dfcba0;
-}
-.soil-meter .filled {
-  background: #597741;
-  border-color: #365634;
+#empty-plots .pixel-icon,
+#harvest-ready .pixel-icon {
+  width: 24px;
+  height: 24px;
 }
 .farm-tools {
   max-width: 100%;
@@ -798,12 +805,23 @@ dialog::backdrop {
     right: 6px;
     gap: 6px;
   }
-  #season {
+  .farm-overview {
     margin-left: 0;
     flex: 1;
+  }
+  #season {
     justify-content: space-between;
     min-width: 0;
-    gap: 8px;
+    gap: 4px;
+    padding-inline: 4px;
+  }
+  #season .coin-balance {
+    font-size: 16px;
+    gap: 3px;
+  }
+  #season .coin-balance .pixel-icon {
+    width: 20px;
+    height: 20px;
   }
   .hud-bottom {
     bottom: 6px;
@@ -816,9 +834,6 @@ dialog::backdrop {
   }
   #farm-message {
     font-size: 13px;
-  }
-  #farm-stats {
-    display: none;
   }
   .farm-tools {
     width: fit-content;
@@ -872,7 +887,7 @@ dialog::backdrop {
   .farm-title {
     display: none;
   }
-  #season {
+  .farm-overview {
     margin-left: 0;
   }
   #service-panel {
@@ -892,13 +907,12 @@ dialog::backdrop {
   .farm-card:has(#service-panel:not([hidden])) #open-menu {
     display: none;
   }
-  .farm-card:has(#service-panel:not([hidden])) #season {
+  .farm-card:has(#service-panel:not([hidden])) .farm-overview {
     flex: 1;
+  }
+  .farm-card:has(#service-panel:not([hidden])) #season {
     flex-wrap: wrap;
     min-width: 0;
-  }
-  #farm-stats {
-    display: none;
   }
   #farm-message {
     -webkit-line-clamp: 1;
@@ -1198,10 +1212,10 @@ button.crisis-card {
   }
 }
 
-/* Keep the development entry out of the compact HUD row. */
+/* Keep the development entry below the compact HUD. */
 #crisis-test {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
   min-height: 44px;
   margin: 0;

@@ -71,8 +71,8 @@ import {
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div>
-<header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><output id="season"></output><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
-<div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Click a building to visit, or an empty plot to plant.</strong><span id="farm-summary" class="sr-only"></span><div id="farm-stats" aria-hidden="true"></div></div>
+<header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><div class="farm-overview"><output id="season"></output><section id="farm-status" aria-label="Farm status"><span id="empty-plots" role="img"></span><span id="harvest-ready" role="img"></span></section></div><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
+<div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Click a building to visit, or an empty plot to plant.</strong><span id="farm-summary" class="sr-only"></span></div>
 <section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><button id="seed-selection" aria-label="Choose seeds"></button><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
 <div id="service-controls" hidden><div class="seed-shop"><div id="crop-options"></div><p id="crop-opportunity"></p></div><button id="next-season">End turn</button><p id="progression"></p><p id="frost-warning"></p><button id="work" hidden>Unload a seed delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><button id="move-plot">Move a plot</button><details id="build-shop"><summary>Building plans</summary><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></details><p id="selected-building"></p><button id="upgrade-building" hidden></button><button id="move-building" hidden></button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span></div>
 <dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><button id="resume">Back to the farm</button></dialog>
@@ -1321,8 +1321,13 @@ function render() {
   improve.innerHTML = `${icon("improve")}<span>Soil${state.soilLevel < 3 ? "<small>+3 / harvest</small>" : ""}<small id="soil-status">${soilStatus}</small></span><span class="tool-price" aria-hidden="true">${state.soilLevel === 3 ? "✓" : `${icon("coin")}${policyCost(soilCost(state), policy)}`}</span>`;
   document.querySelector("#farm-summary")!.textContent =
     `${state.plots.length} plots · ${ready} ready to harvest · Soil level ${state.soilLevel}/3`;
-  document.querySelector("#farm-stats")!.innerHTML =
-    `<span title="${state.plots.length} plots">${icon("expand")}${state.plots.length}</span><span title="${ready} ready to harvest">${icon("harvest")}${ready}</span><span title="Soil level ${state.soilLevel}/3">${icon("improve")}<span class="soil-meter">${[1, 2, 3].map((level) => `<i class="${level <= state.soilLevel ? "filled" : ""}"></i>`).join("")}</span></span>`;
+  const emptyPlots = document.querySelector("#empty-plots")!;
+  const empty = state.plots.filter((plot) => plot === null).length;
+  emptyPlots.setAttribute("aria-label", `${empty} empty plots`);
+  emptyPlots.innerHTML = `${icon("expand")}<span aria-hidden="true">${empty}</span>`;
+  const harvestReady = document.querySelector("#harvest-ready")!;
+  harvestReady.setAttribute("aria-label", `${ready} plots ready to harvest`);
+  harvestReady.innerHTML = `${icon("harvest")}<span aria-hidden="true">${ready}</span>`;
 }
 async function apply(
   next: typeof state,
