@@ -77,3 +77,29 @@ Cloudflare installs dependencies, builds, and deploys on pushes. Enable branch p
 Manage builds and custom domains in Cloudflare → Workers & Pages → whatwesow. Keep the GitHub app authorized for this repository. The apex domain uses a Cloudflare-managed CNAME to `whatwesow.pages.dev`. No deployment credentials belong in this repository or in GitHub secrets.
 
 Sources: [Pages Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/), [build configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/).
+
+## GitHub validation performance
+
+The `Validate` workflow runs build/unit checks and 16 browser shards in parallel.
+Each shard runs two workers, keeping the original per-runner load; `fullyParallel`
+lets Playwright distribute individual tests rather than whole files. The final
+`validate` job keeps the existing required-check name and requires every shard and
+the production checks to pass. No test is omitted and automatic retries are off.
+The build already checks types, so CI does not run a second standalone typecheck.
+
+Pull requests run once per update; pushes to `main` and manual runs also validate.
+New commits cancel obsolete runs for the same event and ref. Browser downloads
+are cached by OS, architecture, and lockfile; system dependencies are still
+installed on each runner. Failed jobs retain screenshots, traces, and browser
+HTML reports for seven days. Download a failure artifact and run
+`pnpm exec playwright show-trace path/to/trace.zip` to inspect it.
+
+The October 28 audit found seven failures in the last ten completed runs, with
+a median elapsed time of 17m 28s and browser suites taking 10–19 minutes, with repeated travel timeouts and a gait test sampling only 630ms of wall
+time. The gait check now waits for four observed frames and gives the actual
+walk the same 30-second arrival allowance as navigation checks. Earlier farming
+and service failures refer to paths replaced by the current contextual menus.
+The target is over 90% less elapsed CI time; verify that against hosted run
+start/completion times after rollout, including runner queue time. Sharding uses
+more simultaneous runners, so account concurrency and runner minutes still matter.
+Local `pnpm validate` remains the complete unsharded check.

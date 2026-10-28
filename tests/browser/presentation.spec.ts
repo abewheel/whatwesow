@@ -46,14 +46,22 @@ test("walking uses changing gait frames in both directions and returns to idle",
     await page.locator(`[data-cell="${cell}"]`).click();
     await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
     const frames = new Set<string>();
-    for (let i = 0; i < 18; i++) {
-      const frame = (await canvas.getAttribute("data-farmer-frame"))!;
-      expect(frame).toMatch(/^farmer-gait:[0-7]$/);
-      frames.add(frame);
-      await page.waitForTimeout(35);
-    }
-    expect(frames.size).toBeGreaterThanOrEqual(4);
-    await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
+    // Observe actual rendered frames instead of assuming CI paints 18 times
+    // in 630ms. Software rendering can be much slower than a desktop GPU.
+    await expect
+      .poll(
+        async () => {
+          const frame = (await canvas.getAttribute("data-farmer-frame"))!;
+          expect(frame).toMatch(/^farmer-gait:[0-7]$/);
+          frames.add(frame);
+          return frames.size;
+        },
+        { intervals: [35] },
+      )
+      .toBeGreaterThanOrEqual(4);
+    await expect(canvas).toHaveAttribute("data-farmer-cell", cell, {
+      timeout: 30000,
+    });
     await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
     await expect(canvas).toHaveAttribute("data-farmer-frame", /^farmer:/);
   }
