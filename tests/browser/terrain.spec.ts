@@ -11,7 +11,6 @@ test("painted ground survives camera changes, GPU recovery, and seasonal cache r
   );
   await setCameraCell(page, "row", "32");
   await setCameraCell(page, "column", "32");
-  await clickCamera(page, "#go-to-cell");
   await page.locator("#camera-controls summary").click();
   await page.mouse.move(100, 200);
   const sample = async () => {

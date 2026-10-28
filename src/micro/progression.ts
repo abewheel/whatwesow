@@ -2,6 +2,21 @@ import type { MicroState, CropId } from "./state";
 import type { BuildingKind, Structure } from "./world";
 
 export const opportunities = {
+  coop: {
+    need: "Harvest 3 crops",
+    story:
+      'Mara: "A coop gives your hens a dry home. Collect their eggs each season."',
+  },
+  dairy: {
+    need: "Harvest 12 crops",
+    story:
+      'Ruth: "There is room here for dairy cows. Visit them each season to collect milk."',
+  },
+  sheepfold: {
+    need: "Harvest 24 crops",
+    story:
+      'Ruth: "A sheltered flock will give you wool. Come by each season to collect it."',
+  },
   shed: {
     need: "Harvest 3 crops",
     story:
@@ -88,6 +103,9 @@ export function earnOpportunities(s: MicroState): Opportunity[] {
   const n = totalHarvests(s),
     h = s.harvests;
   const ready: Record<Opportunity, boolean> = {
+    coop: n >= 3,
+    dairy: n >= 12,
+    sheepfold: n >= 24,
     shed: n >= 3,
     apple: n >= 6,
     corn: h.turnip > 0 && h.carrot > 0,

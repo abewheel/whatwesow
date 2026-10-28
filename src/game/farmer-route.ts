@@ -1,9 +1,10 @@
 import {
-  buildings,
+  structureSize,
   cellAllowed,
   cellKey,
   footprint,
   serviceLocations,
+  serviceOptions,
   WORLD_SIZE,
   inBounds,
   type Cell,
@@ -17,11 +18,11 @@ const blocker = (world: FarmerWorld) => {
   const occupied = new Set(
     [
       ...world.layout.structures.flatMap((s) =>
-        footprint(s, buildings[s.kind].width, buildings[s.kind].height),
+        footprint(s, structureSize(s).width, structureSize(s).height),
       ),
-      ...serviceLocations(world.layout, {
-        council: world.policy?.permitsRequired === true,
-      }).flatMap((s) => footprint(s, s.width, s.height)),
+      ...serviceLocations(world.layout, serviceOptions(world.policy)).flatMap(
+        (s) => footprint(s, s.width, s.height),
+      ),
       // Land the county took lies under the reservoir.
       ...(world.policy?.takenCells ?? []),
     ].map(cellKey),

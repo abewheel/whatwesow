@@ -1,4 +1,5 @@
-import { visitBuilding, endTurn, clickCamera, setCameraCell } from "./helpers";
+import { choosePlotWork } from "./helpers";
+import { endTurn, clickCamera, setCameraCell } from "./helpers";
 import { test, expect } from "./fixtures";
 test("zoom controls preserve a centered land cell and clamp at their limits", async ({
   page,
@@ -9,7 +10,6 @@ test("zoom controls preserve a centered land cell and clamp at their limits", as
   );
   await setCameraCell(page, "row", "32");
   await setCameraCell(page, "column", "32");
-  await clickCamera(page, "#go-to-cell");
   const target = page.locator('[data-cell="32,32"]');
   // Development tools make the outer page scrollable. The camera invariant is
   // the land cell's position inside the farm, independent of document scrolling.
@@ -46,9 +46,9 @@ test("zoom controls preserve a centered land cell and clamp at their limits", as
   await page.locator("#farm").focus();
   await page.keyboard.press("+");
   await expect(page.locator("#zoom-level")).toHaveText("200%");
-  for (let i = 0; i < 6; i++)
+  for (let i = 0; i < 5; i++)
     await page.getByRole("button", { name: "Zoom out", exact: true }).click();
-  await expect(page.locator("#zoom-level")).toHaveText("25%");
+  await expect(page.locator("#zoom-level")).toHaveText("50%");
   await expect(
     page.getByRole("button", { name: "Zoom out", exact: true }),
   ).toBeDisabled();
@@ -57,71 +57,30 @@ test("zoom controls preserve a centered land cell and clamp at their limits", as
   await expect(page.locator("#zoom-level")).toHaveText("100%");
   await expect(page.locator("#season")).toContainText("100 coins");
 });
-test("farming, multi-cell building previews and distant placements work at both zoom extremes", async ({
+test("context menus stay attached and usable at both zoom extremes", async ({
   page,
 }) => {
-  // This path includes travel across the estate at both zoom limits and a reload.
-  test.setTimeout(120000);
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  page.on("requestfailed", (r) => errors.push(r.url()));
-  await page.goto("/?instance=validation-zoom-interactions");
+  await page.goto("/?instance=validation-context-zoom");
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
-  for (let i = 0; i < 3; i++) await clickCamera(page, "#zoom-out");
-  await page.locator('[data-plot="0"]').click();
-  await expect(page.locator("#season")).toContainText("96 coins");
+  for (let i = 0; i < 2; i++) await clickCamera(page, "#zoom-out");
+  await page.locator("#close-camera").click();
+  await page.locator('[data-plot="0"]').press("Enter");
+  await choosePlotWork(page);
+  await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
+    "aria-label",
+    /growing/,
+  );
   await endTurn(page);
-  await page.locator('[data-plot="0"]').click();
-  await expect(page.locator("#season")).toContainText("105 coins");
+  await page.locator("#close-service").click();
   await clickCamera(page, "#zoom-reset");
   for (let i = 0; i < 3; i++) await clickCamera(page, "#zoom-in");
-  await page.getByLabel("Work on").selectOption("micro");
-  await page.getByRole("button", { name: "Read current state" }).click();
-  const farm = JSON.parse(
-    await page.getByLabel("Game state JSON").inputValue(),
+  await page.locator("#close-camera").click();
+  await page.locator('[data-plot="0"]').press("Enter");
+  await choosePlotWork(page);
+  await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
+    "aria-label",
+    /empty/,
   );
-  farm.harvests.turnip = 3;
-  await page.getByLabel("Game state JSON").fill(JSON.stringify(farm));
-  await page.getByRole("button", { name: "Apply state", exact: true }).click();
-  await expect(page.locator("#dev-status")).toHaveText(
-    "State applied and saved.",
-  );
-  await visitBuilding(page, "builder");
-  await page.locator('[data-build="shed"]').click();
-  await page.locator('[data-cell="14,18"]').hover();
-  await expect(page.locator("#placement-preview")).toHaveAttribute(
-    "data-valid",
-    "true",
-  );
-  await expect(page.locator("#placement-preview")).toHaveCSS("width", "256px");
-  await page.locator('[data-cell="14,18"]').click();
-  await expect(page.locator("#season")).toContainText("45 coins");
-  await visitBuilding(page, "seeds");
-  await page.locator('[data-build="oak"]').click();
-  await page.locator('[data-cell="14,18"]').hover();
-  await expect(page.locator("#placement-preview")).toHaveAttribute(
-    "data-valid",
-    "false",
-  );
-  await setCameraCell(page, "row", "63");
-  await setCameraCell(page, "column", "63");
-  await clickCamera(page, "#go-to-cell");
-  await page.locator('[data-cell="63,63"]').click();
-  await expect(page.locator("#farm-message")).toContainText("Oak tree planted");
-  await expect(page.locator("#season")).toContainText("30 coins");
-  const size = await page.locator("canvas").evaluate((el) => ({
-    width: (el as HTMLCanvasElement).width,
-    height: (el as HTMLCanvasElement).height,
-  }));
-  expect(size.width).toBeLessThanOrEqual(1280);
-  expect(size.height).toBeLessThanOrEqual(720);
-  await page.reload();
-  await expect(page.locator("#zoom-level")).toHaveText("100%");
-  await expect(page.locator('[data-cell="63,63"]')).toHaveAttribute(
-    "data-structure",
-    "3",
-  );
-  expect(errors).toEqual([]);
 });

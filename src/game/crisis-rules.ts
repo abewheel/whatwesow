@@ -13,6 +13,7 @@ import type { WaterInput } from "../micro/rules";
 import {
   buildingLevel,
   buildings,
+  isAnimal,
   isTree,
   type BuildingKind,
 } from "../micro/world";
@@ -27,7 +28,10 @@ import {
 // written into farmPolicy; every rule is derived again from the records and their answers.
 type Farm = MicroState & MacroState;
 export const cropIds = Object.keys(crops) as CropId[];
-const fruitKinds = (Object.keys(buildings) as BuildingKind[]).filter(isTree);
+// Everything else the farm sells: fruit, and eggs, milk and wool.
+const producerKinds = (Object.keys(buildings) as BuildingKind[]).filter(
+  (kind) => isTree(kind) || isAnimal(kind),
+);
 
 const combine = <T>(
   a: T | undefined,
@@ -280,7 +284,7 @@ function applyTrigger(
     if (mult !== 1)
       add({
         cropPrices: Object.fromEntries(
-          [...cropIds, ...fruitKinds].map((kind) => [kind, mult]),
+          [...cropIds, ...producerKinds].map((kind) => [kind, mult]),
         ),
       });
   }

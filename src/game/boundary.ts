@@ -3,8 +3,37 @@ import type { MacroState } from "../macro/state";
 import { WORLD_SIZE, type Cell } from "../micro/world";
 import type { GroundLayer } from "./terrain";
 import { seasonFrame } from "./border-artwork";
+import { laneArtwork, type LaneKind } from "./lane-artwork";
+import { buildingArtwork } from "./building-artwork";
 
 type Point = { x: number; y: number };
+export type BoundaryWalker = {
+  sprite: Phaser.GameObjects.Image;
+  start: Point;
+  end: Point;
+  offset: number;
+};
+
+/** A shared clock preserves decorative walks across camera and farm redraws. */
+export function updateBoundaryWalkers(walkers: BoundaryWalker[], time: number) {
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  for (const { sprite, start, end, offset } of walkers) {
+    const phase = ((time + offset) % 16000) / 8000;
+    const returning = phase >= 1;
+    const progress = reduced ? 0.5 : returning ? 2 - phase : phase;
+    sprite.setPosition(
+      start.x + (end.x - start.x) * progress,
+      start.y + (end.y - start.y) * progress,
+    );
+    sprite.setFrame(
+      reduced
+        ? 42
+        : (returning ? 6 : 0) + (Math.floor((time + offset) / 140) % 6),
+    );
+    sprite.setDepth(sprite.y);
+  }
+}
+
 const colors = {
   spring: {
     bank: 0x829b58,
@@ -50,6 +79,7 @@ export function drawBoundary(
   view: { x: number; y: number; width: number; height: number; zoom?: number },
   groundArt: GroundLayer,
 ) {
+  const walkers: BoundaryWalker[] = [];
   const p = colors[season],
     winter = season === "winter";
   const at = (col: number, row: number) => point({ col, row });
@@ -166,9 +196,14 @@ export function drawBoundary(
       groundArt.tile(
         { row, col },
         pos,
-        col >= WORLD_SIZE && col < WORLD_SIZE + 2
+        (col >= WORLD_SIZE && col < WORLD_SIZE + 2) ||
+          (row >= WORLD_SIZE + 6 && (row % 10 === 0 || col % 10 === 0)) ||
+          (col >= WORLD_SIZE + 4 &&
+            row >= 0 &&
+            row < WORLD_SIZE &&
+            col % 8 === 0)
           ? "gravel"
-          : col < 0 && row < WORLD_SIZE
+          : (col < 0 && row < WORLD_SIZE) || row < -2
             ? "woodland"
             : "grass",
       );
@@ -308,22 +343,37 @@ export function drawBoundary(
       i % 3 === 0 ? p.track : winter ? 0xf4f3e6 : 0xe2cda0,
     );
   }
-  for (let row = 0; row < WORLD_SIZE; row += 1.4) {
-    // Leave an opening where a future farm entrance can meet the lane.
-    if (row > 14 && row < 18) continue;
-    const a = at(WORLD_SIZE - 0.38, row),
-      b = at(WORLD_SIZE - 0.38, Math.min(row + 1.4, WORLD_SIZE));
-    for (const dy of [-12, -6]) {
-      line({ x: a.x, y: a.y + dy }, { x: b.x, y: b.y + dy }, 0x856849, 4);
-      line(
-        { x: a.x, y: a.y + dy - 1 },
-        { x: b.x, y: b.y + dy - 1 },
-        winter ? 0xe4e8d9 : 0xd3ba86,
-        2,
-      );
+  const laneSprite = (
+    kind: LaneKind,
+    col: number,
+    row: number,
+    width: number,
+  ) => {
+    const pos = at(col, row);
+    if (!visible([pos], width)) return;
+    const art = laneArtwork(kind, season);
+    const frame = scene.textures.getFrame(art.key);
+    scenery.add(
+      scene.add
+        .image(pos.x, pos.y, art.key)
+        .setOrigin(art.originX, art.originY)
+        .setDisplaySize(width, (width * frame.height) / frame.width)
+        .setDepth(pos.y + (kind === "entrance" ? 34 : 0)),
+    );
+  };
+  // Keep complete spans out of the entrance, with capped posts at both ends.
+  for (let row = 0; row + 1.4 <= WORLD_SIZE; row += 1.4) {
+    if (row < 18 && row + 1.4 > 14) continue;
+    laneSprite("fence", WORLD_SIZE - 0.38, row, 84);
+  }
+  laneSprite("entrance", WORLD_SIZE - 0.38, 16, 232);
+  // Irregular verge stones follow the lane, leaving the entrance clear.
+  for (let row = -0.4; row < WORLD_SIZE; row += 0.65) {
+    for (const col of [WORLD_SIZE - 0.48, WORLD_SIZE + 1.52]) {
+      if (col < WORLD_SIZE && row > 13.5 && row < 18.5) continue;
+      const pos = at(col + noise(row * 79) * 0.08, row);
+      stone(pos.x, pos.y, 0.28 + noise(row * 37) * 0.13);
     }
-    rect(a.x - 2, a.y - 19, 5, 21, 0x886c4e);
-    rect(a.x - 2, a.y - 19, 3, 18, winter ? 0xe6e9db : 0xd6c493);
   }
   // The country lane crosses the bottom-left river and continues out of the window.
   const bridgeStart = WORLD_SIZE + 0.25,
@@ -474,16 +524,9 @@ export function drawBoundary(
         .setDepth(pos.y),
     );
   }
-  // Warm lanterns punctuate the road without entering the placement grid.
-  for (const row of [3, 10, 22, 29]) {
-    const pos = at(WORLD_SIZE + 0.05, row);
-    stone(pos.x, pos.y, 1.2);
-    rect(pos.x - 1, pos.y - 35, 3, 34, 0x615c46);
-    rect(pos.x - 5, pos.y - 41, 11, 12, 0x615c46);
-    rect(pos.x - 3, pos.y - 39, 7, 8, 0xf6ce74);
-    rect(pos.x, pos.y - 39, 1, 8, 0xffedaf);
-    rect(pos.x - 6, pos.y - 43, 13, 3, winter ? 0xecefe0 : 0x7a7455);
-  }
+  // Lanterns flank the entrance and continue down the orchard lane.
+  for (const row of [3, 10, 13.5, 18.5, 26, 34, 42, 50, 58])
+    laneSprite("lamp", WORLD_SIZE + 1.8, row, 48);
   // Northwest: irregular, depth-sorted groves fill the forest side of the window.
   const trees: {
     x: number;
@@ -535,6 +578,101 @@ export function drawBoundary(
       155,
     );
   }
+  // The second forest reaches the upper scroll corners, including behind the
+  // northwest grove. World-coordinate seeds keep every stand fixed while panning.
+  for (
+    let gx = Math.floor(minCol / 2.3) - 1;
+    gx <= Math.ceil(maxCol / 2.3);
+    gx++
+  )
+    for (let gy = Math.floor(minRow / 2) - 1; gy <= -2; gy++) {
+      const seed = gx * 719 + gy * 263;
+      tree(gx * 2.3 + noise(seed) * 1.1, gy * 2 + noise(seed + 1), seed, 210);
+    }
+
+  const atlas = season === "fall" || winter ? `farm-${season}` : "farm-spring";
+  const sprite = (col: number, row: number, frame: number, size: number) => {
+    const pos = at(col, row);
+    if (!visible([pos], size)) return;
+    scenery.add(
+      scene.add
+        .image(pos.x, pos.y, atlas, frame)
+        .setOrigin(0.5, 0.9)
+        .setDisplaySize(size, size)
+        .setTint(season === "summer" ? 0xfff4d6 : 0xffffff)
+        .setDepth(pos.y),
+    );
+  };
+  const house = (col: number, row: number, frame: number) => {
+    const art = buildingArtwork({ col, row, width: 3, height: 3 }, frame);
+    const top = point(art),
+      front = at(col + 2.5, row + 2.5);
+    if (!visible([top, front], art.size)) return;
+    scenery.add(
+      scene.add
+        .image(top.x, top.y, atlas, frame)
+        .setOrigin(0, 0)
+        .setDisplaySize(art.size, art.size)
+        .setTint(season === "summer" ? 0xfff4d6 : 0xffffff)
+        .setDepth(front.y),
+    );
+  };
+  const stroll = (col: number, row: number, seed: number) => {
+    const start = at(col, row),
+      end = at(col + 2.4, row);
+    if (!visible([start, end], 70)) return;
+    const walker = scene.add
+      .image(start.x, start.y, "farmer", 42)
+      .setOrigin(0.5, 1)
+      .setScale(0.25)
+      .setTint([0xffd4b8, 0xd3e2ff, 0xe9d1ff][Math.abs(seed) % 3]);
+    scenery.add(walker);
+    walkers.push({ sprite: walker, start, end, offset: noise(seed) * 16000 });
+  };
+  // Riverside village: small blocks, flower gardens, wells and strolling locals.
+  // Continue the lots beyond the viewport rather than leaving a bare outer edge.
+  for (
+    let row = Math.max(WORLD_SIZE + 8, Math.floor(minRow / 10) * 10 + 2);
+    row <= maxRow;
+    row += 10
+  )
+    for (let col = Math.floor(minCol / 10) * 10 + 2; col <= maxCol; col += 10) {
+      const seed = row * 173 + col * 37;
+      house(col, row, noise(seed) > 0.78 ? 4 : 0);
+      house(col + 5, row + 3, noise(seed + 1) > 0.65 ? 1 : 0);
+      sprite(col + 5, row, 5, 140);
+      sprite(col + 1, row + 6, 3, 105);
+      detail(0, col + 3.6, row + 4, 55, seed);
+      detail(1, col + 7, row + 7, 65, seed + 1);
+      stroll(col, row - 1.8, seed);
+    }
+  // The laneside orchard alternates fruit trees and flowering trees around
+  // grassy clearings and garden sheds, with seasonal roofs and bare winter limbs.
+  for (
+    let col = Math.max(WORLD_SIZE + 5, Math.floor(minCol / 4) * 4 + 1);
+    col <= maxCol;
+    col += 4
+  )
+    for (
+      let row = Math.max(1, Math.floor(minRow / 4) * 4 + 1);
+      row <= Math.min(WORLD_SIZE + 7, maxRow);
+      row += 4
+    ) {
+      const seed = col * 97 + row * 151;
+      if (col % 16 === 5 && row % 16 === 5) {
+        house(col, row, 4);
+        sprite(col + 2, row + 3, 3, 95);
+        stroll(col - 0.9, row + 3, seed);
+      } else {
+        sprite(
+          col + noise(seed) * 0.8,
+          row + noise(seed + 1) * 0.8,
+          noise(seed + 2) > 0.75 ? 5 : 2,
+          140 + noise(seed + 3) * 35,
+        );
+        detail(0, col + 1.4, row + 1, 45 + noise(seed + 4) * 15, seed);
+      }
+    }
   trees.sort((a, b) => a.y - b.y || a.x - b.x);
   for (const tree of trees)
     scenery.add(
@@ -550,4 +688,6 @@ export function drawBoundary(
         .setTint(tree.tint)
         .setDepth(tree.y),
     );
+  updateBoundaryWalkers(walkers, scene.time.now);
+  return walkers;
 }

@@ -20,25 +20,15 @@ test("loads behind a cover, starts bare, builds fields and completes a home next
   await expect(page.locator("[data-plot]")).toHaveCount(0);
   await expect(page.locator("[data-structure]")).toHaveCount(0);
   await expect(page.locator("[data-service]")).toHaveCount(1);
-  await visitBuilding(page, "home");
-  await page
-    .getByRole("button", { name: "Prepare fields", exact: true })
-    .click();
-  await page.locator("#expand").click();
   await page.locator('[data-cell="16,16"]').click();
+  await page.locator("#expand").click();
   await expect(page.locator("[data-plot]")).toHaveCount(1);
-  await page.locator("#farm-mode").click();
-  await visitBuilding(page, "home");
-  await page
-    .getByRole("button", { name: "Build your house", exact: true })
-    .click();
-  await expect(page.locator('[data-build="oak"]')).toBeHidden();
-  await page.locator('[data-build="home"]').click();
+  await page.locator("#close-service").click();
   await page.locator('[data-cell="12,18"]').click();
+  await page.locator('[data-build="home"]').click();
   await expect(page.locator("#farm-message")).toContainText(
     "construction started",
   );
-  await page.locator("#farm-mode").click();
   await expect(page.locator('[data-service="home"]')).toHaveCount(1);
   await page.reload();
   await expect(page.locator("#startup")).toBeHidden();
@@ -52,9 +42,10 @@ test("loads behind a cover, starts bare, builds fields and completes a home next
   );
   await page.locator("#close-service").click();
   await visitBuilding(page, "home");
+  await expect(page.locator("#next-season")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Prepare fields", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -131,5 +122,37 @@ for (const saved of [false, true]) {
         page.getByRole("button", { name: "Inherit your farm", exact: true }),
       ).toBeVisible();
     }
+  });
+}
+
+for (const viewport of [
+  { width: 1280, height: 720 },
+  { width: 320, height: 568 },
+  { width: 667, height: 375 },
+]) {
+  test(`the detailed tent stays in view and opens from its canvas at ${viewport.width}×${viewport.height}`, async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ viewport, hasTouch: true });
+    const page = await context.newPage();
+    await page.goto(`/?instance=validation-tent-art-${viewport.width}`);
+    await page.locator("#begin-farm").click();
+    const target = await page.locator('[data-service="home"]').boundingBox();
+    expect(target).not.toBeNull();
+    // Tap opaque canvas above the service's ground tile, away from the HUD.
+    const x = target!.x + target!.width / 2 + 10;
+    const y = target!.y + target!.height / 2 - 40;
+    expect(x).toBeGreaterThan(80);
+    expect(x).toBeLessThan(viewport.width - 70);
+    expect(y).toBeGreaterThan(90);
+    const hud = await page.locator("#farm-status").boundingBox();
+    // The entire 160 × 106⅔ tent, anchored 24px below its service, clears the HUD.
+    expect(
+      target!.y + target!.height / 2 - (160 * (2 / 3) - 24),
+    ).toBeGreaterThan(hud!.y + hud!.height);
+    await page.touchscreen.tap(x, y);
+    await expect(page.locator("#service-panel")).toBeVisible();
+    await expect(page.locator("#service-title")).toHaveText("Your tent");
+    await context.close();
   });
 }

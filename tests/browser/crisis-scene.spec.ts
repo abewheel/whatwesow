@@ -5,6 +5,7 @@ import { engine } from "../../src/crisis/engine";
 import { presetState } from "../../src/dev/presets";
 import { homesteadState, type GameState } from "../../src/game/state";
 import { homesteadMicroState, type Plot } from "../../src/micro/state";
+import { councilOffice } from "../../src/micro/world";
 
 const homestead = (fields: Partial<GameState>): GameState => ({
   ...homesteadState(),
@@ -92,6 +93,11 @@ async function open(page: Page, instance: string) {
   );
   return errors;
 }
+// The four corner cells of a council office lot standing at this cell, to frame it.
+const lot = ({ row, col }: { row: number; col: number }) =>
+  [0, councilOffice.height - 1].flatMap((dr) =>
+    [0, councilOffice.width - 1].map((dc) => `${row + dr},${col + dc}`),
+  );
 // A summer drought answered with the first argument, as it is played.
 const drought = { id: "Drought", turn: 6, pick: "D-LIB-P" };
 const field = ["15,15", "15,17", "17,15", "17,17"];
@@ -236,8 +242,8 @@ test("a sealed well fades to grey and the council office stands while permits ar
   await expect(page.locator('[data-service="council"]')).toHaveCount(0);
   await capture(page, "sealed", ["15,19", "16,20", "17,17"]);
   await applyGame(page, state("spring", true));
-  const office = ["7,9", "8,10"];
-  await page.locator(`[data-cell="${office[1]}"]`).scrollIntoViewIfNeeded();
+  const office = lot(councilOffice);
+  await page.locator(`[data-cell="${office[3]}"]`).scrollIntoViewIfNeeded();
   await expect(canvas).toHaveAttribute("data-scene-council", "7,9");
   await expect(page.locator('[data-service="council"]')).toHaveAttribute(
     "data-cell",
@@ -282,9 +288,6 @@ test("the council's answers seal the farm's well and raise the council office", 
     .map(Number);
   await expect(canvas).toHaveAttribute("data-scene-council", `${row},${col}`);
   await expect(canvas).toHaveAttribute("data-scene-taken", "6");
-  await capture(page, "council-answer", [
-    `${row},${col}`,
-    `${row + 1},${col + 1}`,
-  ]);
+  await capture(page, "council-answer", lot({ row, col }));
   expect(errors).toEqual([]);
 });

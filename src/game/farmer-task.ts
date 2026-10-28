@@ -1,4 +1,4 @@
-import { buildings, cellAllowed, type Cell } from "../micro/world";
+import { structureSize, cellAllowed, type Cell } from "../micro/world";
 import type { MicroState } from "../micro/state";
 import type { FarmPolicy } from "../contracts/farm-policy";
 import type { FarmAction } from "../micro/rules";
@@ -22,14 +22,15 @@ export function farmerTaskForAction(
     action.type === "build" ||
     action.type === "move" ||
     action.type === "upgrade" ||
-    action.type === "harvestTree"
+    action.type === "harvestTree" ||
+    action.type === "collectAnimal"
   ) {
     const structure =
       action.type === "build"
         ? current.structures.at(-1)
         : current.structures.find((s) => s.id === action.id);
     if (!structure) return undefined;
-    const { width, height } = buildings[structure.kind];
+    const { width, height } = structureSize(structure);
     return {
       target: { row: structure.row, col: structure.col },
       action: action.type === "harvestFruit" ? "harvest" : action.type,

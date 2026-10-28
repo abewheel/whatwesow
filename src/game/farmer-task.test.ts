@@ -26,7 +26,7 @@ it("keeps building dimensions for perimeter routing", () => {
   const current = actOnFarm(previous, action).state;
   expect(farmerTaskForAction(action, previous, current)).toMatchObject({
     target: action.cell,
-    width: 2,
-    height: 2,
+    width: 3,
+    height: 3,
   });
 });

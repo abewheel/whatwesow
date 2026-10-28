@@ -345,7 +345,7 @@ window.CONTENT = {
         {
           "pos": -80,
           "name": "A valley seed board controls all seed and picks your crops",
-          "immediate": "You get new seed for free. The board now hands out one approved seed through the seed shop.",
+          "immediate": "You get new seed for free. The board now names one approved crop each season, and its seed is free when you plant.",
           "drag": "The state decides what you grow, and its seed yields 20% less. Planting anything else costs a fine.",
           "modifier": "cropChoiceLocked: true; freeSeed: true",
           "effects": [
@@ -545,7 +545,7 @@ window.CONTENT = {
         {
           "pos": -40,
           "name": "Take the land, pay a set price",
-          "immediate": "The county takes 6 tiles across your farm and pays you half what they're worth. Your fields drain into the new reservoir, so to keep its water clean, the county now plans what you build and plant. From now on the county hands out the seed through the seed shop.",
+          "immediate": "The county takes 6 tiles across your farm and pays you half what they're worth. Your fields drain into the new reservoir, so to keep its water clean, the county now plans what you build and plant. From now on the county's chosen seed is free when you plant.",
           "drag": "New buildings and upgrades need county approval, so they take a season longer. Before you plant, you file for a permit at the council office, and it's good from the next season. Each season the county names the one crop you may plant and gives you its seed free. Planting anything else, or without a permit, costs a fine.",
           "modifier": "removeTiles: {count: 6, selection: random, cashPerTile: 0.5×}; permitDelayTicks on plant; cropChoiceLocked: true; freeSeed: true",
           "effects": [
@@ -587,7 +587,7 @@ window.CONTENT = {
         {
           "pos": -80,
           "name": "Take the best land for the common good, pay nothing",
-          "immediate": "The county takes whatever route it likes best: your 8 best tiles, and pays nothing. The rest of your land drains into the reservoir, so the county now plans what you plant on it. From now on the county hands out the seed through the seed shop.",
+          "immediate": "The county takes whatever route it likes best: your 8 best tiles, and pays nothing. The rest of your land drains into the reservoir, so the county now plans what you plant on it. From now on the county's chosen seed is free when you plant.",
           "drag": "The county zones your farm: you can't put up more buildings than you have now. Before you plant, you file for a permit at the council office, and it's good from the next season. Each season the county names the one crop you may plant and gives you its seed free. Planting anything else, or without a permit, costs a fine.",
           "modifier": "removeTiles: {count: 8, selection: mostProductive, cashPerTile: 0}; permitDelayTicks on plant; cropChoiceLocked: true; freeSeed: true",
           "effects": [

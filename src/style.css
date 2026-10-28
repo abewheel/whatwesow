@@ -117,13 +117,14 @@ small {
   width: 28px;
   height: 28px;
   flex-shrink: 0;
-  background-image: url("/art/hud-icons-detailed.png");
-  background-size: 400% 400%;
+  background-size: contain;
+  background-position: center;
   background-repeat: no-repeat;
   filter: drop-shadow(0 1px 1px #49362130);
 }
 .farm-title,
 #season,
+#farm-status,
 .farm-tools,
 .field-note,
 dialog,
@@ -252,12 +253,20 @@ dialog,
 }
 .farm-title {
   padding: 6px 10px;
-  align-self: stretch;
+  align-self: flex-start;
   display: flex;
   align-items: center;
 }
-#season {
+.farm-overview {
+  position: relative;
   margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 252px;
+  pointer-events: none;
+}
+#season {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -332,34 +341,60 @@ dialog,
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
-#farm-stats {
-  display: flex;
+#farm-status {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
   gap: 8px;
-  flex-shrink: 0;
-  font-size: 12px;
+  min-height: 56px;
+  padding: 8px;
+  pointer-events: none;
 }
-#farm-stats > span {
+#empty-plots,
+#growing-plots,
+#harvest-ready {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
+  font-size: 18px;
+  white-space: nowrap;
 }
-#farm-stats .pixel-icon {
-  width: 20px;
-  height: 20px;
+#empty-plots .pixel-icon,
+#growing-plots .pixel-icon,
+#harvest-ready .pixel-icon {
+  width: 24px;
+  height: 24px;
 }
-.soil-meter {
-  display: flex;
-  gap: 2px;
+#empty-plots {
+  justify-self: start;
 }
-.soil-meter i {
-  width: 5px;
-  height: 10px;
-  border: 1px solid #937247;
-  background: #dfcba0;
+#growing-plots {
+  justify-self: center;
 }
-.soil-meter .filled {
-  background: #597741;
-  border-color: #365634;
+#harvest-ready {
+  justify-self: end;
+}
+#farm-status > span > span:last-child {
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 600px) {
+  #farm-status {
+    gap: 4px;
+  }
+  #farm-status > span {
+    gap: 3px;
+    font-size: 14px;
+  }
+  #farm-status .pixel-icon {
+    width: 18px;
+    height: 18px;
+  }
 }
 .farm-tools {
   max-width: 100%;
@@ -407,8 +442,8 @@ summary {
   display: none;
 }
 #camera-controls > summary .pixel-icon {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
 }
 .camera-panel {
   position: absolute;
@@ -445,28 +480,6 @@ summary {
 #pan-left,
 #pan-right {
   width: 44px;
-}
-#coordinate-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  width: 100%;
-}
-#coordinate-form label {
-  font-size: 13px;
-  display: grid;
-  gap: 4px;
-}
-#coordinate-form input {
-  width: 100%;
-}
-#go-to-cell,
-#camera-error {
-  grid-column: 1 / -1;
-}
-#camera-error {
-  color: #923d28;
-  font-size: 14px;
 }
 input,
 select,
@@ -673,9 +686,6 @@ input[aria-invalid="true"] {
   line-height: 1.35;
   margin-top: 3px;
 }
-.plan-copy .plan-rule {
-  color: #923d28;
-}
 #structure-inspection {
   margin-bottom: 12px;
 }
@@ -826,12 +836,24 @@ dialog::backdrop {
     right: 6px;
     gap: 6px;
   }
-  #season {
+  .farm-overview {
     margin-left: 0;
+    min-width: 0;
     flex: 1;
+  }
+  #season {
     justify-content: space-between;
     min-width: 0;
-    gap: 8px;
+    gap: 4px;
+    padding-inline: 4px;
+  }
+  #season .coin-balance {
+    font-size: 16px;
+    gap: 3px;
+  }
+  #season .coin-balance .pixel-icon {
+    width: 20px;
+    height: 20px;
   }
   .hud-bottom {
     bottom: 6px;
@@ -844,9 +866,6 @@ dialog::backdrop {
   }
   #farm-message {
     font-size: 13px;
-  }
-  #farm-stats {
-    display: none;
   }
   .farm-tools {
     width: fit-content;
@@ -900,7 +919,7 @@ dialog::backdrop {
   .farm-title {
     display: none;
   }
-  #season {
+  .farm-overview {
     margin-left: 0;
   }
   #service-panel {
@@ -920,13 +939,12 @@ dialog::backdrop {
   .farm-card:has(#service-panel:not([hidden])) #open-menu {
     display: none;
   }
-  .farm-card:has(#service-panel:not([hidden])) #season {
+  .farm-card:has(#service-panel:not([hidden])) .farm-overview {
     flex: 1;
+  }
+  .farm-card:has(#service-panel:not([hidden])) #season {
     flex-wrap: wrap;
     min-width: 0;
-  }
-  #farm-stats {
-    display: none;
   }
   #farm-message {
     -webkit-line-clamp: 1;
@@ -1226,10 +1244,10 @@ button.crisis-card {
   }
 }
 
-/* Keep the development entry out of the compact HUD row. */
+/* Keep the development entry below the compact HUD. */
 #crisis-test {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
   min-height: 44px;
   margin: 0;
@@ -1357,7 +1375,11 @@ button.crisis-card {
   color: #6b2a17;
 }
 @media (max-width: 700px), (max-height: 500px) {
-  /* The farmhouse sheet offers "Answer the council" instead. */
+  /* The farm status bar spans the HUD's edge here: wait below it. */
+  #council-meeting {
+    top: calc(100% + 72px);
+  }
+  /* An open popup leads with "Answer the council" instead. */
   .farm-card:has(#service-panel:not([hidden])) #council-meeting {
     display: none;
   }
@@ -1428,13 +1450,6 @@ button.crisis-card {
 #council-trades:not(:has(button:not([hidden]))) {
   display: none;
 }
-#permit-status {
-  font-size: 14px;
-  line-height: 1.5;
-}
-#file-permit {
-  width: 100%;
-}
 #premium-seed {
   display: flex;
   align-items: center;
@@ -1456,13 +1471,206 @@ button.crisis-card {
   color: var(--muted);
   font-size: 13px;
 }
-.crop-tag.thirsty {
-  padding: 0 6px;
-  border: 1px solid #5d8fa0;
-  color: #2f5f6e;
-  background: #e2f0ef;
-}
 .crop-rule {
   flex-basis: 100%;
   color: #923d28;
+}
+.season-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  background: #edf0ddeb;
+  color: #33492f;
+  touch-action: none;
+}
+.season-transition-summer {
+  background: #fff0c9eb;
+  color: #72501e;
+}
+.season-transition-fall {
+  background: #f4dfc4eb;
+  color: #754329;
+}
+.season-transition-winter {
+  background: #e4eff5eb;
+  color: #3a5669;
+}
+.season-transition-card {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px;
+}
+.season-transition-card .pixel-icon {
+  width: 48px;
+  height: 48px;
+}
+.season-transition-card strong {
+  font-size: clamp(28px, 7vw, 42px);
+  text-transform: capitalize;
+}
+
+.season-transition-emblem {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 72px;
+}
+.season-confetti {
+  position: absolute;
+  left: calc(50% - 4px);
+  top: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+  opacity: 0;
+  background: #e994ab;
+  border-radius: 7px 0 7px 0;
+}
+.season-transition-summer .season-confetti {
+  background: #eab037;
+  border-radius: 0;
+  clip-path: polygon(
+    50% 0,
+    65% 35%,
+    100% 50%,
+    65% 65%,
+    50% 100%,
+    35% 65%,
+    0 50%,
+    35% 35%
+  );
+}
+.season-transition-fall .season-confetti {
+  background: #bd6b29;
+}
+.season-transition-winter .season-confetti {
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px #b5cfdf;
+}
+
+/* Keep camera access beside the farm menu at every viewport size. */
+#camera-controls > summary {
+  width: 48px;
+  height: 54px;
+  justify-content: center;
+  padding: 4px;
+  border: 4px solid transparent;
+  border-image: url("/art/hud-frame-detailed.png") 150 fill / 4px / 0 stretch;
+  border-radius: 0;
+  background: none;
+}
+#camera-controls .camera-panel {
+  position: absolute;
+  left: auto;
+  right: 0;
+  top: calc(100% + 8px);
+  bottom: auto;
+  width: min(300px, calc(100vw - 24px));
+  max-height: calc(var(--viewport-height, 100dvh) - 100px);
+}
+.pan-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  gap: 4px;
+  margin: 0 auto;
+}
+#pan-up {
+  grid-column: 2;
+}
+#pan-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+#pan-down {
+  grid-column: 2;
+  grid-row: 2;
+}
+#pan-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.hud-top:has(#camera-controls[open]) {
+  z-index: 8;
+}
+
+@media (max-width: 600px) {
+  #season {
+    gap: 4px;
+    padding-inline: 4px;
+  }
+  #season .coin-balance {
+    font-size: 16px;
+    gap: 3px;
+  }
+  #season .coin-balance .pixel-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+#tile-actions button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  white-space: normal;
+}
+#service-panel:has(#tile-actions:not([hidden])) {
+  width: min(320px, calc(100% - 24px));
+}
+#tile-actions button:has(.pixel-icon) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#tile-actions button strong,
+#tile-actions button small {
+  display: block;
+}
+#tile-actions button small {
+  font-size: 12px;
+  margin-top: 4px;
+}
+@media (max-width: 600px) and (min-height: 501px) {
+  #service-panel:has(#tile-actions:not([hidden])) {
+    max-height: calc(var(--viewport-height, 100dvh) * 0.62);
+  }
+}
+.plot-hit[data-context] {
+  background: #f8df6b66;
+  outline: 3px solid #fff0a4;
+}
+#service-panel.inspecting #structure-target,
+#service-panel.inspecting #build-shop,
+#service-panel.inspecting #expand,
+#service-panel.inspecting #improve,
+#service-panel.inspecting #move-plot {
+  display: none;
+}
+
+/* Context menus follow their farm target; inline coordinates clamp to the viewport. */
+#service-panel {
+  right: auto;
+  bottom: auto;
+  width: 300px;
+  z-index: 12;
+}
+#service-panel:has(#tile-actions:not([hidden])) {
+  width: 300px;
+}
+#tile-actions > p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 6px 0;
+}
+.farm-card:has(#service-panel:not([hidden])) .hud-top {
+  right: 12px;
+}
+.farm-card:has(#service-panel:not([hidden])) #open-menu {
+  display: block;
 }

@@ -178,8 +178,9 @@ export function selectPlots(
     .map((p) => p.id);
 }
 
+// Both parts come from a parsed save, whose lots are already enlarged.
 const compose = (micro: MicroState, macro: MacroState) =>
-  parseState({ version: 3, ...micro, ...macro });
+  parseState({ version: 3, buildingLayout: 2, ...micro, ...macro });
 const heading = (n: number, id: string) =>
   engine.text.fill(content.strings.crisisHeading, {
     n,

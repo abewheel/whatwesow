@@ -1,3 +1,4 @@
+import { choosePlotWork } from "./helpers";
 import { test, expect, type Page } from "@playwright/test";
 
 async function begin(page: Page, instance: string) {
@@ -34,7 +35,7 @@ for (const viewport of [
 ]) {
   test.describe(`touch phone ${viewport.width}x${viewport.height}`, () => {
     test.use({ viewport, hasTouch: true, isMobile: true });
-    test("uses every farm service, plants, builds and advances with readable menus", async ({
+    test("plants, builds and ends turns through anchored farm menus", async ({
       page,
     }) => {
       test.setTimeout(90000);
@@ -45,74 +46,48 @@ for (const viewport of [
       );
       await begin(page, `validation-mobile-${viewport.width}`);
       await fits(page, ".hud-top");
+      await page.locator("#coin-count").evaluate((e) => {
+        e.textContent = "100,000";
+      });
+      const balance = (await page.locator(".coin-balance").boundingBox())!;
+      const menu = (await page.locator("#open-menu").boundingBox())!;
+      expect(balance.x + balance.width).toBeLessThanOrEqual(menu.x);
+
       expect(
         (await page.locator(".hud-top").boundingBox())!.height,
       ).toBeLessThan(75);
-      await tent(page);
+      await page.locator('[data-cell="16,16"]').tap();
+      await page.locator("#expand").tap();
+      await expect(page.locator("#improve")).toBeDisabled();
       await fits(page, "#service-panel");
       await fits(page, "#close-service");
-      await expect(page.locator("#next-season")).toBeInViewport();
-      await page
-        .getByRole("button", { name: "Prepare fields", exact: true })
-        .tap();
-      await expect(page.locator("#improve")).toBeDisabled();
-      await expect(page.locator("#improve")).toContainText("+3 / harvest");
-      await expect(page.locator("#soil-status")).toHaveText("Harvest 3 crops");
-      await page.locator("#expand").tap();
-      await page.locator('[data-cell="16,16"]').tap();
-      await expect(page.locator("[data-plot]")).toHaveCount(1);
-      await page.locator("#farm-mode").tap();
-      await page.getByRole("button", { name: "Open seed basket" }).tap();
-      await expect(page.locator("#service-panel")).toBeVisible();
-      await expect(
-        page.locator('[data-crop="turnip"] .control-detail'),
-      ).toContainText("1 season to grow");
-      await fits(page, '[data-crop="turnip"]');
       await page.locator('[data-crop="turnip"]').tap();
-      await page.locator('[data-plot="0"]').tap();
       await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
         "aria-label",
         /growing/,
       );
-      await tent(page);
-      await page
-        .getByRole("button", { name: "Build your house", exact: true })
-        .tap();
-      await expect(page.locator('[data-build="home"]')).toContainText(
-        "Your home",
-      );
-      await expect(page.locator('[data-build="home"]')).toContainText(
-        "Next season",
-      );
-      await fits(page, '[data-build="home"]');
-      await page.locator('[data-build="home"]').tap();
       await page.locator('[data-cell="12,18"]').tap();
-      await expect(page.locator("#farm-message")).toContainText(
-        "construction started",
-      );
+      await page.locator('[data-build="home"]').tap();
+      await expect(page.locator("#service-title")).toHaveText("Farmhouse");
+      await expect(page.locator("#next-season")).toBeDisabled();
       await tent(page);
       await page.locator("#next-season").tap();
       await expect(page.locator("#season")).toContainText("summer");
-      await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
-        "aria-label",
-        /ready/,
-      );
       await page.locator("#close-service").tap();
       await page.locator('[data-plot="0"]').tap();
+      await choosePlotWork(page);
       await expect(page.locator("#season")).toContainText("95 coins");
-      await page.locator('[data-structure="1"]').tap();
-      await expect(page.locator("#service-panel")).toBeVisible();
-      await page
-        .getByRole("button", { name: "Building plans", exact: true })
-        .tap();
-      await page.locator("#structure-target").selectOption("1");
+      await page.locator('[data-structure="1"]').press("Enter");
+      await fits(page, "#service-panel");
       await page.locator("#move-building").tap();
       await page.locator('[data-cell="13,18"]').tap();
       await expect(page.locator('[data-cell="13,18"]')).toHaveAttribute(
         "data-structure",
         "1",
       );
-      await expect(page.locator("#season")).toContainText("95 coins");
+      await expect(
+        page.locator("#seed-selection,#end-turn,#build-shop"),
+      ).toHaveCount(0);
       await page.locator("#camera-controls summary").tap();
       await fits(page, "#close-camera");
       await page.locator("#close-camera").tap();
@@ -128,81 +103,39 @@ test.describe("phone forms and gestures", () => {
     hasTouch: true,
     isMobile: true,
   });
-  test("validates coordinates, submits with Enter and keeps zoom working", async ({
+  test("camera controls pan in four directions and clamp zoom at 50%", async ({
     page,
   }) => {
-    await begin(page, "validation-mobile-coordinate-form");
-    await page.locator("#camera-controls summary").tap();
+    await begin(page, "validation-mobile-camera");
+    await page.getByLabel("View controls", { exact: true }).tap();
     await fits(page, ".camera-panel");
-    await page.locator("#view-row").fill("");
-    await page.locator("#view-col").fill("9");
-    const before = await page
-      .locator("#farm")
-      .evaluate((e) => [e.scrollLeft, e.scrollTop]);
-    await page.locator("#view-col").press("Enter");
-    await expect(page.locator("#camera-error")).toHaveText(
-      "Enter a row and column from 0 to 63.",
+    await expect(page.locator("#view-row, #view-col, #go-to-cell")).toHaveCount(
+      0,
     );
-    expect(
-      await page.locator("#farm").evaluate((e) => [e.scrollLeft, e.scrollTop]),
-    ).toEqual(before);
-    for (const invalid of ["64", "-1", "12.5"]) {
-      await page.locator("#view-row").fill(invalid);
-      await page.locator("#go-to-cell").tap();
-      await expect(page.locator("#view-row")).toHaveAttribute(
-        "aria-invalid",
-        "true",
-      );
-    }
-    await page.locator("#view-row").fill("63");
-    await page.locator("#view-col").fill("63");
-    await page.locator("#view-col").press("Enter");
-    await expect(page.locator("#camera-error")).toBeHidden();
-    await expect(page.locator('[data-cell="63,63"]')).toBeAttached();
-    await page.locator("#home-view").tap();
-    await page.locator("#zoom-in").tap();
-    await expect(page.locator("#zoom-level")).toHaveText("125%");
+    const position = () =>
+      page.locator("#farm").evaluate((e) => [e.scrollLeft, e.scrollTop]);
+    const before = await position();
+    await page.getByRole("button", { name: "Pan right", exact: true }).tap();
+    expect((await position())[0]).toBeGreaterThan(before[0]);
+    await page.getByRole("button", { name: "Pan left", exact: true }).tap();
+    await page.getByRole("button", { name: "Pan down", exact: true }).tap();
+    expect((await position())[1]).toBeGreaterThan(before[1]);
+    await page.getByRole("button", { name: "Pan up", exact: true }).tap();
+    expect(await position()).toEqual(before);
+    await page.locator("#zoom-out").tap();
+    await page.locator("#zoom-out").tap();
+    await expect(page.locator("#zoom-level")).toHaveText("50%");
+    await expect(page.locator("#zoom-out")).toBeDisabled();
+    await page.locator("#farm").focus();
+    await page.keyboard.press("-");
+    await expect(page.locator("#zoom-level")).toHaveText("50%");
     await page.locator("#zoom-reset").tap();
     await expect(page.locator("#zoom-level")).toHaveText("100%");
+    await page.locator("#zoom-in").tap();
+    await expect(page.locator("#zoom-level")).toHaveText("125%");
+    await page.locator("#close-camera").tap();
+    await expect(page.locator(".camera-panel")).toBeHidden();
   });
-  for (const viewport of [
-    { width: 390, height: 844 },
-    { width: 1024, height: 768 },
-  ]) {
-    test(`keeps coordinate inputs and close control above the keyboard at ${viewport.width}px`, async ({
-      page,
-    }) => {
-      await page.setViewportSize(viewport);
-      await begin(page, `validation-mobile-keyboard-${viewport.width}`);
-      await page.locator("#camera-controls summary").tap();
-      await page.locator("#view-row").focus();
-      await page.evaluate(() => {
-        Object.defineProperty(window.visualViewport, "height", {
-          configurable: true,
-          get: () => 400,
-        });
-        window.visualViewport!.dispatchEvent(new Event("resize"));
-      });
-      await expect
-        .poll(async () => {
-          const b = (await page.locator(".camera-panel").boundingBox())!;
-          return b.y + b.height;
-        })
-        .toBeLessThanOrEqual(400);
-      await fits(page, ".camera-panel");
-      await page.locator("#view-col").scrollIntoViewIfNeeded();
-      const input = (await page.locator("#view-col").boundingBox())!;
-      expect(input.y + input.height).toBeLessThanOrEqual(400);
-      const close = (await page.locator("#close-camera").boundingBox())!;
-      expect(close.y + close.height).toBeLessThanOrEqual(400);
-      await page.locator("#view-row").fill("20");
-      await page.locator("#view-col").fill("21");
-      await page.locator("#view-col").press("Enter");
-      await expect(page.locator("#camera-error")).toBeHidden();
-      await page.locator("#close-camera").tap();
-      await expect(page.locator(".camera-panel")).toBeHidden();
-    });
-  }
   test("touch panning moves the estate without planting or scrolling the page", async ({
     page,
     context,

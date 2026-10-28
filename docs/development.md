@@ -25,7 +25,7 @@ pnpm dev --instance validation-my-task
 
 Named instances start their own server on a free port and print a URL with an instance name. Each name uses a separate IndexedDB database. Keep the printed query string when reloading. Stop the server with Ctrl+C. Production ignores instance parameters and excludes playtest tools from its bundle.
 
-New games show a start screen after artwork, fonts, and local saves finish loading. A failed game-artwork request keeps the farm covered and offers Reload farm; retrying preserves the saved season. They begin with no buildings or fields, a temporary tent, and 240 coins. The tent provides End turn while the house is under construction. Founding farms persist the optional `selfBuilt: true` micro field, which keeps services in the tent or farmhouse menu rather than adding village buildings. Existing saves retain their layout and services.
+New games show a start screen after artwork, fonts, and local saves finish loading. A failed game-artwork request keeps the farm covered and offers Reload farm; retrying preserves the saved season. They begin with no buildings or fields, a temporary tent, and 240 coins. The tent provides End turn while the house is under construction. Founding farms persist the optional `selfBuilt: true` micro field, which controls village artwork. Existing saves retain their layout. Actions live on tiles and structures; End turn and recovery work live at home. There are no seed-basket or service-catalog menus.
 
 Saves are versioned, validated, and stored locally. Export/import transfers a save as JSON. Browser storage can be cleared or evicted, so export anything you want to keep. Saves belong to each origin, including its port; return to the same port to reuse them.
 
@@ -40,7 +40,7 @@ Validation runs formatting, lint, types, unit/integration tests, a production bu
 
 ## Mobile checks
 
-`pnpm exec playwright test tests/browser/mobile.spec.ts` checks touch play at 320 × 568, 390 × 844, and 667 × 375, including construction, farming, coordinate validation, on-screen keyboard resizing, zoom, panning, and save import/export. To check the same forms and menus in the iPhone browser engine, install WebKit with `pnpm exec playwright install webkit`, then run `pnpm exec playwright test tests/browser/mobile.spec.ts --browser=webkit --grep-invert "touch panning"`. The native gesture test uses Chromium’s touch protocol.
+`pnpm exec playwright test tests/browser/mobile.spec.ts` checks touch play at 320 × 568, 390 × 844, and 667 × 375, including construction, farming, camera controls, on-screen keyboard resizing, zoom, panning, and save import/export. To check the same forms and menus in the iPhone browser engine, install WebKit with `pnpm exec playwright install webkit`, then run `pnpm exec playwright test tests/browser/mobile.spec.ts --browser=webkit --grep-invert "touch panning"`. The native gesture test uses Chromium’s touch protocol.
 
 ## Structure
 

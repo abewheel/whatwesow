@@ -1,3 +1,4 @@
+import { enlargeBuildingLots } from "../micro/building-layout";
 import {
   actOnFarm,
   growCrops,
@@ -38,14 +39,17 @@ import {
 export { seasons } from "../macro/state";
 
 // Only integration joins domains and migrates older save envelopes.
-export type GameState = { version: 3 } & MicroState & MacroState;
+export type GameState = { version: 3; buildingLayout?: 2 } & MicroState &
+  MacroState;
 export const initialState = (): GameState => ({
   version: 3,
+  buildingLayout: 2,
   ...initialMicroState(),
   ...initialMacroState(),
 });
 export const homesteadState = (): GameState => ({
   version: 3,
+  buildingLayout: 2,
   ...initialMacroState(),
   ...homesteadMicroState(),
 });
@@ -54,12 +58,12 @@ export function parseState(value: unknown): GameState {
     throw new Error("State must be an object.");
   const saved = value as Record<string, unknown>;
   if (saved.version === 1) {
-    return {
+    return parseState({
       version: 3,
       ...homesteadMicroState(),
       coins: parseLegacyCoins(saved.coins),
-      ...parseMacro(saved),
-    };
+      ...parseMacroState(saved),
+    });
   }
   if (saved.version === 2) {
     if (
@@ -68,7 +72,7 @@ export function parseState(value: unknown): GameState {
       saved.plots.length > 49
     )
       throw new Error("Legacy saves need 9–49 plots.");
-    return {
+    return parseState({
       version: 3,
       ...parseMicroState({
         ...saved,
@@ -78,11 +82,24 @@ export function parseState(value: unknown): GameState {
         nextStructureId: 2,
         structures: homesteadMicroState().structures,
       }),
-      ...parseMacro(saved),
-    };
+      ...parseMacroState(saved),
+    });
   }
   if (saved.version !== 3) throw new Error("Use version 1, 2 or 3.");
-  return { version: 3, ...parseMicroState(value), ...parseMacro(value) };
+  if (saved.buildingLayout !== undefined && saved.buildingLayout !== 2)
+    throw new Error("Invalid building layout version.");
+  const macro = parseMacro(value),
+    farm = parseMicroState(value);
+  const state: GameState = {
+    version: 3,
+    buildingLayout: 2,
+    ...farm,
+    ...macro,
+  };
+  // Larger lots also keep off land the council's rules have taken.
+  return saved.buildingLayout === 2
+    ? state
+    : { ...state, ...enlargeBuildingLots(farm, farmContext(state).policy) };
 }
 /** Macro checks record shapes; integration checks them against the crisis layer. */
 function parseMacro(value: unknown): MacroState {
@@ -180,6 +197,7 @@ export function advanceSeason(state: GameState): {
     { permits, contract } = paid.state;
   const result = parseState({
     version: 3,
+    buildingLayout: 2,
     ...paid.state,
     seasonSales: undefined,
     water: undefined,

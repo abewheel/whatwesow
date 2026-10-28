@@ -14,11 +14,14 @@ import {
   buildings,
   constructionCost,
   isTree,
+  isAnimal,
+  animalProducts,
   treeProduct,
   buildingLevel,
   canPlace,
   WORLD_SIZE,
   occupiedCells,
+  serviceOptions,
   cellKey,
   upgradeCost,
   cellAllowed,
@@ -39,6 +42,7 @@ import {
 import {
   canWork,
   credit,
+  animalQuote,
   fruitQuote,
   plantQuote,
   saleQuote,
@@ -50,6 +54,7 @@ export type FarmAction =
   | { type: "harvest"; plot: number }
   | { type: "harvestFruit"; id: number }
   | { type: "harvestTree"; id: number }
+  | { type: "collectAnimal"; id: number }
   | { type: "work" }
   | { type: "expand"; cell?: Cell }
   | { type: "build"; kind: BuildingKind; cell: Cell }
@@ -155,6 +160,26 @@ export function actOnFarm(
         `${crops[plot.crop].name} harvested`,
       ));
     }
+  } else if (action.type === "collectAnimal") {
+    const animal = state.structures.find((s) => s.id === action.id);
+    if (
+      !animal ||
+      !isAnimal(animal.kind) ||
+      animal.pendingConstruction ||
+      !animal.product
+    )
+      throw new Error("No animal products ready. Return next season.");
+    if (!cellAllowed(animal, policy))
+      throw new Error("This building is outside the current land grant.");
+    const sale = animalQuote(state, animal, policy, turn);
+    animal.product = false;
+    ({ state, message } = sell(
+      state,
+      sale,
+      policy,
+      turn,
+      `${animalProducts[animal.kind].product} collected`,
+    ));
   } else if (action.type === "harvestTree") {
     const tree = state.structures.find((s) => s.id === action.id);
     if (
@@ -186,9 +211,7 @@ export function actOnFarm(
       throw new Error("The current plot limit has been reached.");
     const cost = policyCost(expansionCost(state), policy);
     if (state.coins < cost) throw new Error("Not enough coins to open a plot.");
-    const occupied = occupiedCells(state, {
-      council: policy.permitsRequired === true,
-    });
+    const occupied = occupiedCells(state, serviceOptions(policy));
     const cell =
       action.cell ??
       Array.from({ length: WORLD_SIZE * WORLD_SIZE }, (_, i) => ({
@@ -249,6 +272,7 @@ export function actOnFarm(
       ...action.cell,
       id,
       kind: action.kind,
+      footprint: { width: item.width, height: item.height },
       level: 1,
       pendingConstruction: true,
       ...(wait ? { wait } : {}),
@@ -291,7 +315,9 @@ export function actOnFarm(
         )
       )
         throw new Error("That footprint is occupied or outside the farm.");
-      Object.assign(building, action.cell);
+      Object.assign(building, action.cell, {
+        footprint: { width: item.width, height: item.height },
+      });
       message = `${item.name} moved. No coins spent.`;
     } else {
       if (building.pendingConstruction)

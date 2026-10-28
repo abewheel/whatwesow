@@ -10,8 +10,73 @@ import { cellKey, type Cell, type Layout } from "../micro/world";
 import type { FarmPolicy } from "../contracts/farm-policy";
 import type { FarmerTask } from "./farmer-task";
 
-// Uneven source rows need explicit gutters so complete hats stay in-frame.
-export const farmerRowBounds = [0, 174, 354, 532, 722, 902, 1084, 1250, 1448];
+// Measured rectangles preserve each complete pose without adjacent frame bleed.
+export const farmerFrames = [
+  [
+    [74, 6, 175, 170],
+    [244, 9, 349, 174],
+    [429, 5, 517, 174],
+    [590, 5, 687, 173],
+    [758, 5, 860, 173],
+    [928, 5, 1030, 175],
+  ],
+  [
+    [71, 182, 170, 353],
+    [248, 183, 353, 354],
+    [423, 181, 519, 355],
+    [590, 180, 690, 354],
+    [765, 182, 866, 354],
+    [941, 183, 1035, 355],
+  ],
+  [
+    [65, 361, 151, 534],
+    [238, 395, 353, 529],
+    [420, 394, 532, 528],
+    [590, 362, 730, 529],
+    [776, 363, 874, 535],
+    [951, 362, 1031, 534],
+  ],
+  [
+    [59, 537, 158, 722],
+    [237, 537, 370, 717],
+    [414, 546, 550, 726],
+    [595, 540, 742, 726],
+    [771, 552, 893, 721],
+    [940, 538, 1033, 718],
+  ],
+  [
+    [54, 759, 166, 894],
+    [238, 764, 369, 894],
+    [415, 730, 547, 900],
+    [590, 729, 712, 909],
+    [768, 739, 883, 896],
+    [949, 728, 1048, 905],
+  ],
+  [
+    [47, 908, 178, 1083],
+    [221, 917, 365, 1087],
+    [413, 922, 556, 1088],
+    [587, 917, 723, 1066],
+    [759, 916, 900, 1084],
+    [954, 910, 1038, 1088],
+  ],
+  [
+    [59, 1089, 154, 1256],
+    [239, 1090, 343, 1256],
+    [419, 1091, 516, 1257],
+    [587, 1091, 688, 1257],
+    [767, 1092, 865, 1257],
+    [946, 1092, 1042, 1258],
+  ],
+  [
+    [60, 1260, 144, 1438],
+    [244, 1264, 323, 1439],
+    [421, 1261, 497, 1437],
+    [591, 1262, 673, 1437],
+    [772, 1262, 851, 1438],
+    [951, 1265, 1030, 1438],
+  ],
+];
 
 // Contact points in the original 181px grid, separate from tools and loose soil.
 // Keeping feet anchored prevents the generated poses from sliding between cells.
@@ -285,22 +350,29 @@ export class Farmer {
     const walkFrame = Math.floor(this.stride) % 6;
     const pose = walking ? walkFrame : frame;
     const [cx, originalCy] = contacts[row][pose];
-    const width = 181;
-    const height = farmerRowBounds[row + 1] - farmerRowBounds[row];
-    const cy = originalCy + row * 181 - farmerRowBounds[row];
+    const [left, top, right, bottom] = farmerFrames[row][pose];
+    const width = right - left;
+    const height = bottom - top;
+    const contactX = walking || !action ? (left + right) / 2 : cx + pose * 181;
+    const cy = walking ? height - 8 : originalCy + row * 181 - top;
     this.art
       .setTexture("farmer", row * 6 + pose)
       // One stable idle drawing breathes continuously, with its boots fixed at the origin.
       .setScale(
-        58 / width,
-        (58 / width) *
+        58 / 181,
+        (58 / 181) *
           (!walking &&
           !action &&
           !matchMedia("(prefers-reduced-motion: reduce)").matches
             ? 1 + Math.sin((this.clock * Math.PI * 2) / 3.6) * 0.008
             : 1),
       )
-      .setOrigin(this.facing < 0 ? 1 - cx / width : cx / width, cy / height)
+      .setOrigin(
+        this.facing < 0
+          ? 1 - (contactX - left) / width
+          : (contactX - left) / width,
+        cy / height,
+      )
       .setFlipX(this.facing < 0);
     this.effect.clear();
     const navigating =

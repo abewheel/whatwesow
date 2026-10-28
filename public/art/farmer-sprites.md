@@ -1,6 +1,6 @@
 # Farmer sprite sheet
 
-`farmer-sprites.png` is a transparent 1086 × 1448 atlas with six columns and eight rows. Columns are 181 pixels wide; explicit row boundaries at 0, 174, 354, 532, 722, 902, 1084, 1250, and 1448 preserve complete hats. Phaser uses per-frame boot contact points, scales artwork by 58/181, and mirrors them for leftward movement. Feet and the layered ground shadow share the center of one world cell. Work routes stop on a reachable adjacent cell; a tile outline and particles identify the target. Placed structures and current land policy constrain routes, and layout changes clear old destinations. Linear texture filtering matches the painted scenery at game scale.
+`farmer-sprites.png` is a transparent 1086 × 1448 atlas with six columns and eight rows. Each pose uses a measured rectangle in `farmerFrames` in `src/game/farmer.ts` because the generated rows and columns have uneven spacing. Phaser scales artwork by 58/181 and mirrors it for leftward movement. Walking anchors each pose near its boots; work uses per-frame boot contact points. Feet and the layered ground shadow share the center of one world cell. Work routes stop on a reachable adjacent cell; a tile outline and particles identify the target. Placed structures and current land policy constrain routes, and layout changes clear old destinations. Linear texture filtering matches the painted scenery at game scale.
 
 | Row (zero based) | Frames | Motion |
 | --- | --- | --- |

@@ -19,7 +19,7 @@ export async function visitBuilding(
     service === "home"
       ? page
           .locator("[data-structure]")
-          .and(page.getByRole("button", { name: /^Farmhouse / }))
+          .and(page.getByRole("button", { name: /^Farmhouse \d+, level/ }))
           .or(page.locator('[data-service="home"]'))
           .first()
       : page.locator(`[data-service="${service}"]`);
@@ -36,7 +36,24 @@ export async function setCameraCell(
   value: string,
 ) {
   await openCamera(page);
-  await page.getByLabel(`View ${axis}`, { exact: true }).fill(value);
+  await page.evaluate(
+    ({ axis, value }) => {
+      const farm = document.querySelector<HTMLElement>("#farm")!;
+      farm.dataset[axis] = value;
+      const row = farm.dataset.row ?? "16";
+      const col = farm.dataset.column ?? "16";
+      const cell = document.querySelector<HTMLElement>(
+        `[data-cell="${row},${col}"]`,
+      )!;
+      const bounds = cell.getBoundingClientRect();
+      const view = farm.getBoundingClientRect();
+      farm.scrollBy(
+        bounds.x + bounds.width / 2 - view.x - view.width / 2,
+        bounds.y + bounds.height / 2 - view.y - view.height / 2,
+      );
+    },
+    { axis, value },
+  );
 }
 async function openCamera(page: Page) {
   if (
@@ -53,6 +70,8 @@ export async function endTurn(page: Page) {
   const before = await button.textContent();
   await button.click();
   await expect(button).not.toHaveText(before!);
+  // A council meeting opens once the new season has been revealed.
+  await expect(page.locator(".season-transition")).toHaveCount(0);
   await answerCouncil(page);
 }
 /** Answer a council meeting End turn opened: the first argument, and no to any deal. */
@@ -66,4 +85,20 @@ export async function answerCouncil(page: Page) {
   if (await no.isVisible()) await no.click();
   await back.click();
   await expect(dialog).toBeHidden();
+}
+
+// Choose the work explicitly now that tapping a plot opens its actions.
+export async function choosePlotWork(page: Page, crop = "turnip") {
+  const actions = page.locator("#tile-actions");
+  await expect(actions).toBeVisible();
+  const harvest = actions.getByRole("button", {
+    name: "Harvest crop",
+    exact: true,
+  });
+  if (await harvest.isVisible()) {
+    await harvest.click();
+    return;
+  }
+  const plant = actions.locator(`[data-crop="${crop.toLowerCase()}"]`);
+  if (await plant.isVisible()) await plant.click();
 }

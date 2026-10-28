@@ -148,7 +148,7 @@ export function councilFacts(
     );
   if (policy.premiumSeed)
     facts.push(
-      "Premium seed is on sale in the seed basket: it costs more and yields more, but some plantings fail.",
+      "Premium seed is offered when you plant an empty plot: it costs more and yields more, but some plantings fail.",
     );
   const trade = drought ? policy.waterTrade : undefined;
   const contract = state.contract && state.contract.until >= turn;

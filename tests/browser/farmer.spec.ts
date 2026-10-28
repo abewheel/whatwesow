@@ -1,4 +1,5 @@
-import { visitBuilding, endTurn, clickCamera } from "./helpers";
+import { choosePlotWork } from "./helpers";
+import { endTurn, clickCamera } from "./helpers";
 import { test, expect } from "./fixtures";
 import { homesteadMicroState as initialMicroState } from "../../src/micro/state";
 
@@ -16,6 +17,7 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
   await page
     .getByRole("button", { name: "Plot 1: empty", exact: true })
     .click();
+  await choosePlotWork(page);
   await expect(canvas).toHaveAttribute("data-farmer-motion", "plant");
   await expect(canvas).toHaveAttribute("data-farmer-target", "16,16");
   const stance = (await canvas.getAttribute("data-farmer-cell"))!
@@ -27,11 +29,10 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
   await expect(page.locator("#season")).toContainText("summer");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.getByRole("button", { name: /Plot 1: Turnip, ready/ }).click();
+  await choosePlotWork(page);
   await expect(canvas).toHaveAttribute("data-farmer-motion", "harvest");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
 
-  await visitBuilding(page, "seeds");
-  await page.locator('[data-crop="turnip"]').click();
   const farm = initialMicroState();
   farm.plotCells[0] = { row: 18, col: 16 };
   await page.getByLabel("Work on").selectOption("micro");
@@ -40,9 +41,17 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
   await expect(page.locator("#dev-status")).toHaveText(
     "State applied and saved.",
   );
+  await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
+    "data-cell",
+    "18,16",
+  );
+  // Return from the state editor before opening a viewport-anchored menu.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.locator(".farm-card")).toBeInViewport();
   await page
     .getByRole("button", { name: "Plot 1: empty", exact: true })
     .click();
+  await choosePlotWork(page);
   await expect(canvas).toHaveAttribute("data-farmer-motion", "plant");
   await expect(canvas).toHaveAttribute("data-farmer-target", "18,16");
   const relocated = (await canvas.getAttribute("data-farmer-cell"))!

@@ -327,6 +327,46 @@ describe("the harvest sale chain", () => {
     expect(over.state.coins).toBe(0);
     expect(over.state.structures.at(-1)?.product).toBe(false);
   });
+  it("sells eggs, milk and wool through the same tax, quota and debts", () => {
+    const farm = {
+      ...establishedFarm(),
+      coins: 0,
+      owed: 5,
+      nextStructureId: 3,
+      structures: [
+        ...establishedFarm().structures,
+        {
+          id: 2,
+          kind: "coop" as const,
+          row: 0,
+          col: 0,
+          level: 2,
+          product: true,
+        },
+      ],
+    };
+    const collect = { type: "collectAnimal", id: 2 } as const;
+    const policy = { harvestTax: 0.1, quota: 1 };
+    const result = actOnFarm(farm, collect, { turn: 3, policy });
+    expect(result.state).toMatchObject({
+      coins: 49,
+      seasonSales: { turn: 3, count: 1 },
+    });
+    expect(result.state.owed).toBeUndefined();
+    expect(result.message).toBe(
+      "Eggs collected! +54 coins (−6 to the relief fund). 5 paid toward what you owe.",
+    );
+    const over = actOnFarm(
+      { ...farm, seasonSales: { turn: 3, count: 1 } },
+      collect,
+      { turn: 3, policy },
+    );
+    expect(over.state.coins).toBe(0);
+    expect(over.state.structures.at(-1)?.product).toBe(false);
+    expect(over.message).toBe(
+      "Eggs collected. Over this season's sales limit: taken for nothing.",
+    );
+  });
 });
 
 describe("water at the season change", () => {
@@ -538,7 +578,7 @@ describe("council rules for buildings", () => {
     ).entries())
       state = actOnFarm(
         state,
-        { type: "build", kind, cell: { row: 0, col: i * 4 } },
+        { type: "build", kind, cell: { row: 0, col: i * 6 } },
         1,
       ).state;
     state = completeUpgrades(state);

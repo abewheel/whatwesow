@@ -32,12 +32,12 @@ After a pick, the meeting shows the player's argument and its speaker, Tom Brenn
 
 The council waits while the latest crisis has no answer, or its deal has none. Meanwhile:
 
-- **End turn** is disabled with the note "The council is waiting for your answer." and an **Answer the council** button. `advanceSeason` throws the same message.
-- Every farm action is refused with the same message (`actOnGame`): planting, harvesting, building, moving plots or buildings, upgrades, soil work, delivery work and trades. Nothing on the farm changes between the crisis and its answer, so the answer lands on the farm the crisis found.
-- Escape and × only hide the meeting. The HUD's **Council meeting** button reopens it.
+- Every popup leads with the note "The council is waiting for your answer." and an **Answer the council** button, and **End turn** in the farmhouse popup is disabled. `advanceSeason` throws the same message.
+- Every farm action is refused with the same message (`actOnGame`), and its popup button is disabled: planting, harvesting, collecting eggs, milk or wool, building, moving plots or buildings, upgrades, soil work, delivery work and trades. Nothing on the farm changes between the crisis and its answer, so the answer lands on the farm the crisis found.
+- Escape and × only hide the meeting. The HUD's **Council meeting** button reopens it; on small screens, while a popup is open, the popup's **Answer the council** button stands in for it.
 - After a reload, the meeting reopens once the farm is entered.
 
-The farmhouse (or tent) menu gains a **Council rules** section once a crisis has fired. It lists live facts for this season: in a drought, or under a water limit, what End turn will do to the thirsty crops; owed coins, held sales, the sales allowed this season and how many are used, permits, a price lock, the one crop the rules let you plant, a recovering crop, changed sale prices, water prices, wells and premium seed. It offers the trades open now, each with its price: buying water, selling water rights, and locking in a price. It then lists the standing rules in the council's words. The HUD shows how much is owed with the coins while anything is owed. The seed basket shows each crop's price, sale value, whether it is thirsty, and any rule it breaks; see [the farming loop](micro-game.md#council-rules-and-crops).
+The farmhouse (or tent) popup gains a **Council rules** section once a crisis has fired. It lists live facts for this season: in a drought, or under a water limit, what End turn will do to the thirsty crops; owed coins, held sales, the sales allowed this season and how many are used, permits, a price lock, the one crop the rules let you plant, a recovering crop, changed sale prices, water prices, wells and premium seed. It offers the trades open now, each with its price: buying water, selling water rights, and locking in a price. It then lists the standing rules in the council's words. The HUD shows how much is owed with the coins while anything is owed. An empty plot's popup shows each crop's price, sale value, whether it is thirsty, and any rule planting it on that plot breaks, and a ripe crop's popup what it sells for; see [the farming loop](micro-game.md#council-rules-and-crops).
 
 The farm shows the consequences too, and every one is also in words: dry crops are tinted yellow-brown and labelled "dry"; withered crops turn dark brown, shrink and are labelled "withered"; land the county took lies under the county's reservoir, drawn as water with a bank where it meets the farm (ice in winter), and is labelled as taken by the county; sealed buildings fade to grey under crossed planks and say "sealed by the council"; premium plantings say "premium seed".
 
@@ -51,7 +51,7 @@ A crisis's own effect starts when it fires, before any answer.
 | Blight | Picks the crop on the most plots, else the most harvested crop, else turnip. In summer the spring crops are still in the ground, so it is usually the crop the farm grows most. Every plot of it is cleared at once, and it cannot be planted while it recovers: "Corn is still recovering from blight." | The crop's next two planting seasons, counting the fire season when the crop can be planted then. The answer can shorten it; see [blight recovery](#blight-recovery). |
 | Eminent domain | Nothing until the council decides. | — |
 | Overproduction | Picks the top crop: the most coins from planted plots (plots × harvest value), else the most harvested, else turnip. It sells at 75%. | The fire season and the next. |
-| Price crash | Every crop and fruit sells at 60%. | The fire season and the next: summer and fall. |
+| Price crash | Every crop, fruit, egg, milk and wool sale is at 60%. | The fire season and the next: summer and fall. |
 
 ## What each policy does to the farm
 
@@ -76,7 +76,7 @@ A standing rule binds from the moment its policy takes effect, and a policy that
 
 | Position | Policy | On the farm |
 | --- | --- | --- |
-| +80 | Buy seed from anyone, at your own risk | The seed basket offers premium seed: seed costs 1.5×, a good planting sells for 30% more, and about one planting in eight is diseased and withers at its first growth. The plot and season decide which, so a replay gives the same result. |
+| +80 | Buy seed from anyone, at your own risk | Empty plots offer premium seed: seed costs 1.5×, a good planting sells for 30% more, and about one planting in eight is diseased and withers at its first growth. The plot and season decide which, so a replay gives the same result. |
 | +40 | Optional 'checked safe' label from seed sellers | From now on, seed costs 1.25×, rounded up: without a seed storehouse, turnip 5, radish 4, carrot 9, tomato 12, corn 15 and pumpkin 18 coins. |
 | 0 | County seed checks, for a fee | The blighted crop recovers after one of its planting seasons instead of two. From now on, every planting costs a 2-coin fee, seed costs 1.25×, and every crop harvest sells for 90%. No crop may follow itself on a plot; breaking that rule costs a fine. |
 | −40 | Required seed checks and planting permits | The blighted crop can be replanted at once. From now on, every planting costs a 2-coin fee, seed costs 1.25×, and every crop harvest sells for 90%. Planting needs a permit for that season, filed free at the council office the season before; the season the rule passes is covered. No crop may follow itself on a plot. Breaking either rule costs a fine. |
@@ -123,9 +123,9 @@ All rules here name the top crop chosen when the crisis fired.
 | Position | Policy | On the farm |
 | --- | --- | --- |
 | +80 | Leave prices alone | Only the crash. |
-| +40 | Let farmers lock in next year's price now | During the crash's two seasons, summer and fall, the farmhouse offers to lock in 85% for 4 seasons. While the lock runs, every crop and fruit sells at 85%, whatever prices do. One lock at a time. |
+| +40 | Let farmers lock in next year's price now | During the crash's two seasons, summer and fall, the farmhouse offers to lock in 85% for 4 seasons. While the lock runs, every crop, fruit, egg, milk and wool sale is at 85%, whatever prices do. One lock at a time. |
 | 0 | Short-term loans | A loan of 100 coins or 20 per plot, whichever is more. It is repaid in four equal parts at the next four End turns. |
-| −40 | Lowest-price guarantee, paid for by a harvest tax | The crash cuts prices to 90% instead of 60%. From now on, 10% of every crop and fruit sale goes to the relief fund. |
+| −40 | Lowest-price guarantee, paid for by a harvest tax | The crash cuts prices to 90% instead of 60%. From now on, 10% of every crop, fruit, egg, milk and wool sale goes to the relief fund. |
 | −80 | The state buys all crops at set prices | No crash. Each crop's sale value is frozen at its value when the policy passed, and no multiplier lifts it higher. Each season allows only so many sales (`boardQuota`): 3 or one per two plots, rounded up, whichever is more, times 50%, 75%, 100% or 125%, picked afresh each season, rounded down, at least 1. Sales over it earn nothing and don't count as harvests. Seed costs 1.5×. |
 
 ## Harms
@@ -133,7 +133,7 @@ All rules here name the top crop chosen when the crisis fired.
 | Harm | Cause | Effect |
 | --- | --- | --- |
 | Dry | Drought without protection | The crop keeps growing and sells for half at harvest. |
-| Withered | Irrigation cap, diseased premium seed | Dead. It stops growing, no longer counts as planted, and counts as empty for the fallow rule. Harvesting clears it for nothing, with no harvest counted. |
+| Withered | Irrigation cap, diseased premium seed | Dead. It stops growing, no longer counts as planted, and counts as empty for the fallow rule. **Clear withered crop** in its popup empties the plot for nothing, with no harvest counted. |
 | Cleared | Blight, crops plowed under | The crops are lost; the plots stay. |
 | Taken | Eminent domain | The plots and their cells leave the farm. |
 | Sealed | Drought 0, −40, −80 (wells) | The buildings stay but give no growth, harvest bonus, seed discount or income. |
@@ -150,7 +150,7 @@ Purchases the player chooses, including seed, planting fees, fines, water and bu
 
 ## Delivery work
 
-Delivery work earns 4 coins, which pay what is owed first. It is offered while no plot holds a crop (a withered crop still counts until harvesting clears it), and the coins cannot pay for the cheapest planting this season (`canWork`, `workThreshold`). That price is seed, planting fee and any fine for the cheapest crop the rules allow now, quoted on each plot, since rotation depends on what each plot grew last. Out of season, or when every crop is blocked, it is what planting will cost once it can. A farm with no plots also needs the price of a plot. So a broke farm can always work its way back to planting. Under Blight 0, summer turnip costs 7 (5 for seed at 1.25×, plus the 2-coin fee), so the button stays until two deliveries pay for it. If every plot last grew turnip, turnip there would also cost a 27-coin fine, so the cheapest planting is a tomato at 14 and the button stays until the coins reach 14. A macro `allowWork: false` turns delivery work off.
+Delivery work, in the farmhouse popup, earns 4 coins, which pay what is owed first. It is offered while no plot holds a crop (a withered crop still counts until it is cleared), and the coins cannot pay for the cheapest planting this season (`canWork`, `workThreshold`). That price is seed, planting fee and any fine for the cheapest crop the rules allow now, quoted on each plot, since rotation depends on what each plot grew last. Out of season, or when every crop is blocked, it is what planting will cost once it can. A farm with no plots also needs the price of a plot. So a broke farm can always work its way back to planting. Under Blight 0, summer turnip costs 7 (5 for seed at 1.25×, plus the 2-coin fee), so the button stays until two deliveries pay for it. If every plot last grew turnip, turnip there would also cost a 27-coin fine, so the cheapest planting is a tomato at 14 and the button stays until the coins reach 14. A macro `allowWork: false` turns delivery work off.
 
 ## Fines
 
@@ -222,7 +222,7 @@ Picking Nora Delgado's card every time meets every rule above, and so does picki
 | Engine and content loading | `src/crisis/engine.ts`, `src/crisis/content.ts` |
 | Council meeting; hand, outcome, meter and standing rules; speakers; portraits | `src/crisis/dialog.ts`, `src/crisis/view.ts`, `src/crisis/portraits.ts` |
 | Council rules section | `src/crisis/council.ts`, `src/main.ts` |
-| HUD, End turn, seed basket, council office menu | `src/main.ts`, `src/game/services.ts` |
+| HUD and popups: End turn, crops, plans, the council office | `src/main.ts`, `src/game/services.ts` |
 | Crop marks, ground tints, sealed buildings, council office drawing | `src/game/crop-sprites.ts`, `src/game/terrain.ts`, `src/game/scene.ts`, `src/game/farmer-route.ts` |
 | Crisis presets and the Crisis test | `src/dev/presets.ts`, `src/dev/crisis-trial.ts` |
 
@@ -283,4 +283,4 @@ Edited records carry no one-time results either: no taken land, loans, frozen pr
 
 The development **Crisis test** in the top bar is separate. It plays the crisis layer from its own browser storage, lists each policy's effects as "not applied in this test", and never reads or changes the farm or its save. See [playtesting](playtesting.md#crisis-content).
 
-Unit tests: `src/game/crisis.test.ts` (timing and catch-up, triggers, recovery, every policy, the moved rules with real answers, rules that meet, binding once, water, farm actions while the council waits), `src/game/state.test.ts` (records in saves, the waiting guard), `src/micro/council.test.ts` and `src/micro/money.test.ts` (farm rules, owed coins, quotes, delivery work), `src/contracts/world.test.ts` (policy fields, the hash), `src/crisis/*.test.ts` (meeting and Council rules), `src/game/crisis-scene.test.ts` and `src/dev/presets.test.ts` (every preset fires its crisis; the control family's harsher rules). Browser tests: `tests/browser/crisis-game.spec.ts` (meeting, waiting, reload, one check per crisis, phones; screenshots only when `CRISIS_SCREENSHOTS_DIR` is set), `tests/browser/crisis-scene.spec.ts` (scene marks) and `tests/browser/crisis-trial.spec.ts` (the Crisis test).
+Unit tests: `src/game/crisis.test.ts` (timing and catch-up, triggers, recovery, every policy, the moved rules with real answers, rules that meet, binding once, water, farm actions while the council waits), `src/game/state.test.ts` (records in saves, the waiting guard), `src/micro/council.test.ts` and `src/micro/money.test.ts` (farm rules, owed coins, quotes, delivery work), `src/contracts/world.test.ts` (policy fields, the hash), `src/crisis/*.test.ts` (meeting and Council rules), `src/game/crisis-scene.test.ts` and `src/dev/presets.test.ts` (every preset fires its crisis; the control family's harsher rules). Browser tests: `tests/browser/crisis-game.spec.ts` (meeting, waiting, deals, reload), `tests/browser/crisis-answers.spec.ts` (one check per crisis, the blight's seed rules), `tests/browser/crisis-rules.spec.ts` (water, permits, the county's crop, sales limits, droughts, delivery work) and `tests/browser/crisis-phone.spec.ts` (phones), sharing `tests/browser/crisis-helpers.ts` (screenshots only when `CRISIS_SCREENSHOTS_DIR` is set), `tests/browser/crisis-scene.spec.ts` (scene marks) and `tests/browser/crisis-trial.spec.ts` (the Crisis test).

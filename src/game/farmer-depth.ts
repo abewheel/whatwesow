@@ -2,6 +2,7 @@ export type BuildingOccluder = {
   x: number;
   y: number;
   size: number;
+  height?: number;
   front: { x: number; y: number };
 };
 
@@ -17,7 +18,7 @@ export function farmerDepth(
       feet.x + 18 < building.x ||
       feet.x - 18 > building.x + building.size ||
       feet.y < building.y ||
-      feet.y - 60 > building.y + building.size
+      feet.y - 60 > building.y + (building.height ?? building.size)
     )
       continue;
     const frontEdge =

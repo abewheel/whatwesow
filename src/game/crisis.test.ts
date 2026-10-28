@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mix } from "../contracts/world";
 import { content, engine } from "../crisis/engine";
 import { maxCrises, seasons, turnNumber } from "../macro/state";
-import { plantQuote, saleQuote } from "../micro/money";
+import { animalQuote, plantQuote, saleQuote } from "../micro/money";
 import { actOnFarm, type FarmAction } from "../micro/rules";
 import { crops, harvestValue, type CropId, type Plot } from "../micro/state";
 import { buildingLevel } from "../micro/world";
@@ -222,6 +222,19 @@ describe("when crises fire", () => {
     expect(turnNumber(next.state)).toBe(7);
     expect(next.state.crises).toHaveLength(1);
   });
+  it("keeps a save's compact building lots through End turn, a crisis and its answer", () => {
+    // The homestead's farmhouse keeps its compact lot: it has no saved footprint.
+    const spring = farmAt(5);
+    const lots = (state: GameState) =>
+      state.structures.map((s) => [s.id, s.row, s.col, s.footprint]);
+    expect(lots(spring)).toEqual([[1, 11, 14, undefined]]);
+    const met = endTurn(spring).state;
+    const answered = answerCrisis(met, card("Drought", "OBJ")).state;
+    for (const state of [met, answered, endTurn(answered).state]) {
+      expect(state.buildingLayout).toBe(2);
+      expect(lots(state)).toEqual(lots(spring));
+    }
+  });
   it("refuses farm actions while the council waits, and allows them once answered", () => {
     const waiting = councilAt(0, {
       coins: 1000,
@@ -374,12 +387,22 @@ describe("crisis triggers", () => {
     expect(until("turnip")).toEqual([9, 10, 13]);
     expect(recoveryUntil("corn", 13, 1)).toBe(13);
   });
-  it("crashes every crop and fruit price to 60% for the summer and fall harvests", () => {
+  it("crashes every crop, fruit and animal product price to 60% for the summer and fall harvests", () => {
     const state = councilAt(5);
     expect(seasons[(30 - 1) % 4]).toBe("summer");
     const prices = crisisPolicy(state, 30).cropPrices!;
-    for (const id of [...Object.keys(crops), "apple", "oak"])
+    for (const id of [
+      ...Object.keys(crops),
+      "apple",
+      "oak",
+      "coop",
+      "dairy",
+      "sheepfold",
+    ])
       expect(prices[id]).toBe(0.6);
+    // A level-1 coop's eggs sell for 30 coins, cut to 18.
+    const coop = { id: 9, kind: "coop" as const, row: 0, col: 0, level: 1 };
+    expect(animalQuote(state, coop, { cropPrices: prices }, 30).value).toBe(18);
     expect(crisisPolicy(state, 31).cropPrices).toEqual(prices);
     expect(crisisPolicy(state, 32).cropPrices).toBeUndefined();
   });
@@ -858,6 +881,9 @@ describe("eminent domain policies", () => {
     });
     expect(state.permits).toEqual([14]);
     expect(state.crises![2].limits).toEqual({
+      coop: 0,
+      dairy: 0,
+      sheepfold: 0,
       home: 1,
       shed: 0,
       well: 0,

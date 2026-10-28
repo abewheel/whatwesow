@@ -2,12 +2,53 @@ import type { FarmPolicy } from "../contracts/farm-policy";
 import { WORLD_SIZE } from "../contracts/world";
 export { WORLD_SIZE } from "../contracts/world";
 export type Cell = { row: number; col: number };
+export const animalProducts = {
+  coop: { product: "Eggs", value: 30 },
+  dairy: { product: "Milk", value: 75 },
+  sheepfold: { product: "Wool", value: 120 },
+} as const;
+export type AnimalKind = keyof typeof animalProducts;
+export const isAnimal = (kind: string): kind is AnimalKind =>
+  Object.hasOwn(animalProducts, kind);
 export const buildings = {
+  coop: {
+    name: "Chicken coop",
+    cost: 240,
+    width: 4,
+    height: 4,
+    frame: 1,
+    levels: 3,
+    benefit: "Click to collect eggs each season: 30 coins per level",
+    bonus: 0,
+    income: 0,
+  },
+  dairy: {
+    name: "Dairy barn",
+    cost: 750,
+    width: 5,
+    height: 5,
+    frame: 1,
+    levels: 3,
+    benefit: "Click to collect milk each season: 75 coins per level",
+    bonus: 0,
+    income: 0,
+  },
+  sheepfold: {
+    name: "Sheepfold",
+    cost: 1200,
+    width: 5,
+    height: 5,
+    frame: 1,
+    levels: 3,
+    benefit: "Click to collect wool each season: 120 coins per level",
+    bonus: 0,
+    income: 0,
+  },
   home: {
     name: "Farmhouse",
     cost: 120,
-    width: 3,
-    height: 2,
+    width: 5,
+    height: 4,
     frame: 0,
     levels: 1,
     benefit: "Your home. Move it freely to make room",
@@ -17,8 +58,8 @@ export const buildings = {
   shed: {
     name: "Seed storehouse",
     cost: 60,
-    width: 2,
-    height: 2,
+    width: 3,
+    height: 3,
     frame: 4,
     levels: 3,
     benefit: "Bulk seed storage: seeds cost 1 less per level",
@@ -50,8 +91,8 @@ export const buildings = {
   well: {
     name: "Irrigation well",
     cost: 180,
-    width: 2,
-    height: 2,
+    width: 3,
+    height: 3,
     frame: 3,
     levels: 3,
     benefit: "1 extra grow step and +1 harvest coin per level",
@@ -61,8 +102,8 @@ export const buildings = {
   barn: {
     name: "Harvest barn",
     cost: 600,
-    width: 3,
-    height: 2,
+    width: 5,
+    height: 4,
     frame: 1,
     levels: 3,
     benefit: "+2 coins per harvest per level",
@@ -72,8 +113,8 @@ export const buildings = {
   mill: {
     name: "Grain mill",
     cost: 1800,
-    width: 3,
-    height: 3,
+    width: 5,
+    height: 5,
     frame: 1,
     levels: 3,
     benefit: "+15 coins per corn harvest per level",
@@ -83,8 +124,8 @@ export const buildings = {
   greenhouse: {
     name: "Greenhouse",
     cost: 2400,
-    width: 3,
-    height: 2,
+    width: 5,
+    height: 4,
     frame: 0,
     levels: 3,
     benefit: "+10 coins per harvest per level",
@@ -94,8 +135,8 @@ export const buildings = {
   market: {
     name: "Farm market",
     cost: 3000,
-    width: 3,
-    height: 3,
+    width: 5,
+    height: 5,
     frame: 4,
     levels: 3,
     benefit: "150 coins per level each new season",
@@ -105,8 +146,8 @@ export const buildings = {
   hall: {
     name: "Legacy hall",
     cost: 10000,
-    width: 3,
-    height: 3,
+    width: 5,
+    height: 5,
     frame: 0,
     levels: 3,
     benefit: "+50 coins per harvest per level",
@@ -116,7 +157,26 @@ export const buildings = {
 } as const;
 export type BuildingKind = keyof typeof buildings;
 
+// Saves without explicit dimensions retain their validated historical lots.
+export const compactBuildingSizes: Record<
+  BuildingKind,
+  { width: number; height: number }
+> = Object.fromEntries(
+  Object.keys(buildings).map((kind) => [
+    kind,
+    kind === "home" || kind === "barn" || kind === "greenhouse"
+      ? { width: 3, height: 2 }
+      : kind === "shed" || kind === "well"
+        ? { width: 2, height: 2 }
+        : kind === "apple" || kind === "oak"
+          ? { width: 1, height: 1 }
+          : { width: 3, height: 3 },
+  ]),
+) as Record<BuildingKind, { width: number; height: number }>;
+export const structureSize = (s: Pick<Structure, "kind" | "footprint">) =>
+  s.footprint ?? compactBuildingSizes[s.kind];
 export type Structure = Cell & {
+  footprint?: { width: number; height: number };
   id: number;
   kind: BuildingKind;
   level: number;
@@ -136,8 +196,8 @@ export const services = [
     name: "Farmhouse office",
     row: 7,
     col: 24,
-    width: 2,
-    height: 2,
+    width: 3,
+    height: 3,
     frame: 0,
   },
   {
@@ -145,8 +205,8 @@ export const services = [
     name: "Seed shop & nursery",
     row: 7,
     col: 14,
-    width: 2,
-    height: 2,
+    width: 3,
+    height: 3,
     frame: 4,
   },
   {
@@ -154,8 +214,8 @@ export const services = [
     name: "Builder's workshop",
     row: 7,
     col: 19,
-    width: 2,
-    height: 2,
+    width: 3,
+    height: 3,
     frame: 1,
   },
   {
@@ -163,8 +223,8 @@ export const services = [
     name: "Field shed",
     row: 11,
     col: 9,
-    width: 2,
-    height: 2,
+    width: 3,
+    height: 3,
     frame: 4,
   },
 ] as const;
@@ -174,18 +234,24 @@ export const councilOffice = {
   name: "Council office",
   row: 7,
   col: 9,
-  width: 2,
-  height: 2,
+  width: 3,
+  height: 3,
   frame: 0,
 } as const;
 const allServices = [...services, councilOffice];
 type Service = (typeof allServices)[number];
+// The tent is a smaller lot than the farmhouse office it stands in for.
 export type ServiceLocation<S extends Service = Service> = Omit<
   S,
-  "name" | "row" | "col"
+  "name" | "row" | "col" | "width" | "height"
 > &
-  Cell & { name: string; tent: boolean };
-export type ServiceOptions = { council?: boolean };
+  Cell & { name: string; tent: boolean; width: number; height: number };
+export type ServiceOptions = { council?: boolean; taken?: readonly Cell[] };
+/** The village under these rules: the council office while permits are required, off taken land. */
+export const serviceOptions = (policy: FarmPolicy = {}): ServiceOptions => ({
+  council: policy.permitsRequired === true,
+  taken: policy.takenCells,
+});
 export type Layout = {
   selfBuilt?: true;
   plotCells: Cell[];
@@ -216,8 +282,9 @@ export function serviceLocations(
     [
       ...layout.plotCells,
       ...layout.structures.flatMap((s) =>
-        footprint(s, buildings[s.kind].width, buildings[s.kind].height),
+        footprint(s, structureSize(s).width, structureSize(s).height),
       ),
+      ...(options.taken ?? []),
     ].map(cellKey),
   );
   const settled = layout.structures.some(
@@ -232,22 +299,33 @@ export function serviceLocations(
         (!settled && s.id === "home"),
     )
     .filter((service) => service.id !== "home" || !settled)
-    .map((service) => {
-      const tent = service.id === "home" && !!layout.selfBuilt && !settled;
-      const candidates = [
-        ...(tent ? [{ row: 11, col: 14 }] : []),
-        service,
-        ...Array.from({ length: WORLD_SIZE * WORLD_SIZE }, (_, i) => ({
-          row: Math.floor(i / WORLD_SIZE),
-          col: i % WORLD_SIZE,
-        })),
-      ];
-      const cell = candidates.find((c) =>
-        footprint(c, service.width, service.height).every(
-          (p) => inBounds(p) && !used.has(cellKey(p)),
-        ),
-      ) ?? {
-        row: -2,
+    .map((original) => {
+      const tent = original.id === "home" && !!layout.selfBuilt && !settled;
+      const service = tent ? { ...original, width: 2, height: 2 } : original;
+      const candidates = (function* () {
+        if (tent) yield { row: 11, col: 14 };
+        yield service;
+        for (let radius = 1; radius < WORLD_SIZE * 2; radius++)
+          for (let dr = -radius; dr <= radius; dr++) {
+            const dc = radius - Math.abs(dr);
+            for (const sign of dc === 0 ? [1] : [-1, 1]) {
+              const c = { row: service.row + dr, col: service.col + dc * sign };
+              if (inBounds(c)) yield c;
+            }
+          }
+      })();
+      let cell: Cell | undefined;
+      for (const candidate of candidates)
+        if (
+          footprint(candidate, service.width, service.height).every(
+            (p) => inBounds(p) && !used.has(cellKey(p)),
+          )
+        ) {
+          cell = candidate;
+          break;
+        }
+      cell ??= {
+        row: -service.height,
         col: 9 + allServices.findIndex((s) => s.id === service.id) * 5,
       };
       for (const p of footprint(cell, service.width, service.height))
@@ -301,7 +379,7 @@ export function occupiedCells(
       ),
       ...layout.plotCells,
       ...layout.structures.flatMap((s) =>
-        footprint(s, buildings[s.kind].width, buildings[s.kind].height),
+        footprint(s, structureSize(s).width, structureSize(s).height),
       ),
     ].map(cellKey),
   );
@@ -328,9 +406,7 @@ export function canPlace(
   height = 1,
   policy: FarmPolicy = {},
 ): boolean {
-  const occupied = occupiedCells(layout, {
-    council: policy.permitsRequired === true,
-  });
+  const occupied = occupiedCells(layout, serviceOptions(policy));
   return footprint(cell, width, height).every(
     (c) => cellAllowed(c, policy) && !occupied.has(cellKey(c)),
   );
@@ -373,6 +449,7 @@ export function seasonTrees(
   season: string,
 ): Structure[] {
   return structures.map((s) => {
+    if (isAnimal(s.kind)) return { ...s, product: !s.pendingConstruction };
     if (!isTree(s.kind)) return s;
     const age = Math.min(160, (s.age ?? 0) + 1);
     return {

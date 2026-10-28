@@ -4,34 +4,35 @@ Read this after the repository's `AGENTS.md` and `README.md`. It describes the i
 
 ## Current playable scope
 
-- Start on bare land with a tent and 240 coins. Use the tent for house plans, fields, seeds, and End turn. The house takes one season to build and replaces the tent; the same services then live in the farmhouse menu. Existing developed saves retain their village services.
+- Start on bare land with a tent and 240 coins. Tap land for fields and house plans. The house takes one season to build and replaces the tent; End turn lives on the tent until then, then on the farmhouse. Existing developed saves retain their village artwork.
 - Plant turnips, carrots, corn, radishes, tomatoes, and pumpkins in their allowed seasons; end a turn to grow crops across seasons; harvest crops and ripe fruit for coins; buy plots and soil improvements. All field crops die when winter begins; trees survive.
-- Place, repeat, move, and upgrade structures on a 64 × 64 estate. Pan, jump to coordinates, and zoom from 25% to 200%.
+- Place, repeat, move, and upgrade structures on a 64 × 64 estate. Buildings scale proportionally and reserve larger lots, up to 5 × 5 tiles. Older farms migrate once without losing crops or progress. Pan in four directions and zoom from 50% to 200%.
 - Advance through four seasons across 40 years, ending at turn 160. Construction and upgrades charge immediately, complete next season unless a council rule delays them, and then apply their benefits. Apple trees mature after three years and oaks after ten; mature trees produce harvestable apples or acorns each fall. Markets pay seasonal income. Authored construction unlocks work, with a tested earning path through the complete construction track over 160 turns.
+- Build chicken coops, dairy barns, and sheepfolds with animated animals and seasonal pens. Tap a pen and choose Collect for eggs, milk, or wool once each season; coins arrive after the farmer reaches the building.
 - Face eight council crises, one every four years from year 2 to year 30: drought, blight, eminent domain, overproduction and a price crash, with drought, eminent domain and overproduction coming twice. End turn calls a council meeting; the argument the player picks decides which policy passes, and its rules change water, seed, prices, sales, land and buildings from then on. The farm and the next season wait for an answer. See [crises](crises.md).
-- Apply macro farm policies and explicit losses through integration. Other narrative dialogue and community decisions, relationships, animals, and the legacy ending are still future work.
-- See seasonal scenery, exterior woodland and river, and an animated farmer who walks to adjacent work positions. Clicking ground sends the farmer there. Building menus open on arrival, and planting and harvesting commit only after reaching the plot or tree. A new destination or Escape cancels unfinished travel actions.
+- Apply macro farm policies and explicit losses through integration. Other narrative dialogue and community decisions, relationships, and the legacy ending are still future work.
+- See seasonal scenery, exterior woodland and river, and an animated farmer who walks to adjacent work positions. Tap ground for its actions, including Walk here. Menus open immediately. Planting and harvesting commit after reaching the plot or tree, and End turn commits after reaching home. A new destination or Escape cancels unfinished travel actions.
 - Autosave locally, export/import saves, and edit development-only playtest states. Current saves are version 3; versions 1 and 2 migrate.
 
-On a new farm, click the tent, then the farmhouse, for the calendar, building plans, fields, and seeds. On older developed farms, click the farmhouse for the calendar, the nursery for seeds and saplings, the field shed for plots, soil and tree care, and the builder for structures. The compact HUD shows selected seeds, placement cancellation, and folded View controls for camera navigation. Tap the seed button to visit the basket. Phone menus use content-sized sheets with a fixed close button; touch-drag the farm to pan. After a crisis, the farmhouse menu lists **Council rules**, the HUD shows **Council meeting** while the council waits and how much is owed while coins are owed, and a council office appears while planting permits are required. Coordinate navigation accepts Enter and validates both fields. Open the farm menu for save status and export/import. See [construction](construction.md) for controls and [farming](micro-game.md) for the loop.
+Tap open land for a crop plot, building, or tree at that tile. Tap plots for seasonal seeds, harvest, movement, and farm-wide soil improvements. Tap structures for upgrades or movement and trees for harvest and care. Menus open immediately beside the selected target, flip at screen edges, and follow panning and viewport changes. End turn is only on the farmhouse, or the tent before the house finishes. The farmer must reach home before the season advances. Delivery work at home helps a broke farm recover. Old seed, field, and builder catalogs are removed. The HUD holds empty-plot, growing-crop, and harvest-ready counts, top-right View controls, and movement cancellation; the farm menu holds saves. View controls provide zoom, four-direction pan, and centering. After a crisis, the farmhouse popup lists **Council rules**, the HUD shows **Council meeting** while the council waits and how much is owed while coins are owed, and a council office appears while planting permits are required. See [construction](construction.md) and [farming](micro-game.md).
 
 ## Find the owning code
 
-| Task | Start here | Supporting guide |
-| --- | --- | --- |
-| Crops, prices, soil, farming actions | `src/micro/state.ts`, `src/micro/rules.ts` | [Farming loop](micro-game.md) |
-| Owed coins, seed and sale quotes, delivery work | `src/micro/money.ts` | [Farming loop](micro-game.md#council-rules-and-crops) |
-| Buildings, footprints, placement, unlocks | `src/micro/world.ts`, `src/micro/progression.ts` | [Construction](construction.md) |
-| Calendar, policy state, crisis records | `src/macro/state.ts` | [Macro contract](macro-farm-contract.md) |
-| Save migration and cross-domain transitions | `src/game/state.ts` | [Ownership](game-boundaries.md) |
-| When crises fire, answers, and the farm rules they impose | `src/game/crisis.ts`, `src/game/crisis-rules.ts` | [Crises](crises.md) |
-| Council meeting, Council rules, crisis engine loading | `src/crisis/` | [Crises](crises.md#where-the-code-lives) |
-| Crisis wording, policies, council window math | `crisis-layer/content.json`, `crisis-layer/engine.js` | [Crisis layer](../crisis-layer/INTEGRATION.md) |
-| Shared grid and policy types | `src/contracts/world.ts`, `src/contracts/farm-policy.ts` | [Ownership](game-boundaries.md) |
-| Farm rendering, projection, exterior scenery | `src/game/scene.ts`, `src/game/layout.ts`, `src/game/boundary.ts` | [Design system](design-system.md) |
-| Farmer routing and animation | `src/game/farmer-route.ts`, `src/game/farmer-task.ts`, `src/game/farmer.ts` | [Art assets](art-assets.md) |
-| HTML controls, icons, styling | `src/main.ts`, `src/game/icons.ts`, `src/style.css` | [HUD artwork](art/hud-generation.md) |
-| Persistence, playtest tools, crisis presets and the Crisis test | `src/storage/save.ts`, `src/dev/` | [Playtesting](playtesting.md) |
+| Task                                                            | Start here                                                                  | Supporting guide                                      |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Crops, prices, soil, farming actions                            | `src/micro/state.ts`, `src/micro/rules.ts`                                  | [Farming loop](micro-game.md)                         |
+| Owed coins, seed and sale quotes, delivery work                 | `src/micro/money.ts`                                                        | [Farming loop](micro-game.md#council-rules-and-crops) |
+| Buildings, footprints, placement, unlocks                       | `src/micro/world.ts`, `src/micro/progression.ts`                            | [Construction](construction.md)                       |
+| Calendar, policy state, crisis records                          | `src/macro/state.ts`                                                        | [Macro contract](macro-farm-contract.md)              |
+| Save migration and cross-domain transitions                     | `src/game/state.ts`                                                         | [Ownership](game-boundaries.md)                       |
+| When crises fire, answers, and the farm rules they impose       | `src/game/crisis.ts`, `src/game/crisis-rules.ts`                            | [Crises](crises.md)                                   |
+| Council meeting, Council rules, crisis engine loading           | `src/crisis/`                                                               | [Crises](crises.md#where-the-code-lives)              |
+| Crisis wording, policies, council window math                   | `crisis-layer/content.json`, `crisis-layer/engine.js`                       | [Crisis layer](../crisis-layer/INTEGRATION.md)        |
+| Shared grid and policy types                                    | `src/contracts/world.ts`, `src/contracts/farm-policy.ts`                    | [Ownership](game-boundaries.md)                       |
+| Farm rendering, projection, exterior scenery                    | `src/game/scene.ts`, `src/game/layout.ts`, `src/game/boundary.ts`           | [Design system](design-system.md)                     |
+| Farmer routing and animation                                    | `src/game/farmer-route.ts`, `src/game/farmer-task.ts`, `src/game/farmer.ts` | [Art assets](art-assets.md)                           |
+| HTML controls, icons, styling                                   | `src/main.ts`, `src/game/icons.ts`, `src/style.css`                         | [HUD artwork](art/hud-generation.md)                  |
+| Persistence, playtest tools, crisis presets and the Crisis test | `src/storage/save.ts`, `src/dev/`                                           | [Playtesting](playtesting.md)                         |
 
 Read [ownership and contracts](game-boundaries.md) before changing rules. Domain modules stay pure and do not import the other domain, integration, storage, or rendering. Use integration for whole-state transitions, including calendar income, policy losses and crises. Art requirements in [the asset inventory](asset-inventory.md) describe planned coverage as well as existing assets; they do not introduce game mechanics.
 

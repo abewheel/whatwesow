@@ -71,7 +71,7 @@ it("requires harvests after each individual building level, and corn for a mill"
     actOnFarm(s, {
       type: "build",
       kind: "mill",
-      cell: { row: 5, col: 1 },
+      cell: { row: 7, col: 1 },
     }).state,
   );
   expect(() =>

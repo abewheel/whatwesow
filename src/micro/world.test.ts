@@ -147,7 +147,7 @@ describe("estate construction", () => {
     ).entries())
       state = actOnFarm(
         state,
-        { type: "build", kind, cell: { row: 0, col: i * 4 } },
+        { type: "build", kind, cell: { row: 0, col: i * 6 } },
         159,
       ).state;
     state = completeUpgrades(state);
@@ -187,10 +187,10 @@ it("supports the full 64-square estate and rejects footprints beyond it", () => 
   const start = { ...establishedFarm(), coins: 100000 };
   const far = actOnFarm(
     start,
-    { type: "build", kind: "barn", cell: { row: 61, col: 61 } },
+    { type: "build", kind: "barn", cell: { row: 60, col: 59 } },
     159,
   ).state;
-  expect(far.structures.at(-1)).toMatchObject({ row: 61, col: 61 });
+  expect(far.structures.at(-1)).toMatchObject({ row: 60, col: 59 });
   expect(() =>
     actOnFarm(
       start,
@@ -234,9 +234,9 @@ it("keeps services at reachable roadside entrances when dense farms fill every l
   expect(locations.map((s) => s.id)).toContain("home");
   expect(
     serviceLocations(dense, { council: true }).find((s) => s.id === "council"),
-  ).toMatchObject({ row: -2, col: 29 });
+  ).toMatchObject({ row: -3, col: 29 });
   for (const service of serviceLocations(dense, { council: true })) {
-    expect(service.row).toBe(-2);
+    expect(service.row).toBe(-service.height);
     expect(
       farmerWorkRoute(
         { row: 0, col: 1 },
@@ -253,7 +253,8 @@ it("keeps services at reachable roadside entrances when dense farms fill every l
   ).toBe(false);
 });
 it("shows the council office only when asked, beside the village services", async () => {
-  const { serviceLocations } = await import("./world");
+  const { serviceLocations, serviceOptions, footprint } =
+    await import("./world");
   const farm = establishedFarm();
   expect(serviceLocations(farm).map((s) => s.id)).not.toContain("council");
   expect(serviceLocations(farm, {}).map((s) => s.id)).not.toContain("council");
@@ -289,6 +290,20 @@ it("shows the council office only when asked, beside the village services", asyn
   expect(serviceLocations(crowded, { council: true }).at(-1)).not.toMatchObject(
     { row: 7, col: 9 },
   );
+  // Nor on land the county took for its reservoir.
+  const flooded = serviceLocations(
+    farm,
+    serviceOptions({
+      permitsRequired: true,
+      takenCells: [{ row: 8, col: 10 }],
+    }),
+  ).at(-1)!;
+  expect(flooded.id).toBe("council");
+  expect(
+    footprint(flooded, flooded.width, flooded.height).some(
+      (c) => c.row === 8 && c.col === 10,
+    ),
+  ).toBe(false);
   expect(canPlace(farm, { row: 7, col: 9 })).toBe(true);
   expect(
     canPlace(farm, { row: 7, col: 9 }, 1, 1, { permitsRequired: true }),
