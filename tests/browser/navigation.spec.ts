@@ -1,5 +1,4 @@
 import { buySeeds } from "./helpers";
-import { choosePlotWork } from "./helpers";
 import { expect, test } from "./fixtures";
 import { clickCamera } from "./helpers";
 
@@ -19,11 +18,13 @@ test("the HUD stays compact, inventory stays put, and the shop is visited", asyn
   await page.locator("[data-cell='20,20']").click();
   await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
   await expect(canvas).toHaveAttribute("data-farmer-target", "20,20");
+  await expect(page.locator("#service-panel")).toBeHidden();
   await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20", {
     // Keep real travel covered on software-rendered CI browsers.
     timeout: 30000,
   });
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
+  await expect(page.locator("#service-panel")).toBeVisible();
   await page.locator("#open-inventory").click();
   await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
@@ -104,8 +105,12 @@ test("redirecting before planting leaves the plot empty even with slow saves", a
   const canvas = page.locator("canvas");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.locator("[data-plot='0']").click();
-  await choosePlotWork(page);
-  await page.locator("[data-cell='20,19']").click();
+  await expect(page.locator('[data-crop="turnip"]')).toBeVisible();
+  // Replace the work request before the next animation frame can deliver it.
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>('[data-crop="turnip"]')!.click();
+    document.querySelector<HTMLButtonElement>('[data-cell="20,19"]')!.click();
+  });
   await expect(page.locator("#season")).toContainText("96 coins");
   await expect(canvas).toHaveAttribute("data-farmer-cell", "20,19", {
     timeout: 30000,

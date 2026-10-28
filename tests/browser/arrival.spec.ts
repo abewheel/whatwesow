@@ -1,8 +1,7 @@
-import { buySeeds } from "./helpers";
+import { buySeeds, choosePlotWork, visitBuilding } from "./helpers";
 import { test, expect } from "./fixtures";
 import { homesteadState } from "../../src/game/state";
 import { openCell, setFarm, closeActions, fits } from "./context-helpers";
-import { choosePlotWork, visitBuilding } from "./helpers";
 async function farPlot(page: import("@playwright/test").Page, ripe = false) {
   await page.goto("/?instance=validation-arrival");
   await expect(page.locator("#save-status")).toHaveText(
@@ -14,34 +13,39 @@ async function farPlot(page: import("@playwright/test").Page, ripe = false) {
   await setFarm(page, state);
   if (!ripe) await buySeeds(page, "turnip");
 }
-test("menus open at once while ordering a walk", async ({ page }) => {
-  await page.goto("/?instance=validation-instant-menu");
-  await expect(page.locator("canvas")).toHaveAttribute(
-    "data-farmer-motion",
-    "idle",
-  );
-  await openCell(page, "22,20");
+test("menus wait for arrival at their selected tile", async ({ page }) => {
+  await page.goto("/?instance=validation-arrival-menu");
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
+  const canvas = page.locator("canvas");
+  await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
+  await page.locator('[data-cell="22,20"]').press("Enter");
+  await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
+  await expect(page.locator("#service-panel")).toBeHidden();
   await expect(page.locator("#service-panel")).toBeVisible();
-  await expect(page.locator("canvas")).toHaveAttribute(
-    "data-farmer-motion",
-    "walk",
-  );
+  await expect(canvas).toHaveAttribute("data-farmer-cell", "22,20");
+  await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await expect(page.locator("#walk-here")).toHaveCount(0);
 });
 for (const ripe of [false, true])
-  test(`${ripe ? "harvest" : "plant"} commits only after arrival`, async ({
+  test(`${ripe ? "harvest" : "plant"} waits for the menu visit and commits once chosen`, async ({
     page,
   }) => {
     await farPlot(page, ripe);
-    await openCell(page, "22,20");
-    await choosePlotWork(page);
+    await page.locator('[data-cell="22,20"]').press("Enter");
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-motion",
       "walk",
     );
+    await expect(page.locator("#service-panel")).toBeHidden();
+    await expect(page.locator('[data-plot="8"]')).toHaveAttribute(
+      "aria-label",
+      ripe ? /ready/ : /empty/,
+    );
     await expect(page.locator("#season")).toContainText(
       ripe ? "100 coins" : "96 coins",
     );
+    await expect(page.locator("#service-panel")).toBeVisible();
+    await choosePlotWork(page);
     await expect(page.locator('[data-plot="8"]')).toHaveAttribute(
       "aria-label",
       ripe ? /empty/ : /growing/,
@@ -54,22 +58,29 @@ for (const ripe of [false, true])
       ripe ? "109 coins" : "96 coins",
     );
   });
-test("opening another target cancels unfinished work", async ({ page }) => {
+test("opening another target cancels the unfinished menu visit without planting", async ({
+  page,
+}) => {
   await farPlot(page);
-  await openCell(page, "22,20");
-  await choosePlotWork(page);
+  await page.locator('[data-cell="22,20"]').press("Enter");
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-farmer-motion",
+    "walk",
+  );
+  await expect(page.locator("#service-panel")).toBeHidden();
   await openCell(page, "17,18");
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-farmer-cell",
     "17,18",
   );
+  await expect(page.locator("#service-title")).toHaveText("Open land");
   await expect(page.locator('[data-plot="8"]')).toHaveAttribute(
     "aria-label",
     /empty/,
   );
   await expect(page.locator("#season")).toContainText("96 coins");
 });
-test("End Turn requires home access and blocked buildings expose teardown", async ({
+test("blocked home cannot open its menu and accessible blockers expose teardown", async ({
   page,
 }) => {
   await page.goto("/?instance=validation-blocked-home");
@@ -93,45 +104,47 @@ test("End Turn requires home access and blocked buildings expose teardown", asyn
   );
   state.nextStructureId = 12;
   await setFarm(page, state);
-  await visitBuilding(page, "home");
-  await page.locator("#next-season").click();
-  await expect(page.locator("#service-feedback")).toContainText(
-    "No walking path home",
-  );
-  await fits(page);
+  await page
+    .getByRole("button", { name: /^Farmhouse \d+, level/ })
+    .first()
+    .press("Enter");
+  await expect(page.locator("#farm-message")).toContainText("No walking path");
+  await expect(page.locator("#service-panel")).toBeHidden();
   await expect(page.locator("#season")).toContainText("spring");
   await closeActions(page);
   await page.locator('[data-structure="6"]').press("Enter");
-  await expect(page.locator("#move-building")).toHaveCount(0);
   await expect(page.locator("#teardown-building")).toBeVisible();
+  await fits(page);
+  await expect(page.locator("#move-building")).toHaveCount(0);
 });
-
-for (const action of ["close", "camera"] as const)
-  test(`closing home to ${action} cancels a pending End Turn`, async ({
+for (const action of ["escape", "camera"] as const)
+  test(`${action} cancels a pending home menu visit and leaves the season unchanged`, async ({
     page,
   }) => {
-    await page.goto(`/?instance=validation-cancel-turn-${action}`);
+    await page.goto(`/?instance=validation-cancel-home-${action}`);
     await expect(page.locator("main")).toHaveJSProperty("inert", false);
     await openCell(page, "22,20");
-    await expect(page.locator("canvas")).toHaveAttribute(
-      "data-farmer-cell",
-      "22,20",
-      { timeout: 30000 },
-    );
-    await visitBuilding(page, "home");
-    await page.locator("#next-season").click();
+    await closeActions(page);
+    await page
+      .getByRole("button", { name: /^Farmhouse \d+, level/ })
+      .first()
+      .press("Enter");
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-motion",
       "walk",
     );
-    if (action === "close") await page.locator("#close-service").click();
-    else await page.getByLabel("View controls", { exact: true }).click();
     await expect(page.locator("#service-panel")).toBeHidden();
+    if (action === "escape") await page.keyboard.press("Escape");
+    else await page.getByLabel("View controls", { exact: true }).click();
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-motion",
       "idle",
       { timeout: 30000 },
     );
+    await expect(page.locator("#service-panel")).toBeHidden();
     await expect(page.locator("#season")).toContainText("spring");
     await expect(page.locator(".season-transition")).toHaveCount(0);
+    await visitBuilding(page, "home");
+    await page.locator("#next-season").click();
+    await expect(page.locator("#season")).toContainText("summer");
   });

@@ -120,6 +120,7 @@ export function farmerWorkRoute(
   width = 1,
   height = 1,
   preference: "rear" | "front" = "rear",
+  openFootprint = false,
 ): Route | undefined {
   const work = footprint(target, width, height),
     workKeys = new Set(work.map(cellKey));
@@ -135,5 +136,20 @@ export function farmerWorkRoute(
         preferred: preference === "rear" ? rear : !rear,
       });
     }
-  return routeTo(start, candidates, blocked, workKeys);
+  // Authored scenery can sit just beyond the estate corner. Its nearest
+  // reachable estate tile is the approach, including diagonal corner contact.
+  if (!candidates.size && work.every((tile) => !inBounds(tile))) {
+    const stance = {
+      row: Math.max(0, Math.min(WORLD_SIZE - 1, target.row)),
+      col: Math.max(0, Math.min(WORLD_SIZE - 1, target.col)),
+    };
+    if (!blocked(stance))
+      candidates.set(cellKey(stance), { stance, target, preferred: true });
+  }
+  return routeTo(
+    start,
+    candidates,
+    blocked,
+    openFootprint ? new Set() : workKeys,
+  );
 }

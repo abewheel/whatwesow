@@ -14,6 +14,7 @@ for (const variant of ["male", "female"] as const) {
       })
       .click();
     await page.locator("#begin-farm").click();
+    await expect(page.locator("main")).toHaveJSProperty("inert", false);
     const texture = variant === "male" ? "farmer" : "farmer-female";
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-frame",

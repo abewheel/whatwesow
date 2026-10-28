@@ -8,6 +8,10 @@ it("starts with varied debris and leaves a house-sized starter lot", () => {
   expect(farm.debris!.length).toBeGreaterThan(120);
   expect(new Set(farm.debris!.map((d) => d.kind)).size).toBe(7);
   expect(canPlace(farm, { row: 14, col: 16 }, 5, 5)).toBe(true);
+  expect(
+    farm.debris!.filter((d) => d.row < 5 && d.col < 12).length,
+  ).toBeGreaterThan(1);
+  expect(canPlace(farm, { row: 0, col: 0 })).toBe(true);
 });
 for (const kind of Object.keys(debrisTypes) as (keyof typeof debrisTypes)[])
   it(`clears ${kind} once for its quoted cost and frees every tile`, () => {

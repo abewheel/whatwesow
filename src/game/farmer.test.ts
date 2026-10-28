@@ -13,6 +13,18 @@ const world: FarmerWorld = {
   },
 };
 describe("farmer work routes", () => {
+  it("approaches the wild hive from the estate corner without leaving the grid", () => {
+    const result = farmerWorkRoute(
+      { row: 4, col: 4 },
+      { row: -1, col: -1 },
+      world,
+    )!;
+    expect(result.stance).toEqual({ row: 0, col: 0 });
+    expect(result.target).toEqual({ row: -1, col: -1 });
+    expect(result.route.every((cell) => cell.row >= 0 && cell.col >= 0)).toBe(
+      true,
+    );
+  });
   it("stops adjacent to the target and avoids placed building footprints", () => {
     const start = { row: 3, col: 1 },
       target = { row: 3, col: 6 };
@@ -202,4 +214,44 @@ it("routes around large debris while leaving the L-shaped tree's inner corner wa
   expect(farmerBlocked({ row: 30, col: 32 }, { layout })).toBe(true);
   expect(farmerBlocked({ row: 31, col: 31 }, { layout })).toBe(false);
   expect(farmerBlocked({ row: 42, col: 42 }, { layout })).toBe(true);
+});
+
+it("crosses a future vacant building lot to stage construction when its rear edges are blocked", () => {
+  const target = { row: 10, col: 10 };
+  const reserved: FarmerWorld = {
+    layout: {
+      plotCells: [],
+      structures: [
+        ...Array.from({ length: 4 }, (_, i) => ({ row: 9, col: 10 + i })),
+        ...Array.from({ length: 4 }, (_, i) => ({ row: 10 + i, col: 9 })),
+      ].map((cell, i) => ({
+        ...cell,
+        id: i + 1,
+        kind: "oak" as const,
+        level: 1,
+      })),
+    },
+  };
+  expect(
+    farmerWorkRoute(target, target, reserved, 4, 4, "rear"),
+  ).toBeUndefined();
+  const stage = farmerWorkRoute(target, target, reserved, 4, 4, "rear", true)!;
+  expect(stage).toBeDefined();
+  expect(stage.route).toHaveLength(4);
+  expect(stage.stance.row === 14 || stage.stance.col === 14).toBe(true);
+  expect(stage.route.every((cell) => !farmerBlocked(cell, reserved))).toBe(
+    true,
+  );
+  expect(stage.route.some((cell) => cell.row < 14 && cell.col < 14)).toBe(true);
+  const occupied: FarmerWorld = {
+    layout: {
+      ...reserved.layout,
+      structures: [
+        ...reserved.layout.structures,
+        { ...target, id: 9, kind: "coop", level: 1 },
+      ],
+    },
+  };
+  const work = farmerWorkRoute({ row: 15, col: 12 }, target, occupied, 4, 4)!;
+  expect(work.route.every((cell) => !farmerBlocked(cell, occupied))).toBe(true);
 });

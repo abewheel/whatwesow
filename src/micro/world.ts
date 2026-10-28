@@ -315,8 +315,8 @@ export function initialDebris(): Debris[] {
       c.row % 18 <= 10 &&
       c.col % 18 >= 4 &&
       c.col % 18 <= 10);
-  for (let row = 5; row < 59; row += 3)
-    for (let col = 5; col < 59; col += 3) {
+  for (let row = 2; row < 59; row += 3)
+    for (let col = 2; col < 59; col += 3) {
       if ((row * 7 + col * 11) % 5 === 0) continue;
       const item: Debris = {
         row: row + (mix(row, col) % 2),

@@ -145,6 +145,8 @@ export async function seedPrices(page: Page, plot: number) {
   await closeActions(page);
   await page.locator("#open-inventory").click();
   await page.locator("#open-seed-shop").click();
+  await expect(page.locator("#service-panel")).toBeVisible();
+  await expect(page.locator("#service-title")).toHaveText("Seed shop");
   const regular = page.locator('[data-seed-quality="regular"]');
   if (await regular.count()) await regular.click();
   const prices: Partial<Record<CropId, number>> = {};

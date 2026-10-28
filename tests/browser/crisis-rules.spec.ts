@@ -1,3 +1,4 @@
+import { openFarmUpgrades } from "./helpers";
 // Council rules on the farm: water, permits, the county's crop, sales limits, droughts and delivery work.
 import { test, expect } from "./fixtures";
 import { visitBuilding, endTurn } from "./helpers";
@@ -210,9 +211,10 @@ test("planting limits bring a steady sales allowance and prices that stay put", 
   await endTurn(page);
   await endTurn(page);
   const value = await earns(page, "turnip", 0);
+  await openFarmUpgrades(page);
   await page.locator("#improve").click();
-  await expect(page.locator("#improve")).toHaveAccessibleName(
-    "Soil improvement underway · next season",
+  await expect(page.locator("#improve .soil-status")).toHaveText(
+    "Underway · ready next season",
   );
   await endTurn(page);
   await expect(page.locator("#farm-summary")).toContainText("Soil level 1/3");

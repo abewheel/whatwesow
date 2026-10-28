@@ -1,4 +1,4 @@
-import { buySeeds } from "./helpers";
+import { buySeeds, openFarmUpgrades } from "./helpers";
 import { test, expect } from "./fixtures";
 import {
   openCell,
@@ -30,16 +30,14 @@ test("plants seasonal crops, harvests, reinvests in soil and preserves purchases
     "aria-label",
     /empty/,
   );
-  await openCell(page, "16,16");
-  await expect(page.locator("#improve small")).toHaveText("+3 / harvest");
-  await expect(page.locator("#improve small")).toBeVisible();
-  await page.locator("#improve").click();
-  await expect(page.locator("#improve")).toHaveAttribute(
-    "aria-label",
-    /underway/,
+  await openFarmUpgrades(page);
+  await expect(page.locator("#improve")).toContainText(
+    "+3 coins / harvest on all plots",
   );
-  await expect(page.locator("#improve small")).toHaveText("Next season");
-  await expect(page.locator("#improve small")).toBeVisible();
+  await page.locator("#improve").click();
+  await expect(page.locator("#improve .soil-status")).toHaveText(
+    "Underway · ready next season",
+  );
   await page.reload();
   const state = await readFarm(page);
   expect(state.pendingSoilUpgrade).toBe(true);

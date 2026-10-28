@@ -56,6 +56,8 @@ for (const { preset, heading, speaker, deal, edit, check } of [
       // Ada's answer opens premium seed purchases at the shop.
       await page.locator("#open-inventory").click();
       await page.locator("#open-seed-shop").click();
+      await expect(page.locator("#service-panel")).toBeVisible();
+      await expect(page.locator("#service-title")).toHaveText("Seed shop");
       await page.locator('[data-seed-quality="premium"]').click();
       await expect(page.locator("[data-buy-premium]")).toHaveCount(6);
       await expect(page.locator("#tile-actions")).toContainText(
@@ -71,6 +73,8 @@ for (const { preset, heading, speaker, deal, edit, check } of [
       await page.locator("#close-service").click();
       await page.locator("#open-inventory").click();
       await page.locator("#open-seed-shop").click();
+      await expect(page.locator("#service-panel")).toBeVisible();
+      await expect(page.locator("#service-title")).toHaveText("Seed shop");
       await page.locator('[data-seed-quality="premium"]').click();
       await expect(page.locator("[data-buy-premium]")).toHaveCount(6);
     },
@@ -179,6 +183,11 @@ async function pricesWhileWaiting(page: Page, plot: number) {
   await page.locator("#close-service").click();
   await page.locator("#open-inventory").click();
   await page.locator("#open-seed-shop").click();
+  await expect(page.locator("#service-panel")).toBeVisible();
+  await expect(page.locator("#service-title")).toHaveText("Seed shop");
+  const regular = page.locator('[data-seed-quality="regular"]');
+  if (await regular.count()) await regular.click();
+  await expect(page.locator("[data-buy-seed]")).toHaveCount(6);
   const shop: Partial<Record<CropId, number>> = {};
   for (const button of await page.locator("[data-buy-seed]").all()) {
     const crop = (await button.getAttribute("data-buy-seed")) as CropId;

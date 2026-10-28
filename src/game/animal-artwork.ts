@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { drawHarvestCue } from "./harvest-artwork";
 import { type AnimalKind, type Structure } from "../micro/world";
 import { animalFrame, animalKinds, livestockFrames } from "./animal-layout";
 
@@ -12,6 +13,7 @@ export function drawAnimalPen(
   width: number,
   height: number,
   depth: number,
+  available = true,
 ) {
   const view = scene.add.container(x, y).setDepth(depth);
   const working = !!(
@@ -58,34 +60,7 @@ export function drawAnimalPen(
       }
     }
   }
-  if (working) {
-    const scaffold = scene.add.graphics();
-    scaffold.lineStyle(2, 0x89633d);
-    for (const px of [0.2, 0.52, 0.8])
-      scaffold.lineBetween(
-        width * px,
-        height * 0.43,
-        width * px,
-        height * 0.88,
-      );
-    scaffold.lineBetween(
-      width * 0.18,
-      height * 0.58,
-      width * 0.82,
-      height * 0.58,
-    );
-    view.add(scaffold);
-  }
-  // Small coin badge stays on the shelter; detailed readiness is in the accessible label.
-  if (s.product && !s.pendingConstruction && !s.pendingDemolition) {
-    const badge = scene.add.graphics();
-    const x = width * 0.5,
-      y = height * 0.25;
-    badge.fillStyle(0x624329).fillCircle(x, y, 8);
-    badge.fillStyle(0xeab54e).fillCircle(x, y, 6);
-    badge.lineStyle(1, 0xffedab).strokeCircle(x, y, 4);
-    badge.lineStyle(2, 0x9b6b2b).lineBetween(x, y - 3, x, y + 3);
-    view.add(badge);
-  }
+  if (s.product && !s.pendingConstruction && !s.pendingDemolition && available)
+    view.add(drawHarvestCue(scene, width * 0.5, height * 0.25, s.kind));
   return view;
 }

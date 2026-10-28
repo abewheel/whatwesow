@@ -2005,17 +2005,43 @@ button.crisis-card {
   height: 22px;
 }
 
-/* Soil benefits need a full row, including the locked and pending states. */
+/* Soil improvement explains its benefit and every locked state above the footer. */
 #tile-actions > #improve {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
   width: 100%;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  gap: 4px;
+  gap: 4px 6px;
+  padding: 8px;
+}
+#tile-actions > #improve > .pixel-icon {
+  width: 24px;
+  height: 24px;
+}
+#tile-actions > #improve strong {
+  font-size: 14px;
+  font-weight: 500;
 }
 #tile-actions > #improve small {
-  flex-basis: 100%;
+  grid-column: 1 / -1;
+  margin-top: 0;
   text-align: left;
   overflow-wrap: anywhere;
+}
+#tile-actions > #improve .soil-status {
+  color: #66472d;
+}
+.plot-footer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+#tile-actions .plot-footer #plot-shop {
+  width: auto;
+  flex: 1;
+  justify-content: center;
+}
+#tile-actions .plot-footer #delete-plot {
+  flex: 0 0 44px;
 }
 
 /* Inventory shares the compact corner controls on every screen size. */
@@ -2243,5 +2269,222 @@ button.crisis-card {
   }
   #council-meeting {
     top: calc(100% + 4px);
+  }
+}
+
+/* Plans use fixed rows so prices and build times stay together at every width. */
+#tile-actions .plan-grid button {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 28px minmax(32px, auto) 24px 1fr;
+  align-items: center;
+  justify-items: center;
+  gap: 3px;
+}
+#tile-actions .plan-grid button > .pixel-icon,
+#tile-actions .plan-grid strong,
+#tile-actions .plan-grid .plan-benefit,
+#tile-actions .plan-grid .plan-rule {
+  grid-column: 1 / -1;
+}
+#tile-actions .plan-grid strong {
+  align-self: center;
+  line-height: 1.15;
+}
+.plan-cost,
+.plan-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.plan-cost .pixel-icon,
+.plan-duration .pixel-icon {
+  width: 20px;
+  height: 20px;
+}
+#tile-actions .plan-grid .plan-benefit {
+  align-self: start;
+  font-size: 11px;
+  line-height: 1.2;
+}
+#tile-actions #teardown-building,
+#tile-actions #delete-plot {
+  width: 44px;
+  min-height: 44px;
+  padding: 4px;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+#tile-actions #teardown-building:has(.pixel-icon + .pixel-icon) {
+  width: auto;
+}
+/* The shortcuts share the HUD frame and its two row heights. */
+.corner-controls {
+  grid-template-columns: repeat(2, 56px);
+  grid-template-rows: 56px 56px;
+  gap: 8px 4px;
+}
+.corner-controls #open-menu,
+.corner-controls #open-inventory,
+.corner-controls #open-shop,
+.corner-controls #camera-controls > summary {
+  width: 56px;
+  height: 56px;
+  border: 8px solid transparent;
+  border-image: url("/art/hud-frame-detailed.png") 150 fill / 8px / 0 stretch;
+  box-shadow: 1px 3px 2px #30251740;
+}
+#season {
+  min-height: 56px;
+}
+@media (max-width: 600px), (max-height: 500px) {
+  .corner-controls {
+    grid-template-columns: repeat(2, 48px);
+    grid-template-rows: 48px 48px;
+    gap: 8px 4px;
+  }
+  .hud-top:has(#open-inventory) .corner-controls > button:not(#crisis-test),
+  .hud-top:has(#open-inventory) .corner-controls #camera-controls > summary {
+    width: 48px;
+    height: 48px;
+  }
+  .corner-controls .pixel-icon {
+    width: 26px;
+    height: 26px;
+  }
+  #season,
+  #farm-status {
+    min-height: 48px;
+  }
+}
+#tile-actions .control-detail {
+  flex-wrap: wrap;
+}
+#tile-actions .resource {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+#tile-actions .seed-grid .crop-rule {
+  grid-column: 1 / -1;
+}
+@media (max-width: 600px), (max-height: 500px) {
+  #season,
+  #farm-status {
+    height: 48px;
+    padding-block: 2px;
+  }
+}
+
+/* Keep debt below the balance without wrapping the whole balance below the date. */
+@media (max-width: 420px) {
+  #season {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding-block: 1px;
+  }
+  #season .coin-balance:has(#owed) {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    grid-template-rows: 16px auto;
+    gap: 0 3px;
+    justify-items: end;
+    font-size: 14px;
+    line-height: 1;
+  }
+  #season .coin-balance:has(#owed) > .pixel-icon {
+    width: 16px;
+    height: 16px;
+  }
+  #owed {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+/* Plot tools share the same frame height and border despite different widths. */
+#tile-actions .plot-footer > button {
+  height: 52px;
+  min-height: 52px;
+  padding: 4px;
+  border-width: 6px;
+  border-image-width: 6px;
+}
+#tile-actions .plot-footer #delete-plot {
+  width: 52px;
+  flex-basis: 52px;
+}
+
+/* Plant cards keep each resource in the same icon, label, value columns. */
+#tile-actions .seed-grid .plant-card {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  justify-items: stretch;
+  gap: 5px;
+  padding: 6px;
+}
+.plant-card-heading {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+}
+.plant-card-heading > .pixel-icon {
+  width: 28px;
+  height: 28px;
+}
+#tile-actions .plant-card-heading strong {
+  font-size: 12px;
+}
+.plant-metrics {
+  display: grid;
+  gap: 3px;
+}
+#tile-actions .plant-metrics .resource {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(2ch, max-content);
+  column-gap: 3px;
+  min-height: 22px;
+  text-align: left;
+  font-size: 11px;
+}
+.plant-metrics .resource > .pixel-icon {
+  width: 20px;
+  height: 20px;
+  justify-self: center;
+}
+.plant-metrics .metric-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.plant-sale-notes {
+  display: grid;
+  gap: 2px;
+  font-size: 10px;
+}
+@media (max-height: 500px) {
+  #tile-actions .seed-grid .plant-card {
+    padding: 4px;
+    gap: 3px;
+  }
+}
+.plant-metrics .harvest-value-icon,
+.plant-metrics .harvest-value-icon > .pixel-icon:first-child {
+  width: 22px;
+  height: 22px;
+}
+.plant-metrics .harvest-value-icon > .pixel-icon:last-child {
+  width: 10px;
+  height: 10px;
+  right: 0;
+}
+
+@media (max-height: 500px) {
+  #tile-actions .seed-grid:has(.plant-card) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

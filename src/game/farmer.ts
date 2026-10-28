@@ -286,8 +286,15 @@ export class Farmer {
           `${key}-gait`,
           createFarmerGait(source as HTMLImageElement, key === "farmer-female"),
         )!;
-        for (let frame = 0; frame < 8; frame++)
-          texture.add(frame, 0, frame * 128, 0, 128, 192);
+        for (let frame = 0; frame < 16; frame++)
+          texture.add(
+            frame,
+            0,
+            (frame % 8) * 128,
+            Math.floor(frame / 8) * 192,
+            128,
+            192,
+          );
       }
     }
     const shadow = scene.add.graphics();
@@ -330,6 +337,7 @@ export class Farmer {
     adjacent = false,
     preference: "rear" | "front" = "front",
     onArrival?: () => void,
+    openFootprint = false,
   ): boolean {
     this.arrival = undefined;
     const plan = adjacent
@@ -340,6 +348,7 @@ export class Farmer {
           width,
           height,
           preference,
+          openFootprint,
         )
       : farmerWalkRoute(this.cell, target, this.world);
     if (!plan || !this.view.visible) return false;
@@ -443,9 +452,18 @@ export class Farmer {
     // Readable development evidence without exposing a global game reference.
     if (import.meta.env.DEV) {
       const canvas = this.view.scene.game.canvas;
+      const bounds = this.art.getBounds();
+      const camera = this.view.scene.cameras.main;
+      canvas.dataset.farmerBounds = JSON.stringify({
+        x: bounds.x - camera.scrollX,
+        y: bounds.y - camera.scrollY,
+        width: bounds.width,
+        height: bounds.height,
+      });
       canvas.dataset.farmerScaleY = String(this.art.scaleY);
       canvas.dataset.farmerFrame = `${this.art.texture.key}:${this.art.frame.name}`;
       canvas.dataset.farmerCell = cellKey(this.cell);
+      canvas.dataset.farmerFacing = `${this.back ? "back" : "front"}-${this.facing > 0 ? "right" : "left"}`;
       canvas.dataset.farmerTarget = this.active
         ? cellKey(this.active.target)
         : "";
@@ -478,7 +496,7 @@ export class Farmer {
     const frame = action
       ? Math.min(5, Math.floor((this.elapsed / 1.15) * 6))
       : 0;
-    const walkFrame = Math.floor(this.stride) % 8;
+    const walkFrame = (this.back ? 8 : 0) + (Math.floor(this.stride) % 8);
     const pose = frame;
     const [cx, originalCy] = contacts[row][pose];
     const frames =

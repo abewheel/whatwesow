@@ -26,7 +26,7 @@ test("restart requires confirmation and persists a fresh farm", async ({
   await expect(page.locator("[data-plot]")).toHaveCount(0);
 });
 
-test("land opens visual categories while walking and field deletion gives no refund", async ({
+test("land opens visual categories on arrival and field deletion gives no refund", async ({
   page,
 }) => {
   await page.goto("/?instance=validation-land-menu");
@@ -34,11 +34,16 @@ test("land opens visual categories while walking and field deletion gives no ref
     "Saved on this browser",
   );
   await page.locator('[data-cell="20,20"]').click();
+  await expect(page.locator("#service-panel")).toBeHidden();
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-farmer-motion",
+    "walk",
+  );
   await expect(page.locator("#service-panel")).toBeVisible();
   await expect(page.locator("#service-title")).toHaveText("Open land");
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-farmer-motion",
-    "walk",
+    "idle",
   );
   await expect(page.locator(".plan-categories button .pixel-icon")).toHaveCount(
     4,

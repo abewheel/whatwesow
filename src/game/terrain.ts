@@ -156,6 +156,19 @@ type GroundView = {
   zoom: number;
 };
 
+/** Shared lighting keeps individual soil tiles identical to the cached ground. */
+export function groundTileTint(cell: Cell) {
+  const shade = Math.min(
+    255,
+    Math.round(
+      246 +
+        Math.sin(cell.col * 0.23 + cell.row * 0.19) * 6 +
+        Math.cos(cell.row * 0.43 - cell.col * 0.13) * 3,
+    ),
+  );
+  return Phaser.Display.Color.GetColor(shade, shade, shade);
+}
+
 /** Cache the visible ground at screen resolution; idle frames draw one quad. */
 export class GroundLayer {
   private art: Phaser.GameObjects.RenderTexture;
@@ -179,14 +192,6 @@ export class GroundLayer {
     material: GroundMaterial,
     tint?: number,
   ) {
-    const shade = Math.min(
-      255,
-      Math.round(
-        246 +
-          Math.sin(cell.col * 0.23 + cell.row * 0.19) * 6 +
-          Math.cos(cell.row * 0.43 - cell.col * 0.13) * 3,
-      ),
-    );
     this.art.stamp(
       this.key,
       groundFrame(cell, material),
@@ -194,7 +199,7 @@ export class GroundLayer {
       (point.y - this.view.y) * this.view.zoom,
       {
         scale: this.view.zoom / 2,
-        tint: tint ?? Phaser.Display.Color.GetColor(shade, shade, shade),
+        tint: tint ?? groundTileTint(cell),
       },
     );
   }

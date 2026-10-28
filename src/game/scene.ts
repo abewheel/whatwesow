@@ -1,4 +1,5 @@
 import { prepareSeizedArtwork, drawSeizedLand } from "./seized-artwork";
+import { drawHarvestCue } from "./harvest-artwork";
 import { isolateAtlas, gridFrames } from "./atlas-isolation";
 import {
   hiveAnchor,
@@ -53,7 +54,14 @@ import {
 } from "./boundary";
 import { prepareLaneArtwork } from "./lane-artwork";
 import { borderDetailRect } from "./border-artwork";
-import { GroundLayer, groundTint, takenCell } from "./terrain";
+import {
+  GroundLayer,
+  groundTint,
+  groundFrame,
+  prepareGround,
+  groundTileTint,
+  takenCell,
+} from "./terrain";
 import { Farmer, farmerFrames, femaleFarmerFrames } from "./farmer";
 import { farmerDepth, type BuildingOccluder } from "./farmer-depth";
 import { farmerTaskForAction } from "./farmer-task";
@@ -78,7 +86,16 @@ export const WORLD_WIDTH = WORLD_SIZE * 64 + 512,
 const renderScale = 64 / TILE_WIDTH;
 const tentWidth = 160;
 const tentHeight = tentWidth * (2 / 3);
-export const TENT_CENTER_OFFSET = tentHeight / 2 - 24;
+export const TENT_CENTER_OFFSET = tentHeight / 2 - 48;
+export const tentBounds = (cell: Cell) => {
+  const anchor = projectCell(cell);
+  return {
+    x: anchor.x - tentWidth / 2,
+    y: anchor.y + 48 - tentHeight,
+    width: tentWidth,
+    height: tentHeight,
+  };
+};
 const worldPoint = (p: { x: number; y: number }) => ({
   x: WORLD_WIDTH / 2 + p.x * renderScale,
   y: WORLD_TOP + p.y * renderScale,
@@ -108,6 +125,8 @@ export class FarmScene extends Phaser.Scene {
   private boundaryWalkers: BoundaryWalker[] = [];
   private treeViews = new Map<number, Phaser.GameObjects.Container>();
   private harvestEffects?: Phaser.GameObjects.Container;
+  private entityViews = new Map<string, Phaser.GameObjects.GameObject[]>();
+  private fadingViews = new Set<Phaser.GameObjects.GameObject>();
   private farm = initialMicroState();
   private season: MacroState["season"] = "spring";
   private policy: MacroState["farmPolicy"];
@@ -174,6 +193,7 @@ export class FarmScene extends Phaser.Scene {
     lot: Cell & { width: number; height: number },
     wild: boolean,
     working = false,
+    ready = false,
   ) {
     const point = projectCell(hiveAnchor(lot));
     const art = hiveBounds(point, wild);
@@ -196,31 +216,64 @@ export class FarmScene extends Phaser.Scene {
       height: art.height,
       front: { x: point.x, y: art.bottom },
     });
-    if (working) {
-      const scaffold = this.add.graphics().setDepth(art.bottom + 1);
-      scaffold.lineStyle(3, 0x89633d);
-      for (const dx of [-32, 0, 32])
-        scaffold.lineBetween(
-          point.x + dx,
-          art.bottom - 50,
-          point.x + dx,
-          art.bottom,
+    if (working) this.drawConstruction(lot, art.bottom + 1, 48);
+    if (ready)
+      this.scenery!.add(
+        drawHarvestCue(
+          this,
+          point.x + (wild ? 18 : 12),
+          art.bottom - 12,
+          wild ? "wild-hive" : "beehive",
+        ).setDepth(art.bottom + 2),
+      );
+  }
+
+  /** Timber posts, rails, and braces follow the lot's two visible faces. */
+  private drawConstruction(
+    lot: Cell & { width: number; height: number },
+    depth: number,
+    height = 40,
+  ) {
+    const scaffold = this.add
+      .graphics()
+      .setDepth(depth)
+      .setName("construction");
+    const base = renderFootprint({
+      row: lot.row - 0.42,
+      col: lot.col - 0.42,
+      width: lot.width - 0.16,
+      depth: lot.height - 0.16,
+    }).map(worldPoint);
+    const face = [base[1], base[2], base[3]];
+    for (const [width, color] of [
+      [5, 0x573a25],
+      [2, 0xd6ad70],
+    ]) {
+      scaffold.lineStyle(width, color);
+      for (let i = 0; i < 2; i++) {
+        const a = face[i],
+          b = face[i + 1];
+        const sections = Math.max(
+          1,
+          Math.ceil((i ? lot.height : lot.width) / 2),
         );
-      for (const dy of [16, 40])
-        scaffold.lineBetween(
-          point.x - 38,
-          art.bottom - dy,
-          point.x + 38,
-          art.bottom - dy,
-        );
-      this.scenery!.add(scaffold);
+        for (let n = 0; n <= sections; n++) {
+          const x = a.x + ((b.x - a.x) * n) / sections;
+          const y = a.y + ((b.y - a.y) * n) / sections;
+          scaffold.lineBetween(x, y + 3, x, y - height);
+        }
+        for (const rail of [10, height - 4])
+          scaffold.lineBetween(a.x, a.y - rail, b.x, b.y - rail);
+        scaffold.lineBetween(a.x, a.y - height + 4, b.x, b.y - 10);
+      }
     }
+    this.scenery!.add(scaffold);
   }
 
   hitsTent(point: { x: number; y: number }, cell: Cell) {
-    const anchor = projectCell(cell);
-    const x = (point.x - anchor.x + tentWidth / 2) / tentWidth;
-    const y = (point.y - anchor.y - 24 + tentHeight) / tentHeight;
+    const art = tentBounds(cell);
+    const x = (point.x - art.x) / art.width;
+    const y = (point.y - art.y) / art.height;
     if (x < 0 || x >= 1 || y < 0 || y >= 1) return false;
     const source = this.textures.getFrame("starter-tent");
     return (
@@ -337,6 +390,7 @@ export class FarmScene extends Phaser.Scene {
       );
     this.load.image("beehive-winter", "/art/beehive-winter.png");
     this.load.image("beehive", "/art/beehive.png");
+    this.load.image("harvest-basket", "/art/icons/harvest.png");
 
     this.load.image("debris-seasons", "/art/debris-seasons.png");
     this.load.image("starter-tent", "/art/starter-tent.png");
@@ -520,6 +574,18 @@ export class FarmScene extends Phaser.Scene {
         this.game.canvas.dataset.farmerDepth = String(this.farmer.view.depth);
     }
     this.scenery?.sort("depth");
+    if (import.meta.env.DEV)
+      this.game.canvas.dataset.sceneRemoving = JSON.stringify(
+        [...this.fadingViews].map((object) => ({
+          name: object.name,
+          alpha: (object as Phaser.GameObjects.Image).alpha,
+        })),
+      );
+  }
+  farmerPosition() {
+    return this.farmer
+      ? { x: this.farmer.view.x, y: this.farmer.view.y }
+      : undefined;
   }
   travelTo(
     target: Cell,
@@ -528,6 +594,7 @@ export class FarmScene extends Phaser.Scene {
     adjacent = false,
     preference: "rear" | "front" = "front",
     onArrival?: () => void,
+    openFootprint = false,
   ) {
     return (
       this.farmer?.travel(
@@ -537,6 +604,7 @@ export class FarmScene extends Phaser.Scene {
         adjacent,
         preference,
         onArrival,
+        openFootprint,
       ) ?? false
     );
   }
@@ -600,12 +668,41 @@ export class FarmScene extends Phaser.Scene {
   setState(
     state: MacroState & MicroState & { farmerVariant?: "male" | "female" },
   ) {
+    this.fadeRemovedEntities(state);
     this.farm = state;
     if (this.farmer) this.farmer.variant = state.farmerVariant ?? "male";
     this.farmer?.setWorld(state, state.farmPolicy);
     this.policy = state.farmPolicy;
     this.season = state.season;
     if (this.ground) this.draw();
+  }
+  private fadeRemovedEntities(
+    state: MicroState & { farmPolicy?: MacroState["farmPolicy"] },
+  ) {
+    const remaining = new Set([
+      ...(state.debris ?? []).map((item) => `debris:${cellKey(item)}`),
+      ...state.structures.map((item) => `structure:${item.id}`),
+      ...state.plotCells.map((cell) => `plot:${cellKey(cell)}`),
+      ...serviceLocations(state, serviceOptions(state.farmPolicy)).map(
+        (item) => `service:${item.id}:${item.tent}`,
+      ),
+    ]);
+    for (const [key, objects] of this.entityViews) {
+      if (remaining.has(key)) continue;
+      for (const object of objects) {
+        this.fadingViews.add(object);
+        this.tweens.add({
+          targets: object,
+          alpha: 0,
+          duration: 420,
+          ease: "Sine.easeOut",
+          onComplete: () => {
+            this.fadingViews.delete(object);
+            object.destroy();
+          },
+        });
+      }
+    }
   }
   private draw(publishLayout = true) {
     const g = this.ground!,
@@ -623,10 +720,17 @@ export class FarmScene extends Phaser.Scene {
     g.clear();
     this.groundArt!.begin(this.season, this.view);
     if (this.farmer) scenery.remove(this.farmer.view);
-    for (const tree of this.treeViews.values()) this.tweens.killTweensOf(tree);
+    for (const tree of this.treeViews.values())
+      if (!this.fadingViews.has(tree)) this.tweens.killTweensOf(tree);
     this.treeViews.clear();
     this.buildingOccluders = [];
+    for (const object of this.fadingViews) scenery.remove(object);
     scenery.removeAll(true);
+    scenery.add([...this.fadingViews]);
+    this.entityViews.clear();
+    const remember = (key: string, start: number) => {
+      this.entityViews.set(key, scenery.list.slice(start));
+    };
     if (this.farmer) scenery.add(this.farmer.view);
     this.cameras.main.setBackgroundColor(p.grass);
     const atlas = this.buildingAtlas;
@@ -647,6 +751,13 @@ export class FarmScene extends Phaser.Scene {
       projectCell,
       this.policy,
     );
+    for (const object of scenery.list) {
+      if (this.fadingViews.has(object) || !object.name.startsWith("debris:"))
+        continue;
+      const views = this.entityViews.get(object.name) ?? [];
+      views.push(object);
+      this.entityViews.set(object.name, views);
+    }
     const plotMap = new Map(this.farm.plotCells.map((c, i) => [cellKey(c), i]));
     const targets: PlotTarget[] = [];
     // Crisis marks drawn this frame, published below for development checks.
@@ -663,7 +774,7 @@ export class FarmScene extends Phaser.Scene {
         this.groundArt!.tile(
           { row, col },
           { x, y },
-          index === undefined ? "grass" : "soil",
+          "grass",
           groundTint({ row, col }, this.policy),
         );
         if (takenCell({ row, col }, this.policy)) {
@@ -671,8 +782,31 @@ export class FarmScene extends Phaser.Scene {
           drawSeizedLand(this, scenery, { row, col }, { x, y }, this.season);
         }
         if (index === undefined) continue;
+        const plotStart = scenery.length;
+        // Keep soil as part of the plot's view so even empty fields can fade
+        // into the grass immediately below them when deleted.
+        if (!takenCell({ row, col }, this.policy))
+          scenery.add(
+            this.add
+              .image(
+                x,
+                y,
+                prepareGround(this, this.season),
+                groundFrame({ row, col }, "soil"),
+              )
+              .setScale(0.5)
+              .setDepth(-2)
+              .setName(`soil:${cellKey({ row, col })}`)
+              .setTint(
+                groundTint({ row, col }, this.policy) ??
+                  groundTileTint({ row, col }),
+              ),
+          );
         const plot = this.farm.plots[index];
-        if (!plot) continue;
+        if (!plot) {
+          remember(`plot:${cellKey({ row, col })}`, plotStart);
+          continue;
+        }
         const art = cropArtwork(plot.crop, plot.growth),
           look = cropCondition(plot);
         if (plot.withered) marks.withered++;
@@ -694,36 +828,129 @@ export class FarmScene extends Phaser.Scene {
               .setTintMode(Phaser.TintModes.MULTIPLY_TWO);
           scenery.add(image);
         }
+        remember(`plot:${cellKey({ row, col })}`, plotStart);
       }
     // Phaser sorts by the depth below; equal depths retain placement order,
     // which the artwork hit test also uses.
     for (const s of this.farm.structures) {
-      const item = { ...buildings[s.kind], ...structureSize(s) };
-      const location = projectCell(s);
-      if (!visible(location.x, location.y)) continue;
-      // Sealed kinds give no benefits.
-      const sealed = !!this.policy?.sealedBuildings?.includes(s.kind);
-      if (sealed) marks.sealed++;
-      if (s.kind === "beehive") {
-        this.drawHive(
-          { ...s, width: item.width, height: item.height },
-          false,
-          !!s.pendingConstruction,
-        );
-        continue;
-      }
-      if (isAnimal(s.kind)) {
-        const art = animalArtwork({
-          ...s,
-          kind: s.kind,
-          width: item.width,
-          height: item.height,
-        });
-        const top = projectCell(art),
-          front = projectCell({
-            row: s.row + item.height - 0.5,
-            col: s.col + item.width - 0.5,
+      const entityStart = scenery.length;
+      try {
+        const item = { ...buildings[s.kind], ...structureSize(s) };
+        const location = projectCell(s);
+        if (!visible(location.x, location.y)) continue;
+        // Sealed kinds give no benefits.
+        const sealed = !!this.policy?.sealedBuildings?.includes(s.kind);
+        if (sealed) marks.sealed++;
+        if (s.kind === "beehive") {
+          this.drawHive(
+            { ...s, width: item.width, height: item.height },
+            false,
+            !!(
+              s.pendingConstruction ||
+              s.pendingUpgrade ||
+              s.pendingDemolition
+            ),
+            !!s.product &&
+              !s.pendingConstruction &&
+              !s.pendingDemolition &&
+              !sealed,
+          );
+          continue;
+        }
+        if (isAnimal(s.kind)) {
+          const art = animalArtwork({
+            ...s,
+            kind: s.kind,
+            width: item.width,
+            height: item.height,
           });
+          const top = projectCell(art),
+            front = projectCell({
+              row: s.row + item.height - 0.5,
+              col: s.col + item.width - 0.5,
+            });
+          this.buildingOccluders.push({
+            ...top,
+            y: top.y,
+            size: art.size,
+            height: art.height,
+            front,
+          });
+          this.drawBuildingShadow(
+            art,
+            "animal-buildings",
+            animalFrame(s.kind, this.season),
+          );
+          scenery.add(
+            drawAnimalPen(
+              this,
+              { ...s, kind: s.kind },
+              this.season,
+              top.x,
+              top.y,
+              art.size,
+              art.height,
+              front.y,
+              !sealed,
+            ),
+          );
+          if (s.pendingConstruction || s.pendingUpgrade || s.pendingDemolition)
+            this.drawConstruction(
+              { ...s, width: item.width, height: item.height },
+              front.y + 1,
+            );
+          continue;
+        }
+        if (isTree(s.kind)) {
+          const { x, y } = location;
+          const kind = s.kind as "apple" | "oak";
+          const stage = treeStage(s);
+          const tree = this.add
+            .container(x, y)
+            .setDepth(y)
+            .setAlpha(sealed ? sealedLook.alpha : 1);
+          const crown = this.add
+            .image(0, 0, `tree-${kind}`, treeFrame(s, this.season))
+            .setOrigin(0.5, 1)
+            .setScale([0.13, 0.17, 0.18][stage]);
+          if (sealed) crown.setTint(sealedLook.tint);
+          this.drawSpriteShadow(
+            x - crown.displayWidth / 2,
+            y - crown.displayHeight,
+            crown.displayWidth,
+            crown.displayHeight,
+            `tree-${kind}`,
+            treeFrame(s, this.season),
+          );
+          tree.add(crown);
+          if (s.product)
+            for (const [dx, dy] of productPositions[kind])
+              tree.add(
+                this.add
+                  .image(dx, dy, "tree-products", kind)
+                  .setDisplaySize(kind === "apple" ? 11 : 9, 13),
+              );
+          this.treeViews.set(s.id, tree);
+          scenery.add(tree);
+          if (s.pendingConstruction || s.pendingUpgrade || s.pendingDemolition)
+            this.drawConstruction(
+              { ...s, width: item.width, height: item.height },
+              y + 1,
+              26,
+            );
+          continue;
+        }
+        const distinctFrame = distinctStructures[s.kind];
+        const art = buildingArtwork(
+          { ...s, width: item.width, height: item.height },
+          distinctFrame ?? item.frame,
+          distinctFrame !== undefined,
+        );
+        const top = projectCell(art);
+        const front = projectCell({
+          row: s.row + item.height - 0.5,
+          col: s.col + item.width - 0.5,
+        });
         this.buildingOccluders.push({
           ...top,
           y: top.y,
@@ -731,253 +958,180 @@ export class FarmScene extends Phaser.Scene {
           height: art.height,
           front,
         });
+        const working = !!(
+          s.pendingConstruction ||
+          s.pendingUpgrade ||
+          s.pendingDemolition
+        );
+        const stateAtlas = working && distinctFrame === undefined;
+        const frame = item.frame;
         this.drawBuildingShadow(
           art,
-          "animal-buildings",
-          animalFrame(s.kind, this.season),
-        );
-        scenery.add(
-          drawAnimalPen(
-            this,
-            { ...s, kind: s.kind },
-            this.season,
-            top.x,
-            top.y,
-            art.size,
-            art.height,
-            front.y,
-          ),
-        );
-        continue;
-      }
-      if (isTree(s.kind)) {
-        const { x, y } = location;
-        const kind = s.kind as "apple" | "oak";
-        const stage = treeStage(s);
-        const tree = this.add
-          .container(x, y)
-          .setDepth(y)
-          .setAlpha(sealed ? sealedLook.alpha : 1);
-        const crown = this.add
-          .image(0, 0, `tree-${kind}`, treeFrame(s, this.season))
-          .setOrigin(0.5, 1)
-          .setScale([0.13, 0.17, 0.18][stage]);
-        if (sealed) crown.setTint(sealedLook.tint);
-        this.drawSpriteShadow(
-          x - crown.displayWidth / 2,
-          y - crown.displayHeight,
-          crown.displayWidth,
-          crown.displayHeight,
-          `tree-${kind}`,
-          treeFrame(s, this.season),
-        );
-        tree.add(crown);
-        if (s.product)
-          for (const [dx, dy] of productPositions[kind])
-            tree.add(
-              this.add
-                .image(dx, dy, "tree-products", kind)
-                .setDisplaySize(kind === "apple" ? 11 : 9, 13),
-            );
-        this.treeViews.set(s.id, tree);
-        scenery.add(tree);
-        continue;
-      }
-      const distinctFrame = distinctStructures[s.kind];
-      const art = buildingArtwork(
-        { ...s, width: item.width, height: item.height },
-        distinctFrame ?? item.frame,
-        distinctFrame !== undefined,
-      );
-      const top = projectCell(art);
-      const front = projectCell({
-        row: s.row + item.height - 0.5,
-        col: s.col + item.width - 0.5,
-      });
-      this.buildingOccluders.push({
-        ...top,
-        y: top.y,
-        size: art.size,
-        height: art.height,
-        front,
-      });
-      const working = !!(
-        s.pendingConstruction ||
-        s.pendingUpgrade ||
-        s.pendingDemolition
-      );
-      const stateAtlas = working && distinctFrame === undefined;
-      const frame = item.frame;
-      this.drawBuildingShadow(
-        art,
-        distinctFrame !== undefined
-          ? "distinct-buildings"
-          : stateAtlas
-            ? "farm-states"
-            : atlas,
-        distinctFrame ?? frame,
-      );
-      const building = this.add
-        .image(
-          top.x,
-          top.y,
           distinctFrame !== undefined
             ? "distinct-buildings"
             : stateAtlas
               ? "farm-states"
               : atlas,
           distinctFrame ?? frame,
-        )
-        .setOrigin(0, 0)
-        .setDisplaySize(art.size, art.height)
-        .setAlpha(
-          sealed
-            ? sealedLook.alpha
-            : working && distinctFrame !== undefined
-              ? 0.72
-              : 1,
-        )
-        .setDepth(front.y);
-      scenery.add(building);
-      if (sealed) {
-        building.setTint(sealedLook.tint);
-        // Crossed planks show the seal without relying on colour.
-        const middle = projectCell({
-          row: s.row + (item.height - 1) / 2,
-          col: s.col + (item.width - 1) / 2,
-        });
-        const x = middle.x,
-          y = middle.y - art.size * 0.2,
-          w = art.size * 0.2,
-          h = art.size * 0.1;
-        const planks = this.add.graphics().setDepth(front.y + 1);
-        for (const [width, color] of [
-          [7, 0x493621],
-          [4, 0x9b6a3c],
-        ])
-          planks
-            .lineStyle(width, color)
-            .lineBetween(x - w, y - h, x + w, y + h)
-            .lineBetween(x - w, y + h, x + w, y - h);
-        scenery.add(planks);
-      }
-      if (working && distinctFrame !== undefined) {
-        const scaffold = this.add.graphics().setDepth(front.y + 1);
-        // Timber rails across the two front faces keep pending work visible without labels.
-        const insetBase = renderFootprint({
-          row: s.row - 0.42,
-          col: s.col - 0.42,
-          width: item.width - 0.16,
-          depth: item.height - 0.16,
-        }).map(worldPoint);
-        const face = [insetBase[1], insetBase[2], insetBase[3]];
-        for (const [width, color] of [
-          [4, 0x68472c],
-          [1, 0xd6ad70],
-        ]) {
-          scaffold.lineStyle(width, color);
-          for (const point of face)
-            scaffold.lineBetween(point.x, point.y, point.x, point.y - 30);
-          for (let i = 0; i < 2; i++) {
-            const a = face[i],
-              b = face[i + 1];
-            for (const height of [10, 27])
-              scaffold.lineBetween(a.x, a.y - height, b.x, b.y - height);
-            scaffold.lineBetween(a.x, a.y - 27, b.x, b.y - 10);
-          }
+        );
+        const building = this.add
+          .image(
+            top.x,
+            top.y,
+            distinctFrame !== undefined
+              ? "distinct-buildings"
+              : stateAtlas
+                ? "farm-states"
+                : atlas,
+            distinctFrame ?? frame,
+          )
+          .setOrigin(0, 0)
+          .setDisplaySize(art.size, art.height)
+          .setAlpha(
+            sealed
+              ? sealedLook.alpha
+              : working && distinctFrame !== undefined
+                ? 0.72
+                : 1,
+          )
+          .setDepth(front.y);
+        scenery.add(building);
+        if (sealed) {
+          building.setTint(sealedLook.tint);
+          // Crossed planks show the seal without relying on colour.
+          const middle = projectCell({
+            row: s.row + (item.height - 1) / 2,
+            col: s.col + (item.width - 1) / 2,
+          });
+          const x = middle.x,
+            y = middle.y - art.size * 0.2,
+            w = art.size * 0.2,
+            h = art.size * 0.1;
+          const planks = this.add.graphics().setDepth(front.y + 1);
+          for (const [width, color] of [
+            [7, 0x493621],
+            [4, 0x9b6a3c],
+          ])
+            planks
+              .lineStyle(width, color)
+              .lineBetween(x - w, y - h, x + w, y + h)
+              .lineBetween(x - w, y + h, x + w, y - h);
+          scenery.add(planks);
         }
-        scenery.add(scaffold);
+        if (working && distinctFrame !== undefined)
+          this.drawConstruction(
+            { ...s, width: item.width, height: item.height },
+            front.y + 1,
+          );
+      } finally {
+        remember(`structure:${s.id}`, entityStart);
       }
     }
     for (const service of serviceLocations(
       this.farm,
       serviceOptions(this.policy),
     )) {
-      const point = projectCell(service);
-      if (publishLayout && service.row < 0)
-        targets.push({
-          ...service,
-          x: point.x,
-          y: point.y,
-          width: 64,
-          height: 32,
-        });
-      if (!visible(point.x, point.y)) continue;
-      if (service.id === "council") {
-        marks.council = cellKey(service);
-        this.drawCouncilOffice(service, point);
-        continue;
-      }
-      if (service.id === "hive") {
-        this.drawHive(service, true);
-        continue;
-      }
-      if (service.tent) {
-        const top = {
-          x: point.x - tentWidth / 2,
-          y: point.y + 24 - tentHeight,
-        };
-        this.drawSpriteShadow(
-          top.x,
-          top.y,
-          tentWidth,
-          tentHeight,
-          "starter-tent",
-        );
-        scenery.add(
-          this.add
-            .image(point.x, point.y + 24, "starter-tent")
-            .setOrigin(0.5, 1)
-            .setDisplaySize(tentWidth, tentHeight)
-            .setDepth(point.y + 24),
-        );
-        this.buildingOccluders.push({
-          ...top,
-          size: tentWidth,
-          height: tentHeight,
-          front: { x: point.x, y: point.y + 24 },
-        });
-        continue;
-      }
-      const art = buildingArtwork(
-        service,
-        distinctServices[service.id] ?? service.frame,
-        service.id !== "home",
-      );
-      this.drawBuildingShadow(
-        art,
-        service.id === "home" ? atlas : "distinct-buildings",
-        distinctServices[service.id] ?? service.frame,
-      );
-      const top = projectCell(art);
-      const front = projectCell({
-        row: service.row + service.height - 0.5,
-        col: service.col + service.width - 0.5,
-      });
-      this.buildingOccluders.push({
-        ...top,
-        y: top.y,
-        size: art.size,
-        height: art.height,
-        front,
-      });
-      scenery.add(
-        this.add
-          .image(
+      const entityStart = scenery.length;
+      try {
+        const point = projectCell(service);
+        if (publishLayout && service.row < 0)
+          targets.push({
+            ...service,
+            x: point.x,
+            y: point.y,
+            width: 64,
+            height: 32,
+          });
+        if (!visible(point.x, point.y)) continue;
+        if (service.id === "council") {
+          marks.council = cellKey(service);
+          this.drawCouncilOffice(service, point);
+          continue;
+        }
+        if (service.id === "hive") {
+          this.drawHive(service, true, false, this.farm.honeyReady !== false);
+          continue;
+        }
+        if (service.tent) {
+          const top = tentBounds(service);
+          this.drawSpriteShadow(
             top.x,
             top.y,
-            service.id === "home" ? atlas : "distinct-buildings",
-            distinctServices[service.id] ?? service.frame,
-          )
-          .setOrigin(0, 0)
-          .setDisplaySize(art.size, art.height)
-          .setDepth(front.y),
-      );
+            tentWidth,
+            tentHeight,
+            "starter-tent",
+          );
+          scenery.add(
+            this.add
+              .image(top.x, top.y, "starter-tent")
+              .setOrigin(0, 0)
+              .setDisplaySize(tentWidth, tentHeight)
+              .setDepth(top.y + top.height),
+          );
+          this.buildingOccluders.push({
+            ...top,
+            size: tentWidth,
+            height: tentHeight,
+            front: { x: top.x + top.width / 2, y: top.y + top.height },
+          });
+          continue;
+        }
+        const art = buildingArtwork(
+          service,
+          distinctServices[service.id] ?? service.frame,
+          service.id !== "home",
+        );
+        this.drawBuildingShadow(
+          art,
+          service.id === "home" ? atlas : "distinct-buildings",
+          distinctServices[service.id] ?? service.frame,
+        );
+        const top = projectCell(art);
+        const front = projectCell({
+          row: service.row + service.height - 0.5,
+          col: service.col + service.width - 0.5,
+        });
+        this.buildingOccluders.push({
+          ...top,
+          y: top.y,
+          size: art.size,
+          height: art.height,
+          front,
+        });
+        scenery.add(
+          this.add
+            .image(
+              top.x,
+              top.y,
+              service.id === "home" ? atlas : "distinct-buildings",
+              distinctServices[service.id] ?? service.frame,
+            )
+            .setOrigin(0, 0)
+            .setDisplaySize(art.size, art.height)
+            .setDepth(front.y),
+        );
+      } finally {
+        remember(`service:${service.id}:${service.tent}`, entityStart);
+      }
     }
     this.groundArt!.finish();
     // Development evidence of entity presentation and crisis marks.
     if (import.meta.env.DEV) {
       const data = this.game.canvas.dataset;
+      data.sceneConstruction = String(
+        scenery.list.filter((object) => object.name === "construction").length,
+      );
+      const harvestCues: string[] = [];
+      const inspect = (objects: Phaser.GameObjects.GameObject[]) => {
+        for (const object of objects) {
+          if (object.name.startsWith("harvest-ready:"))
+            harvestCues.push(object.name.slice("harvest-ready:".length));
+          if (object instanceof Phaser.GameObjects.Container)
+            inspect(object.list);
+        }
+      };
+      inspect(scenery.list);
+      data.sceneHarvestCues = JSON.stringify(harvestCues.sort());
       data.sceneLabels = String(
         scenery.list.filter(
           (object) => object instanceof Phaser.GameObjects.Text,

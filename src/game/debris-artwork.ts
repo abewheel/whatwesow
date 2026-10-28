@@ -1,5 +1,6 @@
 import type Phaser from "phaser";
 import {
+  cellKey,
   debrisTypes,
   debrisFootprint,
   cellAllowed,
@@ -43,6 +44,7 @@ export function drawDebris(
   policy?: FarmPolicy,
 ) {
   const frame = seasonFrame(season);
+  let currentId = "";
   const sprite = (
     atlas: string,
     index: string | number,
@@ -54,11 +56,13 @@ export function drawDebris(
     const image = scene.add
       .image(point.x, point.y + 15, atlas, index)
       .setOrigin(0.5, 1)
-      .setFlipX(flip);
+      .setFlipX(flip)
+      .setName(`debris:${currentId}`);
     image.setScale(width / image.width).setDepth(point.y + 14);
     layer.add(image);
   };
   for (const d of items) {
+    currentId = cellKey(d);
     if (!debrisFootprint(d).some((c) => cellAllowed(c, policy))) continue;
     const spec = debrisTypes[d.kind];
     if (d.kind === "fallenTree") {

@@ -18,6 +18,7 @@ async function tent(page: Page) {
   await expect(page.locator("#service-panel")).toBeVisible({ timeout: 20000 });
 }
 async function fits(page: Page, selector: string) {
+  await expect(page.locator(selector)).toBeVisible();
   const box = await page.locator(selector).boundingBox();
   expect(box).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
@@ -60,7 +61,7 @@ for (const viewport of [
       await buySeeds(page, "turnip");
       await page.locator('[data-cell="16,16"]').tap();
       await page.locator("#expand").tap();
-      await expect(page.locator("#improve")).toBeDisabled();
+      await expect(page.locator("#improve")).toHaveCount(0);
       await fits(page, "#service-panel");
       await fits(page, "#close-service");
       await page.locator('[data-crop="turnip"]').tap();
@@ -73,6 +74,13 @@ for (const viewport of [
       await expect(page.locator("#service-title")).toHaveText("Farmhouse");
       await expect(page.locator("#next-season")).toBeDisabled();
       await tent(page);
+      await page.locator("#farm-upgrades").tap();
+      await expect(page.locator("#improve")).toBeDisabled();
+      await expect(page.locator("#improve .soil-status")).toHaveText(
+        "Harvest 3 crops",
+      );
+      await fits(page, "#service-panel");
+      await page.locator("#back-home").tap();
       await page.locator("#next-season").tap();
       await expect(page.locator("#season")).toContainText("summer");
       await page.locator("#close-service").tap();

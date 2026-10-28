@@ -49,6 +49,7 @@ import { icon, type Icon } from "./game/icons";
 import {
   FarmScene,
   TENT_CENTER_OFFSET,
+  tentBounds,
   projectCell,
   WORLD_WIDTH,
   WORLD_HEIGHT,
@@ -186,7 +187,9 @@ let contextTarget: ContextTarget | null = null;
 let shopQuantity = "1";
 let shopPremium = false;
 let planCategory = "farm";
+let homeUpgrades = false;
 function closeService() {
+  homeUpgrades = false;
   if (contextTarget) navigationVersion++;
   contextTarget = null;
   document
@@ -256,11 +259,20 @@ function positionContext() {
       bottom: bounds.top - card.top + art.bottom * zoom - viewport.scrollTop,
     };
   } else if (service?.tent) {
+    const art = tentBounds(service);
     anchor = {
-      left: x - 80 * zoom,
-      right: x + 80 * zoom,
-      top: y + (24 - 160 * (2 / 3)) * zoom,
-      bottom: y + 24 * zoom,
+      left: bounds.left - card.left + art.x * zoom - viewport.scrollLeft,
+      right:
+        bounds.left -
+        card.left +
+        (art.x + art.width) * zoom -
+        viewport.scrollLeft,
+      top: bounds.top - card.top + art.y * zoom - viewport.scrollTop,
+      bottom:
+        bounds.top -
+        card.top +
+        (art.y + art.height) * zoom -
+        viewport.scrollTop,
     };
   } else if (building || service) {
     const lot = building
@@ -332,11 +344,25 @@ function positionContext() {
     : 440;
   servicePanel.style.maxHeight = `${Math.min(panelLimit, bottomEdge - topEdge)}px`;
   const height = servicePanel.getBoundingClientRect().height;
-  const rightFits = anchor.right + gap + width <= rightEdge;
-  const leftFits = anchor.left - gap - width >= leftEdge;
+  const rightSpace = rightEdge - anchor.right - gap;
+  const leftSpace = anchor.left - leftEdge - gap;
+  const rightFits = rightSpace >= width;
+  const leftFits = leftSpace >= width;
+  const farmer = scene.farmerPosition();
+  const farmerX = farmer
+    ? bounds.left - card.left + farmer.x * zoom - viewport.scrollLeft
+    : x;
+  const farmerY = farmer
+    ? bounds.top - card.top + farmer.y * zoom - viewport.scrollTop
+    : y;
+  // Keep the menu across the target from the farmer when that side fits.
+  // If the farmer stands directly above or below it, use the wider side.
+  const preferRight =
+    Math.abs(farmerX - x) > 24 * zoom ? farmerX < x : rightSpace >= leftSpace;
   let left: number, top: number;
   if (rightFits || leftFits) {
-    left = rightFits ? anchor.right + gap : anchor.left - gap - width;
+    const useRight = rightFits && (!leftFits || preferRight);
+    left = useRight ? anchor.right + gap : anchor.left - gap - width;
     top = (anchor.top + anchor.bottom) / 2 - Math.min(height / 2, 80);
   } else {
     left = x - width / 2;
@@ -348,7 +374,9 @@ function positionContext() {
     servicePanel.style.maxHeight = `${Math.min(panelLimit, available)}px`;
     const actualHeight = servicePanel.getBoundingClientRect().height;
     top =
-      below >= above ? anchor.bottom + gap : anchor.top - gap - actualHeight;
+      (farmerY < y && below >= actualHeight) || above < actualHeight
+        ? anchor.bottom + gap
+        : anchor.top - gap - actualHeight;
   }
   const actualHeight = servicePanel.getBoundingClientRect().height;
   servicePanel.style.left = `${Math.max(leftEdge, Math.min(rightEdge - width, left))}px`;
@@ -409,6 +437,37 @@ function workPlot(cell: Cell, crop?: CropId, premiumSeed = false) {
     ? `Walking to ${crop ? "plant" : "harvest"} this plot.`
     : "No walking path to this plot.";
 }
+function startConstruction(kind: BuildingKind, cell: Cell) {
+  const target = contextTarget;
+  if (!target) return;
+  const request = ++navigationVersion;
+  const item = buildings[kind];
+  const reached = scene.travelTo(
+    cell,
+    item.width,
+    item.height,
+    true,
+    "rear",
+    () => {
+      if (request !== navigationVersion || contextTarget !== target) return;
+      void act({ type: "build", kind, cell });
+    },
+    true,
+  );
+  if (!reached) {
+    serviceFeedback.textContent = "No walking path to start this building.";
+    serviceFeedback.hidden = false;
+    positionContext();
+    return;
+  }
+  // Keep the chosen lot visible while the farmer steps out of its future
+  // footprint. The new building must never force a reset back to spawn.
+  for (const button of tileActions.querySelectorAll<HTMLButtonElement>(
+    "button",
+  ))
+    button.disabled = true;
+  message.textContent = `Walking to start ${item.name.toLowerCase()}.`;
+}
 function openSeedShop() {
   viewport.scrollIntoView({ block: "start" });
   const destination =
@@ -468,10 +527,21 @@ function openContext(target: ContextTarget) {
   closeService();
   cameraControls.open = false;
   clearBuild();
-  navigationVersion++;
+  const request = ++navigationVersion;
   contextTarget = target;
   if (target.type === "cell") planCategory = "farm";
   const destination = contextCell();
+  const show = () => {
+    if (request !== navigationVersion || contextTarget !== target) return;
+    serviceFeedback.hidden = true;
+    refreshContext();
+    servicePanel.hidden = false;
+    inventoryControls?.render();
+    positionContext();
+    document
+      .querySelector<HTMLButtonElement>("#close-service")!
+      .focus({ preventScroll: true });
+  };
   if (destination && target.type !== "inventory") {
     const structure =
       target.type === "building"
@@ -487,30 +557,34 @@ function openContext(target: ContextTarget) {
       target.type === "shop"
         ? state.structures.find((s) => cellKey(s) === cellKey(destination))
         : undefined;
+    const debris =
+      target.type === "cell" ? debrisAt(state.debris, destination) : undefined;
     const lot = structure
       ? structureSize(structure)
       : house
         ? structureSize(house)
-        : (service ?? { width: 1, height: 1 });
+        : debris
+          ? debrisTypes[debris.kind]
+          : (service ?? { width: 1, height: 1 });
     const adjacent =
+      Boolean(debris) ||
       target.type !== "cell" ||
       state.plotCells.some((c) => cellKey(c) === cellKey(destination));
-    scene.travelTo(
-      destination,
+    const reached = scene.travelTo(
+      debris ?? destination,
       lot.width,
       lot.height,
       adjacent,
       structure && isTree(structure.kind) ? "rear" : "front",
+      show,
     );
+    if (!reached) {
+      contextTarget = null;
+      message.textContent = "No walking path to this tile.";
+    }
+    return;
   }
-  serviceFeedback.hidden = true;
-  refreshContext();
-  servicePanel.hidden = false;
-  inventoryControls?.render();
-  positionContext();
-  document
-    .querySelector<HTMLButtonElement>("#close-service")!
-    .focus({ preventScroll: true });
+  show();
 }
 function refreshContext() {
   const target = contextTarget,
@@ -555,7 +629,50 @@ function refreshContext() {
   const shop =
     target.type === "shop" ||
     (target.type === "service" && target.id === "seeds");
-  if (target.type === "inventory") {
+  if (home && homeUpgrades) {
+    title.textContent = "Farm upgrades";
+    tileButton(
+      "Back to home",
+      () => {
+        homeUpgrades = false;
+        refreshContext();
+      },
+      false,
+      "back-home",
+      "home",
+      "Back to home",
+    );
+    note(
+      `Soil level ${state.soilLevel}/3 · +${state.soilLevel * 3} coins per harvest on every plot.`,
+      "soil-level",
+    );
+    const offer = `soil${state.soilLevel + 1}` as Opportunity,
+      available = state.soilLevel < 3 && hasOpportunity(state, offer),
+      soilPrice = policyCost(soilCost(state), policy),
+      soilStatus = state.pendingSoilUpgrade
+        ? "Underway · ready next season"
+        : state.soilLevel === 3
+          ? "Fully improved"
+          : final
+            ? "No next season to finish"
+            : !available
+              ? opportunities[offer].need
+              : state.coins < soilPrice
+                ? `Need ${soilPrice - state.coins} more coins`
+                : "Ready next season";
+    tileButton(
+      `Improve soil · +3 coins per harvest on all plots · ${soilStatus}${!state.pendingSoilUpgrade && state.soilLevel < 3 ? ` · ${soilPrice} coins` : ""}`,
+      () => void act({ type: "improve" }),
+      waiting ||
+        !!state.pendingSoilUpgrade ||
+        final ||
+        !available ||
+        state.coins < soilPrice,
+      "improve",
+      "improve",
+      `${icon("improve")}<strong>Improve soil</strong>${!state.pendingSoilUpgrade && state.soilLevel < 3 ? `<span class="resource soil-price">${icon("coin")}${soilPrice}</span>` : ""}<small>+3 coins / harvest on all plots</small><small class="soil-status">${soilStatus}</small>`,
+    );
+  } else if (target.type === "inventory") {
     title.textContent = "Inventory";
     const grid = document.createElement("div");
     grid.className = "seed-grid stock-grid";
@@ -650,7 +767,7 @@ function refreshContext() {
       else button.dataset.buySeed = id;
       button.dataset.unitPrice = String(unit);
       button.dataset.saleDescription = earnings(sale);
-      button.innerHTML = `${icon(id)}<strong>${premium ? "★ " : ""}${crops[id].name}</strong><span class="shop-price"></span><span class="seed-stock">${icon("seeds")}${premium ? state.premiumSeeds[id] : state.seeds[id]}</span><span class="control-detail">${icon("grow")}${growthSeasons(state, id, policy)} ${crops[id].plantingSeasons.map((season) => icon(season === "summer" ? "sun" : season)).join("")} ${icon("harvestValue")}${sale.value}${sale.tax ? `<small>−${sale.tax} tax</small>` : ""}${sale.held ? "<small>Next season</small>" : ""}${sale.overQuota ? "<small>Sales limit</small>" : ""}</span>${rule ? `<span class="crop-rule">${rule}</span>` : ""}${!cropUnlocked(state, id) ? `<span class="crop-rule">${opportunities.corn.need}</span>` : ""}`;
+      button.innerHTML = `${icon(id)}<strong>${premium ? "★ " : ""}${crops[id].name}</strong><span class="shop-price"></span><span class="seed-stock">${icon("seeds")}${premium ? state.premiumSeeds[id] : state.seeds[id]}</span><span class="control-detail"><span class="resource">${icon("duration")}${growthSeasons(state, id, policy)}</span> ${crops[id].plantingSeasons.map((season) => icon(season === "summer" ? "sun" : season)).join("")} <span class="resource">${icon("harvestValue")}${sale.value}</span>${sale.tax ? `<small>−${sale.tax} tax</small>` : ""}${sale.held ? "<small>Next season</small>" : ""}${sale.overQuota ? "<small>Sales limit</small>" : ""}</span>${rule ? `<span class="crop-rule">${rule}</span>` : ""}${!cropUnlocked(state, id) ? `<span class="crop-rule">${opportunities.corn.need}</span>` : ""}`;
       grid.append(button);
     }
     const update = () => {
@@ -717,7 +834,7 @@ function refreshContext() {
       note("Sealed by the council: no benefits.");
     const stats = document.createElement("div");
     stats.className = "building-stats";
-    stats.innerHTML = `${icon("improve")}${building.level}/${item.levels} ${pending ? icon("grow") + "1" : ""}<small>${item.benefit}</small>`;
+    stats.innerHTML = `${icon("improve")}${building.level}/${item.levels} ${pending ? icon("duration") + "1" : ""}<small>${item.benefit}</small>`;
     stats.setAttribute(
       "aria-label",
       `${item.benefit} · Level ${building.level}/${item.levels}${building.pendingDemolition ? " · Teardown underway, clears next season" : building.pendingConstruction ? " · Under construction, ready next season" : building.pendingUpgrade ? " · Upgrade underway, ready next season" : ""}`,
@@ -783,7 +900,7 @@ function refreshContext() {
         "upgrade-building",
         "improve",
         pending
-          ? `${icon("grow")}1`
+          ? `${icon("duration")}1`
           : `${icon("improve")}${icon("coin")}${cost}${remaining ? `<small>${icon("harvest")}${remaining} ${building.kind === "mill" ? "corn crops" : "crops"}</small>` : ""}${policy.frozenUpgrades ? "<small>Upgrades frozen</small>" : ""}${policy.blockedBuildings?.includes(building.kind) ? "<small>Not allowed by the council</small>" : ""}`,
       );
     }
@@ -798,7 +915,7 @@ function refreshContext() {
       waiting || !!building.pendingDemolition || final,
       "teardown-building",
       "teardown",
-      `${icon("teardown")}${building.pendingDemolition ? icon("grow") + "1" : ""}`,
+      `${icon("teardown")}${building.pendingDemolition ? icon("duration") + "1" : ""}`,
     );
   } else if (target.type === "service") {
     // An answer can lift permits: the council office's popup goes with the office.
@@ -875,10 +992,10 @@ function refreshContext() {
           () => workPlot(cell),
           waiting || (!plot.withered && !ready),
           undefined,
-          plot.growth >= crops[plot.crop].steps ? "harvestValue" : "grow",
+          plot.growth >= crops[plot.crop].steps ? "harvestValue" : "duration",
           plot.growth >= crops[plot.crop].steps
             ? `${icon("harvestValue")}${saleQuote(state, plot.crop, policy, turn, index).value}`
-            : `${icon(plot.crop)}${icon("grow")}${plot.growth}/${crops[plot.crop].steps}`,
+            : `${icon(plot.crop)}${icon("duration")}${plot.growth}/${crops[plot.crop].steps}`,
         );
       } else {
         const last = state.lastCrops?.[String(state.plotIds[index])];
@@ -931,38 +1048,23 @@ function refreshContext() {
             );
             button.dataset.crop = id;
             if (premium) button.dataset.premium = "true";
-            button.innerHTML = `${icon(id)}<strong>${premium ? "★ " : ""}${crops[id].name}</strong><span>${icon("seeds")}${count}${cost ? `${icon("coin")}${cost}` : ""}</span><span class="control-detail">${icon("grow")}${seasons}${icon("harvestValue")}${sale.value}${sale.tax ? `<small>−${sale.tax} tax</small>` : ""}${sale.held ? "<small>Next season</small>" : ""}${sale.overQuota ? "<small>Sales limit</small>" : ""}</span>${rule ? `<span class="crop-rule">${rule}</span>` : ""}`;
+            button.classList.add("plant-card");
+            button.innerHTML = `<span class="plant-card-heading">${icon(id)}<strong>${premium ? "★ " : ""}${crops[id].name}</strong></span><span class="plant-metrics"><span class="resource" data-metric="seeds">${icon("seeds")}<span>Seeds</span><span class="metric-value">${count}</span></span><span class="resource" data-metric="seasons">${icon("duration")}<span>Seasons</span><span class="metric-value">${seasons}</span></span><span class="resource" data-metric="harvest">${icon("harvestValue")}<span>Harvest</span><span class="metric-value">${sale.value}</span></span>${cost ? `<span class="resource" data-metric="cost">${icon("coin")}<span>Planting</span><span class="metric-value">${cost}</span></span>` : ""}</span>${sale.tax || sale.held || sale.overQuota ? `<span class="plant-sale-notes">${sale.tax ? `<small>−${sale.tax} tax</small>` : ""}${sale.held ? "<small>Next season</small>" : ""}${sale.overQuota ? "<small>Sales limit</small>" : ""}</span>` : ""}${rule ? `<span class="crop-rule">${rule}</span>` : ""}`;
             grid.append(button);
           }
         }
-        tileButton(
-          "Open seed shop",
-          openSeedShop,
-          false,
-          undefined,
-          "seeds",
-          "Shop",
-        );
       }
-      const offer = `soil${state.soilLevel + 1}` as Opportunity,
-        available = state.soilLevel < 3 && hasOpportunity(state, offer);
-      const soilButton = tileButton(
-        state.pendingSoilUpgrade
-          ? "Soil improvement underway · next season"
-          : state.soilLevel === 3
-            ? "Soil fully improved"
-            : `Improve soil · ${policyCost(soilCost(state), policy)} coins · +3 per harvest on all plots${!available ? ` · ${opportunities[offer].need}` : ""}`,
-        () => void act({ type: "improve" }),
-        waiting ||
-          !!state.pendingSoilUpgrade ||
-          final ||
-          !available ||
-          state.coins < policyCost(soilCost(state), policy),
-        "improve",
-        "improve",
-        `${icon("improve")}${icon("coin")}${policyCost(soilCost(state), policy)}<small>${state.pendingSoilUpgrade ? "Next season" : state.soilLevel === 3 ? "Fully improved" : `+3 / harvest${!available ? ` · ${opportunities[offer].need}` : ""}`}</small>`,
+      const footer = document.createElement("div");
+      footer.className = "plot-footer";
+      const shopButton = tileButton(
+        "Open seed shop",
+        openSeedShop,
+        false,
+        "plot-shop",
+        "seeds",
+        "Shop",
       );
-      tileButton(
+      const deleteButton = tileButton(
         "Delete field · no refund",
         () => {
           scene.stopFarmer();
@@ -973,7 +1075,8 @@ function refreshContext() {
         "teardown",
         icon("teardown"),
       );
-      tileActions.append(soilButton);
+      footer.append(shopButton, deleteButton);
+      tileActions.append(footer);
     } else if (debrisAt(state.debris, cell)) {
       const item = debrisAt(state.debris, cell)!;
       const spec = debrisTypes[item.kind];
@@ -1031,7 +1134,7 @@ function refreshContext() {
             !canPlace(state, cell, 1, 1, policy),
           "expand",
           "expand",
-          `${icon("expand")}${icon("coin")}${cost}`,
+          `${icon("expand")}<strong>Crop plot</strong><span class="plan-cost">${icon("coin")}${cost}</span><span class="plan-duration">Ready now</span><small class="plan-benefit">Plant seasonal crops</small>`,
         );
         grid.append(button);
       }
@@ -1060,8 +1163,8 @@ function refreshContext() {
               : "farm";
         if (category !== planCategory) continue;
         const button = tileButton(
-          `${item.name} · ${cost} coins · ${item.width}×${item.height} · ${item.benefit} · ${readyIn(delay)}${rule}`,
-          () => void act({ type: "build", kind, cell }),
+          `${item.name} · ${cost} coins · ${item.benefit} · ${readyIn(delay)}${rule}`,
+          () => startConstruction(kind, cell),
           waiting ||
             final ||
             state.coins < cost ||
@@ -1072,12 +1175,24 @@ function refreshContext() {
           "build",
         );
         button.dataset.build = kind;
-        button.innerHTML = `${icon(isTree(kind) ? "sprout" : isAnimal(kind) ? "harvest" : "build")}<strong>${item.name}</strong><span>${icon("coin")}${cost}</span><small>${item.width}×${item.height} ${icon("grow")}${delay + 1}</small><small class="plan-benefit">${item.benefit}</small>${rule ? `<small class="plan-rule">${rule.slice(3)}</small>` : ""}`;
+        button.innerHTML = `${icon(isTree(kind) ? "sprout" : isAnimal(kind) ? "harvest" : "build")}<strong>${item.name}</strong><span class="plan-cost">${icon("coin")}${cost}</span><span class="plan-duration">${icon("duration")}${delay + 1}</span><small class="plan-benefit">${item.benefit}</small>${rule ? `<small class="plan-rule">${rule.slice(3)}</small>` : ""}`;
         grid.append(button);
       }
     }
   }
-  if (home) {
+  if (home && !homeUpgrades) {
+    tileButton(
+      "Farm upgrades",
+      () => {
+        homeUpgrades = true;
+        tileActions.parentElement!.scrollTop = 0;
+        refreshContext();
+      },
+      false,
+      "farm-upgrades",
+      "improve",
+      `${icon("improve")}Farm upgrades`,
+    );
     tileButton(
       "Open seed shop",
       openSeedShop,
@@ -1123,8 +1238,8 @@ function refreshContext() {
           !!state.structures.find((s) => s.id === target.id)
             ?.pendingConstruction),
       "next-season",
-      "grow",
-      `${icon("grow")}<span>${final ? "Final season" : "End turn"} · ${rules().turn}/160</span>`,
+      "duration",
+      `${icon("duration")}<span>${final ? "Final season" : "End turn"} · ${rules().turn}/160</span>`,
     );
     // Described by the council's note only while that note is true.
     if (waiting) button.setAttribute("aria-describedby", "council-wait");
@@ -1665,7 +1780,7 @@ viewport.addEventListener(
           s.id === "hive"
             ? hiveBounds(projectCell(s), true).bottom
             : s.tent
-              ? projectCell(s).y + 24
+              ? tentBounds(s).y + tentBounds(s).height
               : projectCell({
                   row: s.row + s.height - 0.5,
                   col: s.col + s.width - 0.5,
@@ -1998,7 +2113,9 @@ function showPreview(cell: Cell) {
           ),
         )
       : undefined;
-  if (!kind && !hovered && !service) {
+  const debris =
+    !hovered && !service ? debrisAt(state.debris, cell) : undefined;
+  if (!kind && !hovered && !service && !debris) {
     preview.hidden = true;
     buildingTooltip.hidden = true;
     return;
@@ -2010,8 +2127,10 @@ function showPreview(cell: Cell) {
         ? buildings[kind]
         : hovered
           ? { ...buildings[hovered.kind], ...structureSize(hovered) }
-          : service!;
-  const anchor = kind ? cell : (hovered ?? service)!;
+          : debris
+            ? debrisTypes[debris.kind]
+            : service!;
+  const anchor = kind ? cell : (hovered ?? service ?? debris)!;
   preview.dataset.mode = kind ? "placement" : "hover";
   const layout = state;
   const fits = canPlace(layout, cell, item.width, item.height, rules().policy),
@@ -2019,10 +2138,12 @@ function showPreview(cell: Cell) {
   preview.hidden = false;
   preview.dataset.valid = String(!kind || fits);
   const total = item.width + item.height;
-  if (!kind && (hovered || service)) {
+  if (!kind && (hovered || service || debris)) {
     buildingTooltip.textContent = hovered
       ? { ...buildings[hovered.kind], ...structureSize(hovered) }.name
-      : service!.name;
+      : debris
+        ? debrisTypes[debris.kind].name
+        : service!.name;
     buildingTooltip.hidden = false;
     Object.assign(buildingTooltip.style, {
       left: `${(pos.x + (item.width - item.height) * 16) * zoom}px`,
@@ -2034,7 +2155,10 @@ function showPreview(cell: Cell) {
     top: `${(pos.y - 16) * zoom}px`,
     width: `${total * 32 * zoom}px`,
     height: `${total * 16 * zoom}px`,
-    clipPath: `polygon(${(item.height / total) * 100}% 0,100% ${(item.width / total) * 100}%,${(item.width / total) * 100}% 100%,0 ${(item.height / total) * 100}%)`,
+    clipPath:
+      debris?.kind === "fallenTree"
+        ? "polygon(50% 0,100% 50%,83.333% 66.667%,50% 33.333%,16.667% 66.667%,0 50%)"
+        : `polygon(${(item.height / total) * 100}% 0,100% ${(item.width / total) * 100}%,${(item.width / total) * 100}% 100%,0 ${(item.height / total) * 100}%)`,
   });
 }
 const params = new URLSearchParams(location.search);

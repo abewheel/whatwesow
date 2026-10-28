@@ -19,6 +19,11 @@ export async function visitBuilding(
   await target.click();
   await expect(page.locator("#service-panel")).toBeVisible({ timeout });
 }
+export async function openFarmUpgrades(page: Page) {
+  await visitBuilding(page, "home");
+  await page.locator("#farm-upgrades").click();
+  await expect(page.locator("#service-title")).toHaveText("Farm upgrades");
+}
 export async function clickCamera(page: Page, selector: string) {
   await openCamera(page);
   await page.locator(selector).click();
@@ -106,6 +111,8 @@ export async function buySeeds(
   if (await close.isVisible()) await close.click();
   await page.locator("#open-inventory").click();
   await page.locator("#open-seed-shop").click();
+  await expect(page.locator("#service-panel")).toBeVisible();
+  await expect(page.locator("#service-title")).toHaveText("Seed shop");
   const quality = page.locator(
     `[data-seed-quality="${premium ? "premium" : "regular"}"]`,
   );
