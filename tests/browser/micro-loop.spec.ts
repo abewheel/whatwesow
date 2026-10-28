@@ -1,3 +1,4 @@
+import { buySeeds } from "./helpers";
 import { test, expect } from "./fixtures";
 import { loadPreset, openCell, readFarm, setFarm } from "./context-helpers";
 import { endTurn } from "./helpers";
@@ -16,10 +17,15 @@ test("crop forecasts include irrigation and policy-adjusted payouts", async ({
   });
   state.farmPolicy = { productionMultiplier: 0.5 };
   await setFarm(page, state);
+  await buySeeds(page, "corn");
   await openCell(page, "16,16");
-  await expect(page.locator('[data-crop="corn"]')).toContainText("1 season");
-  await expect(page.locator('[data-crop="corn"]')).toContainText(
-    "harvest 26 coins",
+  await expect(page.locator('[data-crop="corn"]')).toHaveAttribute(
+    "aria-label",
+    /1 season/,
+  );
+  await expect(page.locator('[data-crop="corn"]')).toHaveAttribute(
+    "aria-label",
+    /harvest 26 coins/,
   );
   await page.locator('[data-crop="corn"]').click();
   await expect(page.locator('[data-plot="0"]')).toHaveAttribute(

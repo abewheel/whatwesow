@@ -1,8 +1,9 @@
+import { buySeeds } from "./helpers";
 import { choosePlotWork } from "./helpers";
 import { expect, test } from "./fixtures";
 import { clickCamera } from "./helpers";
 
-test("the HUD stays compact and menus do not order a walk", async ({
+test("the HUD stays compact and opening the shop leaves the farmer in place", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -16,7 +17,6 @@ test("the HUD stays compact and menus do not order a walk", async ({
   await expect(page.locator("#zoom-in")).toBeHidden();
   await expect(page.locator("#farm-mode")).toBeHidden();
   await page.locator("[data-cell='20,20']").click();
-  await page.getByRole("button", { name: "Walk here", exact: true }).click();
   await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
   await expect(canvas).toHaveAttribute("data-farmer-target", "20,20");
   await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20", {
@@ -24,7 +24,8 @@ test("the HUD stays compact and menus do not order a walk", async ({
     timeout: 30000,
   });
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
-  await page.locator("[data-service=seeds]").click();
+  await page.locator("#open-inventory").click();
+  await page.locator("#open-seed-shop").click();
   await expect(page.locator("#service-panel")).toBeVisible();
   await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
@@ -43,10 +44,8 @@ test("a new ground click replaces the current walk and a drag does not give a de
   const canvas = page.locator("canvas");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.locator("[data-cell='22,20']").click();
-  await page.getByRole("button", { name: "Walk here", exact: true }).click();
   await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
   await page.locator("[data-cell='18,17']").click();
-  await page.getByRole("button", { name: "Walk here", exact: true }).click();
   await expect(canvas).toHaveAttribute("data-farmer-target", "18,17");
   await expect(canvas).toHaveAttribute("data-farmer-cell", "18,17", {
     timeout: 30000,
@@ -96,13 +95,13 @@ test("redirecting before planting leaves the plot empty even with slow saves", a
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
+  await buySeeds(page, "turnip");
   const canvas = page.locator("canvas");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.locator("[data-plot='0']").click();
   await choosePlotWork(page);
   await page.locator("[data-cell='20,19']").click();
-  await page.getByRole("button", { name: "Walk here", exact: true }).click();
-  await expect(page.locator("#season")).toContainText("100 coins");
+  await expect(page.locator("#season")).toContainText("96 coins");
   await expect(canvas).toHaveAttribute("data-farmer-cell", "20,19", {
     timeout: 30000,
   });

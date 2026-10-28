@@ -4,7 +4,7 @@ Start with [development](development.md) to run the game. For state recipes and 
 
 | Work | Owner | Entry point |
 | --- | --- | --- |
-| Money, crops, plots, soil improvements, farming actions | Micro builder | `src/micro/state.ts` |
+| Money, seed inventory, crops, plots, soil improvements, farming actions | Micro builder | `src/micro/state.ts` |
 | Calendar, future dialogue, choices, community, legacy | Macro builder | `src/macro/state.ts` |
 | Save schema, coordination between domains | Shared, agree before changing | `src/game/state.ts` |
 | Crisis timing, answers, and the farm rules they impose | Integration, agree before changing | `src/game/crisis.ts`, `src/game/crisis-rules.ts` |
@@ -33,3 +33,5 @@ Agree on new shared inputs, effects, save migrations, and shared UI changes befo
 ## Adding state
 
 Add fields and validation to the owning domain, then update its initial state and tests. Update save composition and migration in integration deliberately: existing version 1 saves must still load, or receive an explicit migration. Add scenario presets only when they describe real, supported state. Run full validation and the changed browser paths before handing work over.
+
+Seed inventory belongs to micro as `seeds: Record<CropId, number>`. Missing inventory in older saves defaults to zero. `buySeeds` charges coins and adds inventory atomically; `plant` consumes inventory only. Calendar changes preserve unused seeds.

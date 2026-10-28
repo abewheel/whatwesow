@@ -1,3 +1,4 @@
+import { buySeeds } from "./helpers";
 import { test, expect } from "@playwright/test";
 import { endTurn, visitBuilding } from "./helpers";
 import { closeActions, fits, openCell } from "./context-helpers";
@@ -16,6 +17,7 @@ for (const viewport of [
     page.on("requestfailed", (r) => errors.push(r.url()));
     await page.goto(`/?instance=validation-context-${viewport.width}`);
     await page.locator("#begin-farm").click();
+    await buySeeds(page, "turnip");
     await openCell(page, "16,16");
     await fits(page);
     await page.locator("#expand").click();
@@ -43,7 +45,8 @@ for (const viewport of [
     await endTurn(page);
     await visitBuilding(page, "home");
     await fits(page);
-    await expect(page.locator("#move-building")).toBeVisible();
+    await expect(page.locator("#move-building")).toHaveCount(0);
+    await expect(page.locator("#teardown-building")).toBeVisible();
     await expect(page.locator("#next-season")).toBeVisible();
     await expect(
       page.locator(

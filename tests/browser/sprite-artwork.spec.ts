@@ -69,7 +69,6 @@ for (const viewport of [
     await page.locator("#close-service").click();
     const destination = viewport.height < 400 ? "15,20" : "20,20";
     await page.locator(`[data-cell="${destination}"]`).click();
-    await page.getByRole("button", { name: "Walk here", exact: true }).click();
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-motion",
       "walk",

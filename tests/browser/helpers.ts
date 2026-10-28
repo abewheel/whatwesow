@@ -102,3 +102,24 @@ export async function choosePlotWork(page: Page, crop = "turnip") {
   const plant = actions.locator(`[data-crop="${crop.toLowerCase()}"]`);
   if (await plant.isVisible()) await plant.click();
 }
+
+export async function buySeeds(
+  page: Page,
+  crop: string,
+  quantity = 1,
+  premium = false,
+) {
+  const close = page.locator("#close-service");
+  if (await close.isVisible()) await close.click();
+  await page.locator("#open-inventory").click();
+  await page.locator("#open-seed-shop").click();
+  const quality = page.locator(
+    `[data-seed-quality="${premium ? "premium" : "regular"}"]`,
+  );
+  if (premium || (await quality.count())) await quality.click();
+  await page.locator("#seed-quantity").fill(String(quantity));
+  await page
+    .locator(`[data-buy-${premium ? "premium" : "seed"}="${crop}"]`)
+    .click();
+  await page.locator("#close-service").click();
+}

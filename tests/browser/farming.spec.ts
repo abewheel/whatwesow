@@ -1,3 +1,4 @@
+import { buySeeds } from "./helpers";
 import { test, expect } from "./fixtures";
 import {
   openCell,
@@ -13,6 +14,7 @@ test("plants seasonal crops, harvests, reinvests in soil and preserves purchases
 }) => {
   await page.goto("/?instance=validation-farm-loop");
   await loadPreset(page, "community");
+  await buySeeds(page, "carrot");
   await openCell(page, "16,16");
   await page.locator('[data-crop="carrot"]').click();
   await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
@@ -29,8 +31,15 @@ test("plants seasonal crops, harvests, reinvests in soil and preserves purchases
     /empty/,
   );
   await openCell(page, "16,16");
+  await expect(page.locator("#improve small")).toHaveText("+3 / harvest");
+  await expect(page.locator("#improve small")).toBeVisible();
   await page.locator("#improve").click();
-  await expect(page.locator("#improve")).toContainText("underway");
+  await expect(page.locator("#improve")).toHaveAttribute(
+    "aria-label",
+    /underway/,
+  );
+  await expect(page.locator("#improve small")).toHaveText("Next season");
+  await expect(page.locator("#improve small")).toBeVisible();
   await page.reload();
   const state = await readFarm(page);
   expect(state.pendingSoilUpgrade).toBe(true);
@@ -52,6 +61,7 @@ test("an empty broke farm recovers at home and unaffordable seeds stay disabled"
   await visitBuilding(page, "home");
   await page.locator("#work").click();
   await expect(page.locator("#season")).toContainText("4 coins");
+  await buySeeds(page, "turnip");
   await openCell(page, "16,16");
   await page.locator('[data-crop="turnip"]').click();
   await expect(page.locator('[data-plot="0"]')).toHaveAttribute(

@@ -11,6 +11,7 @@ export type Icon =
   | "expand"
   | "improve"
   | "coin"
+  | "harvestValue"
   | "harvest"
   | "sun"
   | "spring"
@@ -20,10 +21,14 @@ export type Icon =
   | "menu"
   | "home"
   | "build"
-  | "seeds";
-export function icon(name: Icon, className = "") {
+  | "seeds"
+  | "teardown"
+  | "restart";
+export function icon(name: Icon, className = ""): string {
+  if (name === "harvestValue")
+    return `<span class="harvest-value-icon" aria-hidden="true">${icon("harvest")}${icon("coin")}</span>`;
   const path = ["radish", "tomato", "pumpkin"].includes(name)
     ? `/art/${name}-icon.png`
-    : `/art/icons/${name}.${name === "sprout" ? "svg" : "png"}`;
+    : `/art/icons/${name}.${["teardown", "restart"].includes(name) ? "svg" : "png"}`;
   return `<span class="pixel-icon ${className}" aria-hidden="true" style="background-image:url('${path}')"></span>`;
 }

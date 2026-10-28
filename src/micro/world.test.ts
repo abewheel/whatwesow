@@ -16,6 +16,14 @@ import {
 function establishedFarm() {
   return parseMicroState({
     ...initialMicroState(),
+    seeds: {
+      radish: 10,
+      tomato: 10,
+      pumpkin: 10,
+      turnip: 10,
+      carrot: 10,
+      corn: 10,
+    },
     harvests: {
       radish: 0,
       tomato: 0,

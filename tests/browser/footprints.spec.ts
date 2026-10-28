@@ -124,10 +124,11 @@ test("front neighbor tiles remain walkable while building artwork still opens it
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   for (const cell of ["13,15", "12,17"]) {
     await page.locator(`[data-cell="${cell}"]`).click();
-    await page.getByRole("button", { name: "Walk here", exact: true }).click();
     await expect(canvas).toHaveAttribute("data-farmer-target", cell);
     await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
-    await expect(page.locator("#service-panel")).toBeHidden();
+    await expect(page.locator("#service-panel")).toBeVisible();
+    await expect(page.locator("#service-title")).toHaveText("Open land");
+    await page.locator("#close-service").click();
   }
   const art = buildingArtwork({ row: 11, col: 14, width: 3, height: 2 }, 0);
   const anchor = await page.locator('[data-cell="11,14"]').boundingBox();

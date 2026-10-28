@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FarmPolicy } from "../contracts/farm-policy";
 import { mix } from "../contracts/world";
 import {
-  actOnFarm,
+  actOnFarm as farmAction,
   completeUpgrades,
   growCrops,
   waterCrops,
@@ -16,6 +16,23 @@ import {
   type MicroState,
 } from "./state";
 import { buildingLevel, seasonalIncome } from "./world";
+/** Existing scenarios exercise the full paid shop-to-plot path. */
+const actOnFarm: typeof farmAction = (state, action, context = 1) => {
+  const bought =
+    action.type === "plant"
+      ? farmAction(
+          state,
+          {
+            type: "buySeeds",
+            crop: action.crop,
+            quantity: 1,
+            ...(action.premium ? { premium: true as const } : {}),
+          },
+          context,
+        ).state
+      : state;
+  return farmAction(bought, action, context);
+};
 function establishedFarm() {
   return parseMicroState({
     ...initialMicroState(),
@@ -93,7 +110,7 @@ describe("planting under council rules", () => {
     const result = plant(farm, 0, policy);
     expect(result.state.coins).toBe(200 - 12 - 2 - 102);
     expect(result.message).toBe(
-      "Corn planted. −14 coins, including a 2-coin planting fee. Planted against the rules (Corn is banned; no planting permit this season). Fine −102 coins.",
+      "Corn planted. −2 coins, including a 2-coin planting fee. Planted against the rules (Corn is banned; no planting permit this season). Fine −102 coins.",
     );
     expect(() => plant({ ...farm, coins: 115 }, 0, policy)).toThrow(
       /Not enough coins/,
@@ -137,9 +154,9 @@ describe("planting under council rules", () => {
     const fee = plant(farm, 0, { plantingFee: 2 });
     expect(fee.state.coins).toBe(86);
     expect(fee.message).toBe(
-      "Corn planted. −14 coins, including a 2-coin planting fee.",
+      "Corn planted. −2 coins, including a 2-coin planting fee.",
     );
-    expect(plant(farm, 0).message).toBe("Corn planted. −12 coins.");
+    expect(plant(farm, 0).message).toBe("Corn planted. −0 coins.");
   });
   it("sells premium seed that yields more or dies at its first growth", () => {
     const farm = establishedFarm();
@@ -155,20 +172,22 @@ describe("planting under council rules", () => {
     expect(mix(4, 5) % 8).toBe(0);
     const good = premium(0, { premiumSeed });
     expect(good.state.coins).toBe(82);
-    expect(good.message).toBe("Premium corn planted. −18 coins.");
+    expect(good.message).toBe("Premium corn planted. −0 coins.");
     expect(good.state.plots[0]).toEqual({
       crop: "corn",
       growth: 0,
       premium: "good",
+      premiumYield: 1.3,
     });
     const ripe = growCrops(growCrops(good.state));
     expect(harvest(ripe, 0, { premiumSeed }, 6).state.coins).toBe(82 + 44);
-    expect(harvest(ripe, 0, {}, 6).state.coins).toBe(82 + 34);
+    expect(harvest(ripe, 0, {}, 6).state.coins).toBe(82 + 44);
     const bad = growCrops(premium(3, { premiumSeed }).state);
     expect(bad.plots[3]).toEqual({
       crop: "corn",
       growth: 0,
       premium: "bad",
+      premiumYield: 1.3,
       withered: true,
     });
     expect(growCrops(bad).plots[3]).toEqual(bad.plots[3]);

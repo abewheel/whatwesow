@@ -58,7 +58,7 @@ test("animals require a visit, persist collection, and produce again next season
   expect(errors).toEqual([]);
 });
 
-test("coop plans reserve land, complete next season, and keep collection state when moved", async ({
+test("coop plans reserve land, complete next season, and keep collection state after reload", async ({
   page,
 }) => {
   test.setTimeout(120000);
@@ -76,6 +76,7 @@ test("coop plans reserve land, complete next season, and keep collection state w
     "State applied and saved.",
   );
   await openCell(page, "14,19");
+  await page.locator('[data-category="animals"]').click();
   await page.locator('[data-build="coop"]').click();
   await expect(page.locator("#coin-count")).toHaveText("760");
   await expect(page.locator('[data-structure="2"]')).toHaveAttribute(
@@ -93,14 +94,9 @@ test("coop plans reserve land, complete next season, and keep collection state w
   await expect(page.locator("#coin-count")).toHaveText("790");
   await page.locator('[data-structure="2"]').click();
   await expect(page.locator("#service-panel")).toBeVisible();
-  await page.locator("#move-building").click();
-  await page.getByRole("button", { name: "Land 19,19", exact: true }).click();
-  await expect(page.locator('[data-cell="19,19"]')).toHaveAttribute(
-    "aria-label",
-    /Chicken coop 2, collected/,
-  );
+  await expect(page.locator("#move-building")).toHaveCount(0);
   await page.reload();
-  await expect(page.locator('[data-cell="19,19"]')).toHaveAttribute(
+  await expect(page.locator('[data-structure="2"]').first()).toHaveAttribute(
     "aria-label",
     /collected/,
   );
@@ -134,7 +130,6 @@ test("seasonal pens leave adjacent crops and buildings clickable", async ({
     const close = page.locator("#close-service");
     if (await close.isVisible()) await close.click();
     await page.locator('[data-cell="14,17"]').click();
-    await page.getByRole("button", { name: "Walk here", exact: true }).click();
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-cell",
       "14,17",
@@ -154,9 +149,7 @@ test("seasonal pens leave adjacent crops and buildings clickable", async ({
   // The two front-adjacent crop cells must respond to their ground hit targets.
   await page.locator('[data-plot="0"]').click();
   // In winter the failed planting still targets the plot, rather than collecting an animal.
-  await expect(page.locator("#tile-actions")).toContainText(
-    "No planting this season",
-  );
+  await expect(page.locator("[data-crop]")).toHaveCount(0);
 });
 
 test("new farmhouses reserve a 5 by 4 lot through construction and reload", async ({
@@ -189,5 +182,46 @@ test("new farmhouses reserve a 5 by 4 lot through construction and reload", asyn
   await page.reload();
   await expect(page.getByRole("button", { name: /^Farmhouse 1,/ })).toHaveCount(
     20,
+  );
+});
+
+test("a productive coop can collect eggs while its upgrade is underway", async ({
+  page,
+}) => {
+  await page.goto("/?instance=validation-coop-upgrade-collection");
+  await expect(page.locator("#save-status")).toHaveText(
+    "Saved on this browser",
+  );
+  const state = homesteadMicroState();
+  state.coins = 1000;
+  state.harvests.turnip = 100;
+  state.structures.push({
+    id: 2,
+    kind: "coop",
+    row: 14,
+    col: 19,
+    level: 1,
+    product: true,
+  });
+  state.nextStructureId = 3;
+  await page.getByLabel("Work on").selectOption("micro");
+  await page.getByLabel("Game state JSON").fill(JSON.stringify(state));
+  await page.getByRole("button", { name: "Apply state", exact: true }).click();
+  await expect(page.locator("#dev-status")).toHaveText(
+    "State applied and saved.",
+  );
+  await page.getByText("Playtest tools", { exact: true }).click();
+  await page.locator('[data-structure="2"]').press("Enter");
+  await page.locator("#upgrade-building").click();
+  await expect(page.locator("#upgrade-building")).toHaveAccessibleName(
+    /underway/,
+  );
+  const paidCoins = Number(await page.locator("#coin-count").textContent());
+  await expect(page.locator("#collect-animal")).toBeEnabled();
+  await page.locator("#collect-animal").click();
+  await expect(page.locator("#coin-count")).toHaveText(String(paidCoins + 30));
+  await expect(page.locator('[data-structure="2"]')).toHaveAttribute(
+    "aria-label",
+    /collected/,
   );
 });

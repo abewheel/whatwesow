@@ -85,9 +85,15 @@ export type Plot = {
   /** Dead: harvesting clears it for nothing. */
   withered?: true;
   premium?: "good" | "bad";
+  premiumYield?: number;
 } | null;
 export type MicroState = {
   selfBuilt?: true;
+  seeds: Record<CropId, number>;
+  premiumSeeds: Record<CropId, number>;
+  premiumSeedBatches?: Partial<
+    Record<CropId, { quantity: number; yield: number; failOneIn: number }[]>
+  >;
   harvests: Record<CropId, number>;
   opportunities: Opportunity[];
   coins: number;
@@ -117,6 +123,15 @@ export type MicroState = {
   nextPlotId: number;
 };
 export const homesteadMicroState = (): MicroState => ({
+  seeds: { radish: 0, tomato: 0, pumpkin: 0, turnip: 0, carrot: 0, corn: 0 },
+  premiumSeeds: {
+    radish: 0,
+    tomato: 0,
+    pumpkin: 0,
+    turnip: 0,
+    carrot: 0,
+    corn: 0,
+  },
   harvests: { radish: 0, tomato: 0, pumpkin: 0, turnip: 0, carrot: 0, corn: 0 },
   opportunities: [],
   coins: 100,
@@ -181,9 +196,21 @@ export function parseMicroState(value: unknown): MicroState {
       (p.premium !== undefined && p.premium !== "good" && p.premium !== "bad")
     )
       throw new Error("Invalid crop condition.");
+    if (
+      p.premiumYield !== undefined &&
+      (!p.premium ||
+        typeof p.premiumYield !== "number" ||
+        !Number.isFinite(p.premiumYield) ||
+        p.premiumYield < 0 ||
+        p.premiumYield > 100)
+    )
+      throw new Error("Invalid premium yield.");
     return {
       crop,
       growth: Math.min(p.growth as number, crops[crop].steps),
+      ...(p.premiumYield !== undefined
+        ? { premiumYield: p.premiumYield as number }
+        : {}),
       ...(p.dry ? { dry: true as const } : {}),
       ...(p.withered ? { withered: true as const } : {}),
       ...(p.premium ? { premium: p.premium as "good" | "bad" } : {}),
@@ -230,6 +257,13 @@ export function parseMicroState(value: unknown): MicroState {
         b.pendingUpgrade !== undefined)
     )
       throw new Error("Invalid pending construction.");
+    if (
+      b.pendingDemolition !== undefined &&
+      (b.pendingDemolition !== true ||
+        b.pendingConstruction !== undefined ||
+        b.pendingUpgrade !== undefined)
+    )
+      throw new Error("Invalid pending demolition.");
     if (
       b.fruitReady !== undefined &&
       (kind !== "apple" ||
@@ -296,6 +330,9 @@ export function parseMicroState(value: unknown): MicroState {
         ? { pendingConstruction: true as const }
         : {}),
       ...(b.pendingUpgrade === true ? { pendingUpgrade: true as const } : {}),
+      ...(b.pendingDemolition === true
+        ? { pendingDemolition: true as const }
+        : {}),
       ...(isTree(kind)
         ? {
             age:
@@ -349,6 +386,77 @@ export function parseMicroState(value: unknown): MicroState {
     s.plotIds.some((id) => id >= Number(s.nextPlotId))
   )
     throw new Error("Plots need unique stable IDs below nextPlotId.");
+  const seeds = { ...homesteadMicroState().seeds };
+  if (s.seeds !== undefined) {
+    if (!s.seeds || typeof s.seeds !== "object" || Array.isArray(s.seeds))
+      throw new Error("Invalid seed inventory.");
+    const inventory = s.seeds as Record<string, unknown>;
+    if (
+      Object.keys(inventory).length !== Object.keys(crops).length ||
+      Object.keys(inventory).some((crop) => !Object.hasOwn(crops, crop))
+    )
+      throw new Error("Invalid seed inventory crops.");
+    for (const crop of Object.keys(crops) as CropId[]) {
+      if (!Number.isSafeInteger(inventory[crop]) || Number(inventory[crop]) < 0)
+        throw new Error("Use nonnegative whole seed counts.");
+      seeds[crop] = inventory[crop] as number;
+    }
+  }
+  const premiumSeeds = { ...homesteadMicroState().premiumSeeds };
+  const premiumSeedBatches: NonNullable<MicroState["premiumSeedBatches"]> = {};
+  if (s.premiumSeeds !== undefined) {
+    if (
+      !isRecord(s.premiumSeeds) ||
+      Object.keys(s.premiumSeeds).length !== Object.keys(crops).length ||
+      Object.keys(s.premiumSeeds).some((c) => !Object.hasOwn(crops, c))
+    )
+      throw new Error("Invalid premium seed inventory.");
+    for (const crop of Object.keys(crops) as CropId[]) {
+      const count = s.premiumSeeds[crop];
+      if (!Number.isSafeInteger(count) || Number(count) < 0)
+        throw new Error("Invalid premium seed count.");
+      premiumSeeds[crop] = count as number;
+    }
+  }
+  if (
+    s.premiumSeedBatches !== undefined &&
+    (!isRecord(s.premiumSeedBatches) ||
+      Object.keys(s.premiumSeedBatches).some((c) => !Object.hasOwn(crops, c)))
+  )
+    throw new Error("Invalid premium seed batches.");
+  for (const crop of Object.keys(crops) as CropId[]) {
+    const batches = (
+      s.premiumSeedBatches as Record<string, unknown> | undefined
+    )?.[crop];
+    if (batches !== undefined) {
+      if (
+        !Array.isArray(batches) ||
+        batches.some(
+          (b) =>
+            !isRecord(b) ||
+            !Number.isSafeInteger(b.quantity) ||
+            Number(b.quantity) < 1 ||
+            typeof b.yield !== "number" ||
+            !Number.isFinite(b.yield) ||
+            b.yield < 0 ||
+            b.yield > 100 ||
+            !Number.isSafeInteger(b.failOneIn) ||
+            Number(b.failOneIn) < 1,
+        )
+      )
+        throw new Error("Invalid premium seed terms.");
+      const parsed = batches as {
+        quantity: number;
+        yield: number;
+        failOneIn: number;
+      }[];
+      if (parsed.reduce((n, b) => n + b.quantity, 0) !== premiumSeeds[crop])
+        throw new Error("Premium seed terms must match inventory.");
+      if (parsed.length)
+        premiumSeedBatches[crop] = parsed.map((b) => ({ ...b }));
+    } else if (premiumSeeds[crop])
+      throw new Error("Premium seeds need purchase terms.");
+  }
   const harvests = {
     radish: 0,
     tomato: 0,
@@ -398,6 +506,9 @@ export function parseMicroState(value: unknown): MicroState {
   const result: MicroState = {
     ...(s.selfBuilt === true ? { selfBuilt: true as const } : {}),
     ...council,
+    seeds,
+    premiumSeeds,
+    ...(Object.keys(premiumSeedBatches).length ? { premiumSeedBatches } : {}),
     harvests,
     opportunities: [
       ...new Set(
@@ -537,7 +648,9 @@ export const harvestValue = (
   state.structures.reduce(
     (sum, b) =>
       sum +
-      (b.pendingConstruction || policy.sealedBuildings?.includes(b.kind)
+      (b.pendingConstruction ||
+      b.pendingDemolition ||
+      policy.sealedBuildings?.includes(b.kind)
         ? 0
         : buildings[b.kind].bonus * b.level),
     0,
@@ -560,7 +673,7 @@ export function growthSeasons(
     ? 1
     : 1 +
       state.structures
-        .filter((s) => s.kind === "well")
+        .filter((s) => s.kind === "well" && !s.pendingDemolition)
         .reduce((sum, s) => sum + s.level + (s.pendingUpgrade ? 1 : 0), 0);
   return 1 + Math.ceil(Math.max(0, crops[crop].steps - first) / later);
 }

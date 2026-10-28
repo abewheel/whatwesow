@@ -10,6 +10,14 @@ import { applyFarmConsequences } from "./consequences";
 function establishedFarm() {
   return parseMicroState({
     ...initialMicroState(),
+    seeds: {
+      radish: 10,
+      tomato: 10,
+      pumpkin: 10,
+      turnip: 10,
+      carrot: 10,
+      corn: 10,
+    },
     harvests: {
       radish: 0,
       tomato: 0,
@@ -74,7 +82,11 @@ it("accepts policy inputs for gates, quantities, land, prices and output", () =>
   ).state;
   expect(early.coins).toBe(700);
   let planted = actOnFarm(
-    state,
+    actOnFarm(
+      state,
+      { type: "buySeeds", crop: "turnip", quantity: 1 },
+      { turn: 1, policy: { costMultiplier: 2 } },
+    ).state,
     { type: "plant", plot: 0, crop: "turnip" },
     { turn: 1, policy: { costMultiplier: 2 } },
   ).state;
@@ -121,7 +133,7 @@ it("removes by stable IDs, revokes land including whole footprints, and stops re
   expect(revoked.state.plots).toHaveLength(0);
   expect(revoked.state.nextStructureId).toBe(rebuilt.nextStructureId);
   let recovering = { ...revoked.state, coins: 0 };
-  for (let i = 0; i < 9; i++)
+  for (let i = 0; i < 8; i++)
     recovering = actOnFarm(recovering, { type: "work" }).state;
   recovering = actOnFarm(recovering, {
     type: "expand",

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createFarmerGait } from "./farmer-gait";
 import {
   farmerBlocked,
   farmerSpawn,
@@ -166,6 +167,15 @@ export class Farmer {
   private facing = 1;
   private back = false;
   constructor(scene: Phaser.Scene) {
+    if (!scene.textures.exists("farmer-gait")) {
+      const source = scene.textures.get("farmer").getSourceImage();
+      const texture = scene.textures.addCanvas(
+        "farmer-gait",
+        createFarmerGait(source as HTMLImageElement),
+      )!;
+      for (let frame = 0; frame < 8; frame++)
+        texture.add(frame, 0, frame * 128, 0, 128, 192);
+    }
     const shadow = scene.add.graphics();
     shadow.fillStyle(0x233226, 0.08).fillEllipse(2, 2, 29, 13);
     shadow.fillStyle(0x233226, 0.13).fillEllipse(1, 1, 23, 10);
@@ -237,6 +247,13 @@ export class Farmer {
         : plan.route;
     this.elapsed = 0;
     return true;
+  }
+  stop() {
+    this.tasks = [];
+    this.route = [];
+    this.active = undefined;
+    this.elapsed = 0;
+    this.arrival = undefined;
   }
   reset() {
     this.tasks = [];
@@ -347,8 +364,8 @@ export class Farmer {
     const frame = action
       ? Math.min(5, Math.floor((this.elapsed / 1.15) * 6))
       : 0;
-    const walkFrame = Math.floor(this.stride) % 6;
-    const pose = walking ? walkFrame : frame;
+    const walkFrame = Math.floor(this.stride) % 8;
+    const pose = frame;
     const [cx, originalCy] = contacts[row][pose];
     const [left, top, right, bottom] = farmerFrames[row][pose];
     const width = right - left;
@@ -356,7 +373,10 @@ export class Farmer {
     const contactX = walking || !action ? (left + right) / 2 : cx + pose * 181;
     const cy = walking ? height - 8 : originalCy + row * 181 - top;
     this.art
-      .setTexture("farmer", row * 6 + pose)
+      .setTexture(
+        walking ? "farmer-gait" : "farmer",
+        walking ? walkFrame : row * 6 + pose,
+      )
       // One stable idle drawing breathes continuously, with its boots fixed at the origin.
       .setScale(
         58 / 181,
@@ -368,10 +388,12 @@ export class Farmer {
             : 1),
       )
       .setOrigin(
-        this.facing < 0
-          ? 1 - (contactX - left) / width
-          : (contactX - left) / width,
-        cy / height,
+        walking
+          ? 0.5
+          : this.facing < 0
+            ? 1 - (contactX - left) / width
+            : (contactX - left) / width,
+        walking ? 178 / 192 : cy / height,
       )
       .setFlipX(this.facing < 0);
     this.effect.clear();

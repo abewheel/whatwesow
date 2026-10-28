@@ -42,18 +42,13 @@ test("walking uses changing gait frames in both directions and returns to idle",
   await page.goto("/?instance=validation-gait");
   const canvas = page.locator("canvas");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
-  for (const [cell, row] of [
-    ["20,20", 0],
-    ["14,14", 1],
-  ] as const) {
+  for (const cell of ["20,20", "14,14"]) {
     await page.locator(`[data-cell="${cell}"]`).click();
-    await page.getByRole("button", { name: "Walk here", exact: true }).click();
     await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
     const frames = new Set<string>();
     for (let i = 0; i < 18; i++) {
       const frame = (await canvas.getAttribute("data-farmer-frame"))!;
-      expect(frame).toMatch(/^farmer:(?:[0-9]|1[01])$/);
-      expect(Math.floor(Number(frame.split(":")[1]) / 6)).toBe(row);
+      expect(frame).toMatch(/^farmer-gait:[0-7]$/);
       frames.add(frame);
       await page.waitForTimeout(35);
     }
@@ -96,7 +91,6 @@ test("farmer sorts ahead of both farmhouse front edges and behind its rear", asy
   // smaller screen y, so sorting by feet alone would hide the farmer.
   for (const cell of ["13,15", "12,17", "10,15"]) {
     await page.locator(`[data-cell="${cell}"]`).press("Enter");
-    await page.getByRole("button", { name: "Walk here", exact: true }).click();
     await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
     await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
     const depth = Number(await canvas.getAttribute("data-farmer-depth"));

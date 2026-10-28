@@ -22,7 +22,7 @@ export const serviceMenus = {
   builder: {
     name: "Builder's workshop",
     description:
-      "Choose a plan to commission a building, or select one of your buildings to upgrade its facilities or move it.",
+      "Choose a plan to commission a building, or select one of your buildings to upgrade its facilities or tear it down.",
     container: "builder-actions",
   },
   // Shown on the farm only while the council requires planting permits.

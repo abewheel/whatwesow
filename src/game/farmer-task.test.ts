@@ -30,3 +30,20 @@ it("keeps building dimensions for perimeter routing", () => {
     height: 3,
   });
 });
+it("does not queue work at an unrelated cell after removing land or buildings", () => {
+  const farm = initialMicroState();
+  expect(
+    farmerTaskForAction(
+      { type: "deletePlot", id: farm.plotIds[0] },
+      farm,
+      farm,
+    ),
+  ).toBeUndefined();
+  expect(
+    farmerTaskForAction(
+      { type: "teardown", id: farm.structures[0].id },
+      farm,
+      farm,
+    ),
+  ).toBeUndefined();
+});

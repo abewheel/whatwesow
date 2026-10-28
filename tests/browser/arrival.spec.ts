@@ -1,3 +1,4 @@
+import { buySeeds } from "./helpers";
 import { test, expect } from "./fixtures";
 import { homesteadState } from "../../src/game/state";
 import { openCell, setFarm, closeActions, fits } from "./context-helpers";
@@ -11,20 +12,21 @@ async function farPlot(page: import("@playwright/test").Page, ripe = false) {
   state.plotCells[8] = { row: 22, col: 20 };
   state.plots[8] = ripe ? { crop: "turnip", growth: 1 } : null;
   await setFarm(page, state);
+  if (!ripe) await buySeeds(page, "turnip");
 }
-test("menus open at once without ordering a walk", async ({ page }) => {
+test("menus open at once while ordering a walk", async ({ page }) => {
   await page.goto("/?instance=validation-instant-menu");
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-farmer-motion",
     "idle",
   );
-  const before = await page.locator("canvas").getAttribute("data-farmer-cell");
-  await visitBuilding(page, "home");
-  await expect(page.locator("#next-season")).toBeVisible();
+  await openCell(page, "22,20");
+  await expect(page.locator("#service-panel")).toBeVisible();
   await expect(page.locator("canvas")).toHaveAttribute(
-    "data-farmer-cell",
-    before!,
+    "data-farmer-motion",
+    "walk",
   );
+  await expect(page.locator("#walk-here")).toHaveCount(0);
 });
 for (const ripe of [false, true])
   test(`${ripe ? "harvest" : "plant"} commits only after arrival`, async ({
@@ -37,7 +39,9 @@ for (const ripe of [false, true])
       "data-farmer-motion",
       "walk",
     );
-    await expect(page.locator("#season")).toContainText("100 coins");
+    await expect(page.locator("#season")).toContainText(
+      ripe ? "100 coins" : "96 coins",
+    );
     await expect(page.locator('[data-plot="8"]')).toHaveAttribute(
       "aria-label",
       ripe ? /empty/ : /growing/,
@@ -55,7 +59,6 @@ test("opening another target cancels unfinished work", async ({ page }) => {
   await openCell(page, "22,20");
   await choosePlotWork(page);
   await openCell(page, "17,18");
-  await page.getByRole("button", { name: "Walk here", exact: true }).click();
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-farmer-cell",
     "17,18",
@@ -64,9 +67,9 @@ test("opening another target cancels unfinished work", async ({ page }) => {
     "aria-label",
     /empty/,
   );
-  await expect(page.locator("#season")).toContainText("100 coins");
+  await expect(page.locator("#season")).toContainText("96 coins");
 });
-test("blocked buildings can be moved directly, while End Turn requires home access", async ({
+test("End Turn requires home access and blocked buildings expose teardown", async ({
   page,
 }) => {
   await page.goto("/?instance=validation-blocked-home");
@@ -99,19 +102,17 @@ test("blocked buildings can be moved directly, while End Turn requires home acce
   await expect(page.locator("#season")).toContainText("spring");
   await closeActions(page);
   await page.locator('[data-structure="6"]').press("Enter");
-  await page.locator("#move-building").click();
-  await page.locator('[data-cell="20,20"]').press("Enter");
-  await expect(page.locator("#farm-message")).toContainText("moved");
+  await expect(page.locator("#move-building")).toHaveCount(0);
+  await expect(page.locator("#teardown-building")).toBeVisible();
 });
 
-for (const action of ["move", "camera"] as const)
+for (const action of ["close", "camera"] as const)
   test(`closing home to ${action} cancels a pending End Turn`, async ({
     page,
   }) => {
     await page.goto(`/?instance=validation-cancel-turn-${action}`);
     await expect(page.locator("main")).toHaveJSProperty("inert", false);
     await openCell(page, "22,20");
-    await page.getByRole("button", { name: "Walk here", exact: true }).click();
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-cell",
       "22,20",
@@ -123,7 +124,7 @@ for (const action of ["move", "camera"] as const)
       "data-farmer-motion",
       "walk",
     );
-    if (action === "move") await page.locator("#move-building").click();
+    if (action === "close") await page.locator("#close-service").click();
     else await page.getByLabel("View controls", { exact: true }).click();
     await expect(page.locator("#service-panel")).toBeHidden();
     await expect(page.locator("canvas")).toHaveAttribute(

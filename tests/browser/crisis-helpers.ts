@@ -1,7 +1,7 @@
 import content from "../../crisis-layer/content.json" with { type: "json" };
 import { expect, type Page } from "./fixtures";
 import { closeActions } from "./context-helpers";
-import { visitBuilding } from "./helpers";
+import { buySeeds, visitBuilding } from "./helpers";
 import { homesteadState, type GameState } from "../../src/game/state";
 import { seasons, type CrisisRecord } from "../../src/macro/state";
 import { crops, type CropId, type Plot } from "../../src/micro/state";
@@ -128,21 +128,40 @@ export async function openPlot(page: Page, plot: number) {
   await page.locator(`[data-plot="${plot}"]`).press("Enter");
   await expect(page.locator("#service-panel")).toBeVisible();
 }
-/** An empty plot's price for each crop it offers this season: seed plus any fee. */
+/** Shop seed price plus the plot's separate planting fee, for seasonal crops. */
 export async function seedPrices(page: Page, plot: number) {
   await openPlot(page, plot);
-  const prices: Partial<Record<CropId, number>> = {};
+  const fees: Partial<Record<CropId, number>> = {};
   for (const button of await page.locator("#tile-actions [data-crop]").all()) {
     const crop = (await button.getAttribute("data-crop")) as CropId;
-    const name = await button.locator("strong").textContent();
-    prices[crop] = Number(/· (\d+) coins/.exec(name!)![1]);
+    const description =
+      (await button.getAttribute("aria-label")) ??
+      (await button.textContent()) ??
+      "";
+    fees[crop] = Number(
+      /includes a (\d+)-coin fee/.exec(description)?.[1] ?? 0,
+    );
   }
+  await closeActions(page);
+  await page.locator("#open-inventory").click();
+  await page.locator("#open-seed-shop").click();
+  const regular = page.locator('[data-seed-quality="regular"]');
+  if (await regular.count()) await regular.click();
+  const prices: Partial<Record<CropId, number>> = {};
+  for (const crop of Object.keys(fees) as CropId[]) {
+    const button = page.locator(`[data-buy-seed="${crop}"]`);
+    prices[crop] =
+      Number(await button.getAttribute("data-unit-price")) + fees[crop]!;
+  }
+  await openPlot(page, plot);
   return prices;
 }
 /** What an empty plot's popup says a harvest of the crop earns now. */
 export async function earns(page: Page, crop: CropId, plot: number) {
   await openPlot(page, plot);
-  const text = await page.locator(`[data-crop="${crop}"]`).textContent();
+  const text = await page
+    .locator(`[data-crop="${crop}"]`)
+    .getAttribute("aria-label");
   return Number(/harvest (\d+) coins/.exec(text!)![1]);
 }
 /**
@@ -155,6 +174,7 @@ export async function work(
   action: CropId | "harvest",
   after: RegExp,
 ) {
+  if (action !== "harvest") await buySeeds(page, action);
   await openPlot(page, plot);
   const actions = page.locator("#tile-actions");
   await (

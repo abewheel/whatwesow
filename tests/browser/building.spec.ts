@@ -8,7 +8,7 @@ import {
   setFarm,
 } from "./context-helpers";
 import { endTurn } from "./helpers";
-test("commissions, moves and upgrades a specific building and persists paid work", async ({
+test("commissions and upgrades a specific building and persists paid work", async ({
   page,
 }) => {
   await page.goto("/?instance=validation-build-context");
@@ -20,15 +20,6 @@ test("commissions, moves and upgrades a specific building and persists paid work
     id = state.structures.find(
       (s: { row: number; col: number }) => s.row === 30 && s.col === 30,
     ).id;
-  await page.locator("#move-building").click();
-  await expect(page.locator("#placement-hint")).toContainText(
-    "Choose open land as the destination",
-  );
-  await page.locator('[data-cell="35,35"]').press("Enter");
-  await expect(page.locator(`[data-structure="${id}"]`)).toHaveAttribute(
-    "data-cell",
-    "35,35",
-  );
   await endTurn(page);
   const earned = await readFarm(page);
   earned.harvests.turnip += 12;
@@ -36,12 +27,18 @@ test("commissions, moves and upgrades a specific building and persists paid work
   await closeActions(page);
   await page.locator(`[data-structure="${id}"]`).press("Enter");
   await page.locator("#upgrade-building").click();
-  await expect(page.locator("#upgrade-building")).toContainText("underway");
+  await expect(page.locator("#upgrade-building")).toHaveAttribute(
+    "aria-label",
+    /underway/,
+  );
   await page.reload();
   await endTurn(page);
   await closeActions(page);
   await page.locator(`[data-structure="${id}"]`).press("Enter");
-  await expect(page.locator("#tile-actions")).toContainText("Level 2/3");
+  await expect(page.locator(".building-stats")).toHaveAttribute(
+    "aria-label",
+    /Level 2\/3/,
+  );
 });
 test("quotes repeated construction costs and disables blocked footprints and policies", async ({
   page,
@@ -49,7 +46,14 @@ test("quotes repeated construction costs and disables blocked footprints and pol
   await page.goto("/?instance=validation-build-quotes");
   await loadPreset(page, "community");
   await openCell(page, "30,30");
-  await expect(page.locator('[data-build="shed"]')).toContainText("120 coins");
+  await expect(page.locator('[data-build="shed"]')).toHaveAttribute(
+    "aria-label",
+    /120 coins/,
+  );
+  await expect(page.locator('[data-build="shed"] .plan-benefit')).toBeVisible();
+  await expect(page.locator('[data-build="shed"] .plan-benefit')).toHaveText(
+    "Bulk seed storage: seeds cost 1 less per level",
+  );
   const state = await readFarm(page);
   state.farmPolicy = {
     blockedBuildings: ["barn"],
@@ -58,31 +62,50 @@ test("quotes repeated construction costs and disables blocked footprints and pol
   await setFarm(page, state);
   await openCell(page, "30,30");
   await expect(page.locator('[data-build="barn"]')).toBeDisabled();
+  await expect(page.locator('[data-build="barn"] .plan-rule')).toBeVisible();
+  await expect(page.locator('[data-build="barn"] .plan-rule')).toHaveText(
+    "Not allowed by the council",
+  );
+  await page.locator('[data-category="farm"]').click();
   await expect(page.locator('[data-build="shed"]')).toBeDisabled();
+  await expect(page.locator('[data-build="shed"] .plan-rule')).toBeVisible();
+  await expect(page.locator('[data-build="shed"] .plan-rule')).toHaveText(
+    "No more allowed by the council",
+  );
   await openCell(page, "63,63");
   await expect(page.locator('[data-build="barn"]')).toBeDisabled();
 });
-test("moves a plot with its crop without charging coins", async ({ page }) => {
-  await page.goto("/?instance=validation-move-plot");
+test("deletes a planted plot immediately without a refund", async ({
+  page,
+}) => {
+  await page.goto("/?instance=validation-delete-plot");
   await loadPreset(page, "growing");
   const before = await readFarm(page);
   await openCell(page, "16,16");
-  await page
-    .getByRole("button", { name: "Move this plot", exact: true })
-    .click();
-  await page.locator('[data-cell="20,20"]').press("Enter");
-  await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
-    "data-cell",
-    "20,20",
-  );
+  await page.locator("#delete-plot").click();
   const after = await readFarm(page);
   expect(after.coins).toBe(before.coins);
-  expect(after.plots[0]).toEqual(before.plots[0]);
+  expect(after.plots).toHaveLength(before.plots.length - 1);
   await page.reload();
-  await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
-    "data-cell",
-    "20,20",
+  expect((await readFarm(page)).plots).toHaveLength(before.plots.length - 1);
+});
+
+test("tears down a building next season without a refund", async ({ page }) => {
+  await page.goto("/?instance=validation-teardown-building");
+  await loadPreset(page, "community");
+  const before = await readFarm(page);
+  const shed = before.structures.find(
+    (s: { kind: string }) => s.kind === "shed",
   );
+  await closeActions(page);
+  await page.locator(`[data-structure="${shed.id}"]`).first().press("Enter");
+  await page.locator("#teardown-building").click();
+  expect((await readFarm(page)).coins).toBe(before.coins);
+  await expect(
+    page.locator(`[data-structure="${shed.id}"]`).first(),
+  ).toHaveAttribute("aria-label", /tear.?down|demoli|remov/i);
+  await endTurn(page);
+  await expect(page.locator(`[data-structure="${shed.id}"]`)).toHaveCount(0);
 });
 
 test("mill upgrade instructions count corn rather than other harvests", async ({
@@ -98,8 +121,9 @@ test("mill upgrade instructions count corn rather than other harvests", async ({
     (s: { kind: string }) => s.kind === "mill",
   );
   await page.locator(`[data-structure="${mill.id}"]`).press("Enter");
-  await expect(page.locator("#upgrade-building")).toContainText(
-    "Harvest 11 more corn crops",
+  await expect(page.locator("#upgrade-building")).toHaveAttribute(
+    "aria-label",
+    /Harvest 11 more corn crops/,
   );
   await expect(page.locator("#upgrade-building")).toBeDisabled();
 });

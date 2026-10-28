@@ -45,11 +45,13 @@ import {
   animalQuote,
   fruitQuote,
   plantQuote,
+  seedQuote,
   saleQuote,
   salesThisTurn,
   type SaleQuote,
 } from "./money";
 export type FarmAction =
+  | { type: "buySeeds"; crop: CropId; quantity: number; premium?: true }
   | { type: "plant"; plot: number; crop: CropId; premium?: true }
   | { type: "harvest"; plot: number }
   | { type: "harvestFruit"; id: number }
@@ -59,6 +61,8 @@ export type FarmAction =
   | { type: "expand"; cell?: Cell }
   | { type: "build"; kind: BuildingKind; cell: Cell }
   | { type: "upgrade"; id: number }
+  | { type: "teardown"; id: number }
+  | { type: "deletePlot"; id: number }
   | { type: "move"; id: number; cell: Cell }
   | { type: "movePlot"; id: number; cell: Cell }
   | { type: "buyWater" }
@@ -88,7 +92,48 @@ export function actOnFarm(
   let message: string;
   if (action.type === "harvestFruit")
     return actOnFarm(state, { type: "harvestTree", id: action.id }, context);
-  if (action.type === "plant" || action.type === "harvest") {
+  if (action.type === "buySeeds") {
+    if (!Object.hasOwn(crops, action.crop)) throw new Error("Unknown crop.");
+    if (!cropUnlocked(state, action.crop))
+      throw new Error(opportunities.corn.need);
+    if (!Number.isSafeInteger(action.quantity) || action.quantity < 1)
+      throw new Error("Choose a positive whole seed quantity.");
+    if (turn === 160)
+      throw new Error("There is no growing season left for new seeds.");
+    const premium = action.premium === true;
+    if (premium && !policy.premiumSeed)
+      throw new Error("Premium seed is not on offer.");
+    const inventory = premium ? state.premiumSeeds : state.seeds;
+    const price =
+      seedQuote(state, action.crop, policy, premium) * action.quantity;
+    if (
+      !Number.isSafeInteger(price) ||
+      !Number.isSafeInteger(inventory[action.crop] + action.quantity)
+    )
+      throw new Error("That seed quantity is too large.");
+    if (state.coins < price)
+      throw new Error("Not enough coins for those seeds.");
+    state.coins -= price;
+    inventory[action.crop] += action.quantity;
+    if (premium && policy.premiumSeed) {
+      const batches = (state.premiumSeedBatches ??= {});
+      const cropBatches = (batches[action.crop] ??= []);
+      const terms = policy.premiumSeed;
+      const previous = cropBatches.at(-1);
+      if (
+        previous?.yield === terms.yield &&
+        previous.failOneIn === terms.failOneIn
+      )
+        previous.quantity += action.quantity;
+      else
+        cropBatches.push({
+          quantity: action.quantity,
+          yield: terms.yield,
+          failOneIn: terms.failOneIn,
+        });
+    }
+    message = `${action.quantity} ${crops[action.crop].name} seeds bought. −${price} coins.`;
+  } else if (action.type === "plant" || action.type === "harvest") {
     if (
       !Number.isInteger(action.plot) ||
       action.plot < 0 ||
@@ -109,8 +154,12 @@ export function actOnFarm(
           `${crop.name} can be planted in ${crop.plantingSeasons.join(" or ")}.`,
         );
       const premium = action.premium === true;
-      if (premium && !policy.premiumSeed)
-        throw new Error("Premium seed is not on offer.");
+      const inventory = premium ? state.premiumSeeds : state.seeds;
+      if (inventory[action.crop] < 1)
+        throw new Error("Buy seeds at the shop first.");
+      const premiumTerms = premium
+        ? state.premiumSeedBatches?.[action.crop]?.[0]
+        : undefined;
       const quote = plantQuote(
         state,
         action.crop,
@@ -120,18 +169,25 @@ export function actOnFarm(
         action.plot,
       );
       if (quote.blocked) throw new Error(quote.blocked);
-      const price = quote.seed + quote.fee;
+      const price = quote.fee;
       if (state.coins < price + quote.fine)
         throw new Error("Not enough coins for those seeds.");
       state.coins -= price + quote.fine;
+      inventory[action.crop]--;
+      if (premiumTerms) {
+        premiumTerms.quantity--;
+        if (!premiumTerms.quantity)
+          state.premiumSeedBatches![action.crop]!.shift();
+      }
       const plotId = state.plotIds[action.plot];
       state.plots[action.plot] = {
         crop: action.crop,
         growth: 0,
-        ...(premium && policy.premiumSeed
+        ...(premiumTerms
           ? {
+              premiumYield: premiumTerms.yield,
               premium:
-                mix(plotId, turn) % policy.premiumSeed.failOneIn === 0
+                mix(plotId, turn) % premiumTerms.failOneIn === 0
                   ? ("bad" as const)
                   : ("good" as const),
             }
@@ -166,6 +222,7 @@ export function actOnFarm(
       !animal ||
       !isAnimal(animal.kind) ||
       animal.pendingConstruction ||
+      animal.pendingDemolition ||
       !animal.product
     )
       throw new Error("No animal products ready. Return next season.");
@@ -186,6 +243,7 @@ export function actOnFarm(
       !tree ||
       !isTree(tree.kind) ||
       tree.pendingConstruction ||
+      tree.pendingDemolition ||
       !tree.product
     )
       throw new Error("This tree has no ripe product yet.");
@@ -282,6 +340,27 @@ export function actOnFarm(
       }),
     });
     message = `${item.name} ${isTree(action.kind) ? "planted" : "construction started"}. Ready ${readyIn(wait)}. −${cost} coins.`;
+  } else if (action.type === "deletePlot") {
+    const index = state.plotIds.indexOf(action.id);
+    if (index < 0) throw new Error("Choose an existing plot.");
+    state.plots.splice(index, 1);
+    state.plotCells.splice(index, 1);
+    state.plotIds.splice(index, 1);
+    message = "Field removed. No coins returned.";
+  } else if (action.type === "teardown") {
+    const building = state.structures.find((s) => s.id === action.id);
+    if (!building) throw new Error("Choose an existing building.");
+    if (building.pendingDemolition)
+      throw new Error("Teardown is already underway.");
+    if (turn === 160)
+      throw new Error("There is no next season to complete teardown.");
+    delete building.pendingConstruction;
+    delete building.pendingUpgrade;
+    delete building.wait;
+    building.pendingDemolition = true;
+    if (isTree(building.kind) || isAnimal(building.kind))
+      building.product = false;
+    message = `${buildings[building.kind].name} teardown started. Land clears next season. No coins returned.`;
   } else if (action.type === "movePlot") {
     const index = state.plotIds.indexOf(action.id);
     if (index < 0) throw new Error("Choose an existing plot.");
@@ -301,6 +380,8 @@ export function actOnFarm(
     const building = state.structures.find((s) => s.id === action.id);
     if (!building) throw new Error("Choose an existing building.");
     const item = buildings[building.kind];
+    if (building.pendingDemolition)
+      throw new Error("Teardown must finish before using this building.");
     if (action.type === "move") {
       if (
         !canPlace(
@@ -535,6 +616,9 @@ export function waterCrops(current: MicroState, input: WaterInput) {
 /** Complete paid upgrades at the start of the next seasonal turn. */
 export function completeUpgrades(current: MicroState): MicroState {
   const state = parseMicroState(current);
+  state.structures = state.structures.filter(
+    (building) => !building.pendingDemolition,
+  );
   for (const building of state.structures) {
     // A permit delay holds the work for its remaining seasons.
     if (building.wait) {

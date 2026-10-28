@@ -51,7 +51,7 @@ export const buildings = {
     height: 4,
     frame: 0,
     levels: 1,
-    benefit: "Your home. Move it freely to make room",
+    benefit: "Your home and farm office",
     bonus: 0,
     income: 0,
   },
@@ -185,6 +185,7 @@ export type Structure = Cell & {
   pendingConstruction?: true;
   /** Seasons of permit delay left before pending work can complete. */
   wait?: number;
+  pendingDemolition?: true;
   fruitReady?: boolean;
   age?: number;
   product?: boolean;
@@ -288,7 +289,7 @@ export function serviceLocations(
     ].map(cellKey),
   );
   const settled = layout.structures.some(
-    (s) => s.kind === "home" && !s.pendingConstruction,
+    (s) => s.kind === "home" && !s.pendingConstruction && !s.pendingDemolition,
   );
   return allServices
     .filter((s) => s.id !== "council" || options.council)
@@ -420,13 +421,18 @@ export const buildingLevel = (
   policy.sealedBuildings?.includes(kind)
     ? 0
     : layout.structures
-        .filter((s) => s.kind === kind && !s.pendingConstruction)
+        .filter(
+          (s) =>
+            s.kind === kind && !s.pendingConstruction && !s.pendingDemolition,
+        )
         .reduce((sum, s) => sum + s.level, 0);
 export const seasonalIncome = (layout: Layout, policy: FarmPolicy = {}) =>
   layout.structures.reduce(
     (sum, s) =>
       sum +
-      (s.pendingConstruction || policy.sealedBuildings?.includes(s.kind)
+      (s.pendingConstruction ||
+      s.pendingDemolition ||
+      policy.sealedBuildings?.includes(s.kind)
         ? 0
         : buildings[s.kind].income * s.level),
     0,
@@ -464,4 +470,7 @@ export function seasonTrees(
 }
 
 export const hasRipeFruit = (s: Structure) =>
-  isTree(s.kind) && !s.pendingConstruction && s.product === true;
+  isTree(s.kind) &&
+  !s.pendingConstruction &&
+  !s.pendingDemolition &&
+  s.product === true;

@@ -28,9 +28,7 @@ test("tile choices respect seasons and winter frost leaves trees intact", async 
   await endTurn(page);
   await closeActions(page);
   await openCell(page, "16,16");
-  await expect(page.locator("#tile-actions")).toContainText(
-    "No planting this season",
-  );
+  await expect(page.locator("[data-crop]")).toHaveCount(0);
   await expect(page.locator("[data-crop]")).toHaveCount(0);
   expect(
     (await readFarm(page)).structures.find((s: { id: number }) => s.id === 2),

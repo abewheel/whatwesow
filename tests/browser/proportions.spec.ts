@@ -59,7 +59,6 @@ test("End Turn visits a compact retained farmhouse using its actual lot", async 
     6,
   );
   await openCell(page, "13,15");
-  await page.getByRole("button", { name: "Walk here", exact: true }).click();
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-farmer-cell",
     "13,15",

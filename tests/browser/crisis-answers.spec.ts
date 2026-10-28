@@ -53,11 +53,13 @@ for (const { preset, heading, speaker, deal, edit, check } of [
     heading: "Crisis 2 of 8: Blight",
     speaker: "Ada Kessler",
     check: async (page: Page) => {
-      // Ada's answer opens premium seed on every empty plot.
-      await openPlot(page, 7);
-      await expect(page.locator("#premium-seed")).toBeVisible();
-      await expect(page.locator("#premium-terms")).toHaveText(
-        "Seed costs 50% more · yields 30% more · 1 planting in 8 fails",
+      // Ada's answer opens premium seed purchases at the shop.
+      await page.locator("#open-inventory").click();
+      await page.locator("#open-seed-shop").click();
+      await page.locator('[data-seed-quality="premium"]').click();
+      await expect(page.locator("[data-buy-premium]")).toHaveCount(6);
+      await expect(page.locator("#tile-actions")).toContainText(
+        "Premium: +30% yield; 1 in 8 may fail.",
       );
       // The summer blight took the spring corn, which by next spring is still recovering.
       await untilSeason(page, "spring");
@@ -66,7 +68,11 @@ for (const { preset, heading, speaker, deal, edit, check } of [
         "Corn is still recovering from blight.",
       );
       await expect(page.locator('[data-crop="corn"]')).toBeDisabled();
-      await expect(page.locator("#premium-seed")).toBeVisible();
+      await page.locator("#close-service").click();
+      await page.locator("#open-inventory").click();
+      await page.locator("#open-seed-shop").click();
+      await page.locator('[data-seed-quality="premium"]').click();
+      await expect(page.locator("[data-buy-premium]")).toHaveCount(6);
     },
   },
   {
@@ -170,11 +176,24 @@ for (const { preset, heading, speaker, deal, edit, check } of [
  */
 async function pricesWhileWaiting(page: Page, plot: number) {
   const spring = await seedPrices(page, plot);
+  await page.locator("#close-service").click();
+  await page.locator("#open-inventory").click();
+  await page.locator("#open-seed-shop").click();
+  const shop: Partial<Record<CropId, number>> = {};
+  for (const button of await page.locator("[data-buy-seed]").all()) {
+    const crop = (await button.getAttribute("data-buy-seed")) as CropId;
+    shop[crop] = Number(await button.getAttribute("data-unit-price"));
+  }
   const dialog = await callCouncil(page);
   await dialog.getByRole("button", { name: "Close council meeting" }).click();
   await expect(dialog).toBeHidden();
-  const prices = await seedPrices(page, plot);
-  // The waiting crisis changes no seed price: turnip, sown in both seasons, costs the same.
+  await openPlot(page, plot);
+  const prices: Partial<Record<CropId, number>> = {};
+  for (const button of await page.locator("#tile-actions [data-crop]").all()) {
+    const crop = (await button.getAttribute("data-crop")) as CropId;
+    prices[crop] = shop[crop];
+  }
+  // Waiting changes no policy; retain the shop prices for the new season's crops.
   expect(prices.turnip).toBe(spring.turnip);
   return prices;
 }
@@ -248,14 +267,14 @@ test("the county seed check's fee, treated seed and crop rotation reach the plot
   expect(Object.keys(after)).toEqual(sownIn("summer"));
   for (const crop of Object.keys(before) as CropId[])
     expect(after[crop]).toBe(Math.ceil(before[crop]! * 1.25) + 2);
-  await expect(page.locator('[data-crop="turnip"]')).toContainText(
-    " · includes a 2-coin fee",
+  await expect(page.locator('[data-crop="turnip"]')).toHaveAccessibleName(
+    /includes a 2-coin fee/,
   );
   expect(await earns(page, "turnip", 7)).toBe(Math.floor(value * 0.9));
   // The blight cleared the corn: sow turnip in its first plot and harvest it in fall.
   await work(page, 0, "turnip", /Turnip, growing/);
   await expect(page.locator("#farm-message")).toContainText(
-    `Turnip planted. −${after.turnip} coins, including a 2-coin planting fee.`,
+    "Turnip planted. −2 coins, including a 2-coin planting fee.",
   );
   await endTurn(page);
   await work(page, 0, "harvest", /^Plot 1: empty, turnip grew here last$/);
@@ -285,7 +304,7 @@ test("the county seed check's fee, treated seed and crop rotation reach the plot
   await expect(page.locator('[data-crop="turnip"] .crop-rule')).toHaveCount(0);
   await work(page, 1, "turnip", /Turnip, growing/);
   await expect(page.locator("#farm-message")).toHaveText(
-    `Turnip planted. −${after.turnip} coins, including a 2-coin planting fee.`,
+    "Turnip planted. −2 coins, including a 2-coin planting fee.",
   );
   expect(errors).toEqual([]);
 });

@@ -121,7 +121,10 @@ it("earns the complete farming progression within a lifetime from the bare start
           !(c === "carrot" && state.harvests.turnip === 0 && turn === 1) &&
           state.coins >= seedCost(state, c),
       );
-      if (crop) act({ type: "plant", plot, crop });
+      if (crop) {
+        act({ type: "buySeeds", crop, quantity: 1 });
+        act({ type: "plant", plot, crop });
+      }
     }
     expect(state.coins).toBeGreaterThanOrEqual(0);
     if (turn < 160) state = advanceSeason(state).state;

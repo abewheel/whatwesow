@@ -44,11 +44,11 @@ test.describe("touch phone 320x568", () => {
       const quote = plantQuote(state, crop, policy, 6, false, 1),
         sale = saleQuote(state, crop, policy, 6);
       const button = page.locator(`#tile-actions [data-crop="${crop}"]`);
-      await expect(button.locator("strong")).toHaveText(
-        `${crops[crop].name} · ${quote.seed + quote.fee} coins`,
-      );
-      await expect(button.locator("small").first()).toContainText(
-        `harvest ${sale.value} coins after ${sale.tax} to the relief fund${crop === "turnip" ? ", paid next season" : ""}`,
+      await expect(button.locator("strong")).toHaveText(crops[crop].name);
+      await expect(button).toHaveAccessibleName(
+        new RegExp(
+          `harvest ${sale.value} coins after ${sale.tax} to the relief fund${crop === "turnip" ? ", paid next season" : ""}`,
+        ),
       );
       await expect(button.locator(".crop-rule")).toHaveText(
         `${crop === "pumpkin" ? "Pumpkin is banned. " : ""}No planting permit this season. Planting anyway costs a ${quote.fine}-coin fine.`,
@@ -147,6 +147,9 @@ for (const viewport of [
       await page.evaluate(() => window.scrollTo(0, 0));
       const council = page.locator("#council-rules");
       await council.scrollIntoViewIfNeeded();
+      await page
+        .getByRole("button", { name: "Buy water · 60 coins" })
+        .scrollIntoViewIfNeeded();
       await expect(
         page.getByRole("button", { name: "Buy water · 60 coins" }),
       ).toBeInViewport();

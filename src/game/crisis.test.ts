@@ -3,7 +3,7 @@ import { mix } from "../contracts/world";
 import { content, engine } from "../crisis/engine";
 import { maxCrises, seasons, turnNumber } from "../macro/state";
 import { animalQuote, plantQuote, saleQuote } from "../micro/money";
-import { actOnFarm, type FarmAction } from "../micro/rules";
+import { actOnFarm as farmAction, type FarmAction } from "../micro/rules";
 import { crops, harvestValue, type CropId, type Plot } from "../micro/state";
 import { buildingLevel } from "../micro/world";
 import {
@@ -33,7 +33,7 @@ import {
   waterSupply,
 } from "./crisis-rules";
 import {
-  actOnGame,
+  actOnGame as gameAction,
   advanceSeason,
   farmContext,
   homesteadState,
@@ -42,6 +42,35 @@ import {
   type GameState,
 } from "./state";
 
+/** Buy at the shop before planting so each crisis price remains asserted. */
+const actOnFarm: typeof farmAction = (state, action, context = 1) => {
+  const bought =
+    action.type === "plant"
+      ? farmAction(
+          state,
+          {
+            type: "buySeeds",
+            crop: action.crop,
+            quantity: 1,
+            ...(action.premium ? { premium: true as const } : {}),
+          },
+          context,
+        ).state
+      : state;
+  return farmAction(bought, action, context);
+};
+const actOnGame: typeof gameAction = (state, action) => {
+  const bought =
+    action.type === "plant"
+      ? gameAction(state, {
+          type: "buySeeds",
+          crop: action.crop,
+          quantity: 1,
+          ...(action.premium ? { premium: true as const } : {}),
+        }).state
+      : state;
+  return gameAction(bought, action);
+};
 const order = content.params.runOrder;
 /** A homestead farm at a turn (9 empty plots, ids 1–9, 100 coins). */
 function farmAt(turn: number, fields: Partial<GameState> = {}): GameState {
@@ -1180,7 +1209,7 @@ describe("harms on policies that pass, with real answers", () => {
       farmContext(spring),
     );
     expect(again.message).toBe(
-      "Turnip planted. −7 coins, including a 2-coin planting fee. Planted against the rules (Turnip grew here last). Fine −27 coins.",
+      "Turnip planted. −2 coins, including a 2-coin planting fee. Planted against the rules (Turnip grew here last). Fine −27 coins.",
     );
     expect(act(spring, { type: "plant", plot: 1, crop: "turnip" }).coins).toBe(
       spring.coins - 7,

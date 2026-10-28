@@ -1,3 +1,4 @@
+import { buySeeds } from "./helpers";
 import { choosePlotWork } from "./helpers";
 import { expect, test, type Page } from "./fixtures";
 import { homesteadMicroState as initialMicroState } from "../../src/micro/state";
@@ -55,7 +56,7 @@ test("harvest rewards animate from the tile, count up, and stay correct across r
     )
     .toBeGreaterThan(100);
   await expect(page.locator("#coin-count")).toHaveText("124");
-  // Harvest stays in Plant mode so neighbors can be picked without changing tools.
+  // Harvest clears the menu while adjacent produce remains clickable.
   await expect(page.locator("#service-panel")).toBeHidden();
   await page.locator('[data-structure="3"]').click();
   await page.locator("#harvest-tree").click();
@@ -66,6 +67,7 @@ test("harvest rewards animate from the tile, count up, and stay correct across r
   await page.locator('[data-plot="0"]').click();
   await choosePlotWork(page);
   await expect(page.locator("#season .sr-only")).toContainText("141 coins");
+  await buySeeds(page, "turnip");
   await page.locator('[data-plot="0"]').click();
   await choosePlotWork(page);
   await expect(page.locator("#coin-count")).toHaveText("137");

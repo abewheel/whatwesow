@@ -14,14 +14,18 @@ export function drawAnimalPen(
   depth: number,
 ) {
   const view = scene.add.container(x, y).setDepth(depth);
-  const working = !!(s.pendingConstruction || s.pendingUpgrade);
+  const working = !!(
+    s.pendingConstruction ||
+    s.pendingUpgrade ||
+    s.pendingDemolition
+  );
   const shelter = scene.add
     .image(0, 0, "animal-buildings", animalFrame(s.kind, season))
     .setOrigin(0)
     .setDisplaySize(width, height)
     .setAlpha(working ? 0.55 : 1);
   view.add(shelter);
-  if (!s.pendingConstruction) {
+  if (!s.pendingConstruction && !s.pendingDemolition) {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const column = animalKinds.indexOf(s.kind);
     const scale =
@@ -73,7 +77,7 @@ export function drawAnimalPen(
     view.add(scaffold);
   }
   // Small coin badge stays on the shelter; detailed readiness is in the accessible label.
-  if (s.product && !s.pendingConstruction) {
+  if (s.product && !s.pendingConstruction && !s.pendingDemolition) {
     const badge = scene.add.graphics();
     const x = width * 0.5,
       y = height * 0.25;

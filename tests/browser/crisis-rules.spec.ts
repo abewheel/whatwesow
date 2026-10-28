@@ -47,8 +47,12 @@ test("the public water company seals the well, ends water trading and sends a wa
   // No new well either: the plan on open land says why.
   await openCell(page, "24,16");
   await expect(page.locator('[data-build="well"]')).toBeDisabled();
-  await expect(page.locator('[data-build="well"]')).toHaveText(
+  await expect(page.locator('[data-build="well"]')).toHaveAccessibleName(
     /^Irrigation well · .+ · Not allowed by the council$/,
+  );
+  await expect(page.locator('[data-build="well"] .plan-rule')).toBeVisible();
+  await expect(page.locator('[data-build="well"] .plan-rule')).toHaveText(
+    "Not allowed by the council",
   );
   // A thirsty crop is watered at cost; there is no water to buy or sell.
   await work(page, 0, "corn", /Corn, growing/);
@@ -119,13 +123,12 @@ test("the county's set price brings the council office, its permits and the coun
   // The county's crop has free seed, so only the planting fee; any other crop is fined.
   await openPlot(page, 0);
   const turnip = page.locator('[data-crop="turnip"]');
-  await expect(turnip.locator("strong")).toHaveText("Turnip · 2 coins");
+  await expect(turnip.locator("strong")).toHaveText("Turnip");
+  await expect(turnip).toHaveAccessibleName(/includes a 2-coin fee/);
   await expect(turnip.locator(".crop-rule")).toHaveCount(0);
   for (const crop of ["radish", "carrot", "corn"] as const) {
     const quote = page.locator(`[data-crop="${crop}"]`);
-    await expect(quote.locator("strong")).toHaveText(
-      `${crops[crop].name} · 2 coins`,
-    );
+    await expect(quote.locator("strong")).toHaveText(crops[crop].name);
     await expect(quote.locator(".crop-rule")).toHaveText(
       `Only turnip may be planted. Planting anyway costs a ${3 * crops[crop].sale}-coin fine.`,
     );
@@ -181,7 +184,7 @@ test("planting limits bring a steady sales allowance and prices that stay put", 
   await endTurn(page);
   const value = await earns(page, "turnip", 0);
   await page.locator("#improve").click();
-  await expect(page.locator("#improve")).toHaveText(
+  await expect(page.locator("#improve")).toHaveAccessibleName(
     "Soil improvement underway · next season",
   );
   await endTurn(page);
@@ -335,7 +338,9 @@ test("the council office takes permits while the council requires them", async (
   await expect(page.locator('[data-crop="turnip"] .crop-rule')).toHaveText(
     "No planting permit this season. Planting anyway costs a 5-coin fine.",
   );
-  await expect(page.locator('[data-crop="corn"]')).toContainText("Thirsty");
+  await expect(page.locator('[data-crop="corn"]')).toHaveAccessibleName(
+    /Thirsty/,
+  );
   await visitBuilding(page, "council");
   await expect(page.locator("#service-title")).toHaveText("Council office");
   await expect(page.locator("#permit-status")).toHaveText(

@@ -30,7 +30,22 @@ export function createBuildingShadow(
   context.imageSmoothingEnabled = false;
   // Keep the feet fixed. Height becomes distance down and right on the ground,
   // retaining the roof, chimney and windmill outlines of this exact sprite.
-  context.setTransform(1, 0, -0.45, -0.24, baseline * 0.45, baseline * 1.24);
-  context.drawImage(silhouette, 0, 0);
+  // Sweep from the real sprite to the cast silhouette. A single flattened
+  // projection assumes every wall meets the same horizontal baseline, leaving
+  // daylight between the shadow and the sloping isometric foundation edges.
+  // The sprite itself covers the upright end of this sweep; the exposed ground
+  // receives a continuous shadow all the way back to each actual contact edge.
+  for (let step = 0; step <= 48; step++) {
+    const amount = step / 48;
+    context.setTransform(
+      1,
+      0,
+      -0.45 * amount,
+      1 - 1.24 * amount,
+      baseline * 0.45 * amount,
+      baseline * 1.24 * amount,
+    );
+    context.drawImage(silhouette, 0, 0);
+  }
   return canvas;
 }

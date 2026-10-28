@@ -19,10 +19,19 @@ export async function openCell(page: Page, cell: string) {
 }
 export async function buildAt(page: Page, kind: string, cell: string) {
   await openCell(page, cell);
+  const category = ["coop", "dairy", "sheepfold"].includes(kind)
+    ? "animals"
+    : ["apple", "oak"].includes(kind)
+      ? "trees"
+      : ["market", "mill", "greenhouse", "hall"].includes(kind)
+        ? "trade"
+        : "farm";
+  await page.locator(`[data-category="${category}"]`).click();
   await page.locator(`[data-build="${kind}"]`).click();
   await expect(page.locator("#farm-message")).toContainText(/started|planted/);
 }
 export async function loadPreset(page: Page, id: string) {
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
   await closeActions(page);
   await page.getByLabel("Work on").selectOption("full");
   await page.getByLabel("Starting point").selectOption(id);

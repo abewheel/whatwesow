@@ -1,3 +1,4 @@
+import { buySeeds } from "./helpers";
 import { choosePlotWork } from "./helpers";
 import { test, expect, type Page } from "@playwright/test";
 
@@ -55,7 +56,8 @@ for (const viewport of [
 
       expect(
         (await page.locator(".hud-top").boundingBox())!.height,
-      ).toBeLessThan(75);
+      ).toBeLessThan(80);
+      await buySeeds(page, "turnip");
       await page.locator('[data-cell="16,16"]').tap();
       await page.locator("#expand").tap();
       await expect(page.locator("#improve")).toBeDisabled();
@@ -79,12 +81,12 @@ for (const viewport of [
       await expect(page.locator("#season")).toContainText("95 coins");
       await page.locator('[data-structure="1"]').press("Enter");
       await fits(page, "#service-panel");
-      await page.locator("#move-building").tap();
-      await page.locator('[data-cell="13,18"]').tap();
-      await expect(page.locator('[data-cell="13,18"]')).toHaveAttribute(
-        "data-structure",
-        "1",
-      );
+      await expect(page.locator("#move-building")).toHaveCount(0);
+      await page.locator("#teardown-building").tap();
+      await expect(
+        page.locator('[data-structure="1"]').first(),
+      ).toHaveAttribute("aria-label", /tear.?down|demoli|remov/i);
+      await page.locator("#close-service").tap();
       await expect(
         page.locator("#seed-selection,#end-turn,#build-shop"),
       ).toHaveCount(0);

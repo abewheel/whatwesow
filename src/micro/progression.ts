@@ -86,7 +86,10 @@ export const hasOpportunity = (s: MicroState, id: Opportunity) =>
 export const canBuild = (s: MicroState, kind: BuildingKind) =>
   kind === "home" ||
   (kind === "oak" &&
-    s.structures.some((b) => b.kind === "home" && !b.pendingConstruction)) ||
+    s.structures.some(
+      (b) =>
+        b.kind === "home" && !b.pendingConstruction && !b.pendingDemolition,
+    )) ||
   (kind !== "oak" && hasOpportunity(s, kind));
 export const canPlant = (s: MicroState, crop: CropId) =>
   crop !== "corn" || hasOpportunity(s, "corn");

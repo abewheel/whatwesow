@@ -15,6 +15,12 @@ export function farmerTaskForAction(
   current: MicroState,
   policy?: FarmPolicy,
 ): FarmerTask | undefined {
+  if (
+    action.type === "buySeeds" ||
+    action.type === "teardown" ||
+    action.type === "deletePlot"
+  )
+    return undefined;
   let target: Cell | undefined;
   if ("plot" in action) target = current.plotCells[action.plot];
   else if (

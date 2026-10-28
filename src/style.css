@@ -1750,3 +1750,358 @@ button.crisis-card {
     top: calc(100% + 128px);
   }
 }
+/* A coin tucked into the basket distinguishes harvest proceeds from crop counts. */
+.harvest-value-icon {
+  display: inline-block;
+  position: relative;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  vertical-align: middle;
+}
+.harvest-value-icon > .pixel-icon:first-child {
+  width: 26px;
+  height: 26px;
+}
+.harvest-value-icon > .pixel-icon:last-child {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  right: -2px;
+  top: 0;
+  filter: drop-shadow(0 1px 1px #3a281b);
+}
+#farm-status > span > span:last-child {
+  text-align: center;
+  min-width: 2ch;
+}
+#farm-status > span {
+  justify-self: center;
+}
+#tile-actions .seed-grid,
+#tile-actions .plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+#tile-actions .seed-grid button,
+#tile-actions .plan-grid button {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
+  gap: 3px;
+  padding: 5px;
+  min-width: 0;
+  font-size: 13px;
+}
+#tile-actions .seed-grid strong,
+#tile-actions .plan-grid strong {
+  width: 100%;
+  font-size: 13px;
+  font-weight: 500;
+}
+#tile-actions .seed-grid button > .pixel-icon,
+#tile-actions .plan-grid button > .pixel-icon {
+  width: 26px;
+  height: 26px;
+}
+#tile-actions .control-detail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin: 0;
+  font-size: 12px;
+  width: 100%;
+}
+#tile-actions .control-detail .pixel-icon {
+  width: 18px;
+  height: 18px;
+}
+#tile-actions .control-detail .harvest-value-icon {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+}
+#tile-actions .control-detail .harvest-value-icon > .pixel-icon:first-child {
+  width: 22px;
+  height: 22px;
+}
+#tile-actions .control-detail .harvest-value-icon > .pixel-icon:last-child {
+  width: 12px;
+  height: 12px;
+}
+.shop-price,
+.seed-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.seed-stock {
+  font-size: 12px;
+}
+.seed-stock .pixel-icon,
+.shop-price .pixel-icon {
+  width: 18px;
+  height: 18px;
+}
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.quantity-control > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+#seed-quantity {
+  width: 80px;
+  min-height: 44px;
+}
+#quantity-error {
+  font-size: 12px;
+  color: #923d28;
+}
+.plan-categories {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  margin-bottom: 6px;
+}
+#tile-actions .plan-categories button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  font-size: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+.plan-categories .pixel-icon {
+  width: 22px;
+  height: 22px;
+}
+.plan-categories [aria-pressed="true"] {
+  outline: 2px solid #42643a;
+  outline-offset: -4px;
+}
+.building-stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+#tile-actions .tree-status {
+  display: block;
+  font-size: 12px;
+  margin: 4px 0;
+}
+#tile-actions > button {
+  margin-top: 5px;
+}
+#restart,
+#resume {
+  width: 100%;
+  margin-top: 8px;
+}
+#restart,
+#resume,
+#export,
+#import-trigger,
+.confirm-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.confirm-actions button {
+  flex: 1;
+}
+@media (max-height: 500px) {
+  #tile-actions .seed-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  #tile-actions .seed-grid button {
+    gap: 1px;
+    padding: 3px;
+  }
+  #tile-actions .seed-grid strong {
+    font-size: 11px;
+  }
+  .seed-stock {
+    display: none;
+  }
+}
+#tile-actions .seed-grid button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: 2px;
+  position: relative;
+}
+#tile-actions .seed-grid strong {
+  width: auto;
+  justify-self: start;
+  font-size: 12px;
+  text-align: left;
+}
+#tile-actions .seed-grid button > .pixel-icon {
+  justify-self: end;
+  margin-right: 5px;
+}
+#tile-actions .seed-grid .control-detail {
+  grid-column: 1/-1;
+  grid-row: 3;
+}
+#tile-actions .seed-grid .shop-price {
+  grid-column: 1;
+  grid-row: 2;
+}
+#tile-actions .seed-grid .seed-stock {
+  grid-column: 2;
+  grid-row: 2;
+}
+@media (max-height: 500px) {
+  #tile-actions .seed-grid strong {
+    font-size: 10px;
+  }
+  #tile-actions .seed-grid button > .pixel-icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 2px;
+  }
+  #tile-actions .control-detail .harvest-value-icon {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+  }
+  #tile-actions .control-detail .harvest-value-icon > .pixel-icon:first-child {
+    width: 18px;
+    height: 18px;
+  }
+}
+#tile-actions:has(.inventory-grid) > button {
+  display: inline-flex;
+  width: calc((100% - 12px) / 3);
+  justify-content: center;
+  vertical-align: top;
+  margin: 5px 2px 0 0;
+  padding: 4px;
+  gap: 3px;
+  font-size: 12px;
+}
+#tile-actions:has(.inventory-grid) > button > .pixel-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Inventory shares the compact corner controls on every screen size. */
+#open-inventory {
+  width: 48px;
+  height: 54px;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+}
+#open-inventory .pixel-icon {
+  width: 32px;
+  height: 32px;
+}
+#open-inventory[aria-expanded="true"] {
+  filter: brightness(1.12);
+}
+@media (max-width: 600px) {
+  .hud-top:has(#open-inventory) {
+    gap: 4px;
+  }
+  .hud-top:has(#open-inventory) .farm-overview {
+    min-width: 0;
+  }
+  .hud-top:has(#open-inventory) #season {
+    flex-wrap: wrap;
+    gap: 2px 4px;
+  }
+  .hud-top:has(#open-inventory) #open-inventory,
+  .hud-top:has(#open-inventory) #open-menu,
+  .hud-top:has(#open-inventory) #camera-controls > summary {
+    width: 44px;
+    height: 48px;
+    flex-basis: 44px;
+  }
+}
+.stock-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+.stock-card {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #c6a675;
+  font-size: 13px;
+}
+.stock-card > .pixel-icon {
+  width: 26px;
+  height: 26px;
+}
+.stock-card > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.stock-card > span > .pixel-icon {
+  width: 20px;
+  height: 20px;
+}
+.stock-card strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.seed-qualities {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+#tile-actions .seed-qualities button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex: 1;
+}
+.seed-qualities [aria-pressed="true"] {
+  outline: 2px solid #42643a;
+  outline-offset: -4px;
+}
+.shop-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+#tile-actions .crop-rule {
+  grid-column: 1/-1;
+  font-size: 11px;
+  line-height: 1.25;
+  color: #83492d;
+  display: block;
+}
+@media (max-height: 500px) {
+  .stock-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

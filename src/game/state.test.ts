@@ -87,7 +87,10 @@ it("farm actions compose without changing the macro calendar", async () => {
   const next = replaceDomain(
     start,
     "micro",
-    actOnFarm(start, { type: "plant", plot: 0, crop: "corn" }).state,
+    actOnFarm(
+      actOnFarm(start, { type: "buySeeds", crop: "corn", quantity: 1 }).state,
+      { type: "plant", plot: 0, crop: "corn" },
+    ).state,
   );
   expect(readDomain(next, "macro")).toEqual(readDomain(start, "macro"));
   expect(next.coins).toBe(88);
@@ -181,7 +184,11 @@ it("grows crops only across seasonal turns and pays crop coins at harvest", asyn
     start,
     "micro",
     actOnFarm(
-      start,
+      actOnFarm(
+        start,
+        { type: "buySeeds", crop: "carrot", quantity: 1 },
+        farmContext(start),
+      ).state,
       { type: "plant", plot: 0, crop: "carrot" },
       farmContext(start),
     ).state,
@@ -530,4 +537,42 @@ describe("crisis records in the save", () => {
     });
     expect(state.farmPolicy).toEqual({ seedMultiplier: 2 });
   });
+});
+
+it("persists teardown and clears the footprint next season before seasonal income", async () => {
+  const { actOnFarm } = await import("../micro/rules");
+  const { advanceSeason, farmContext } = await import("./state");
+  const start = initialState();
+  start.structures.push({ id: 2, kind: "market", row: 0, col: 0, level: 1 });
+  start.nextStructureId = 3;
+  const pending = replaceDomain(
+    start,
+    "micro",
+    actOnFarm(start, { type: "teardown", id: 2 }, farmContext(start)).state,
+  );
+  const saved = parseState(JSON.parse(JSON.stringify(pending)));
+  expect(saved.structures[1].pendingDemolition).toBe(true);
+  const next = advanceSeason(saved).state;
+  expect(next.structures.map((s) => s.id)).toEqual([1]);
+  expect(next.coins).toBe(start.coins);
+  expect(next.season).toBe("summer");
+  expect(saved.structures).toHaveLength(2);
+});
+
+it("migrates old saves without seeds and preserves purchased inventory through domain replacement and export", async () => {
+  const { actOnFarm } = await import("../micro/rules");
+  const start = initialState();
+  const { seeds: omitted, ...legacy } = start;
+  expect(parseState(legacy).seeds).toEqual(omitted);
+  const bought = replaceDomain(
+    start,
+    "micro",
+    actOnFarm(start, { type: "buySeeds", crop: "turnip", quantity: 4 }).state,
+  );
+  const saved = parseState(JSON.parse(JSON.stringify(bought)));
+  expect(saved.seeds.turnip).toBe(4);
+  expect(saved.coins).toBe(84);
+  expect(
+    replaceDomain(saved, "macro", { year: 2, season: "spring" }).seeds,
+  ).toEqual(saved.seeds);
 });

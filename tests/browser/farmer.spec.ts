@@ -1,3 +1,4 @@
+import { buySeeds } from "./helpers";
 import { choosePlotWork } from "./helpers";
 import { endTurn, clickCamera } from "./helpers";
 import { test, expect } from "./fixtures";
@@ -13,6 +14,7 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
+  await buySeeds(page, "turnip");
   const canvas = page.locator("canvas");
   await page
     .getByRole("button", { name: "Plot 1: empty", exact: true })
@@ -45,6 +47,7 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
     "data-cell",
     "18,16",
   );
+  await buySeeds(page, "turnip");
   // Return from the state editor before opening a viewport-anchored menu.
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.locator(".farm-card")).toBeInViewport();

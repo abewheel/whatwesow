@@ -10,7 +10,10 @@ import {
 import { canBuild, canPlant, totalHarvests } from "./progression";
 
 function harvest(s: MicroState, crop: CropId = "turnip") {
-  let next = actOnFarm(s, { type: "plant", plot: 0, crop }).state;
+  let next = actOnFarm(
+    actOnFarm(s, { type: "buySeeds", crop, quantity: 1 }).state,
+    { type: "plant", plot: 0, crop },
+  ).state;
   while (next.plots[0]!.growth < crops[crop].steps) next = growCrops(next);
   return actOnFarm(next, { type: "harvest", plot: 0 });
 }

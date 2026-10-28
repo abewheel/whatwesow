@@ -394,6 +394,9 @@ export class FarmScene extends Phaser.Scene {
       ) ?? false
     );
   }
+  stopFarmer() {
+    this.farmer?.stop();
+  }
   resetFarmer() {
     this.farmer?.reset();
   }
@@ -648,7 +651,11 @@ export class FarmScene extends Phaser.Scene {
         height: art.height,
         front,
       });
-      const working = !!(s.pendingConstruction || s.pendingUpgrade);
+      const working = !!(
+        s.pendingConstruction ||
+        s.pendingUpgrade ||
+        s.pendingDemolition
+      );
       const stateAtlas = working && distinctFrame === undefined;
       const frame = item.frame;
       this.drawBuildingShadow(

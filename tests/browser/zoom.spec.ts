@@ -1,3 +1,4 @@
+import { buySeeds } from "./helpers";
 import { choosePlotWork } from "./helpers";
 import { endTurn, clickCamera, setCameraCell } from "./helpers";
 import { test, expect } from "./fixtures";
@@ -64,6 +65,7 @@ test("context menus stay attached and usable at both zoom extremes", async ({
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
+  await buySeeds(page, "turnip");
   for (let i = 0; i < 2; i++) await clickCamera(page, "#zoom-out");
   await page.locator("#close-camera").click();
   await page.locator('[data-plot="0"]').press("Enter");

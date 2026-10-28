@@ -9,6 +9,14 @@ import {
 function establishedFarm() {
   return parseMicroState({
     ...initialMicroState(),
+    seeds: {
+      radish: 10,
+      tomato: 10,
+      pumpkin: 10,
+      turnip: 10,
+      carrot: 10,
+      corn: 10,
+    },
     harvests: {
       radish: 0,
       tomato: 0,
@@ -24,17 +32,18 @@ describe("farming loop", () => {
   it.each(Object.keys(crops) as CropId[])(
     "plants, grows, harvests, and replants %s without mutation",
     (crop) => {
-      const start = establishedFarm();
+      const start = { ...establishedFarm(), seeds: initialMicroState().seeds };
       const context = {
         turn: crops[crop].plantingSeasons[0] === "summer" ? 2 : 1,
       };
       let state = actOnFarm(
-        start,
+        actOnFarm(start, { type: "buySeeds", crop, quantity: 1 }, context)
+          .state,
         { type: "plant", plot: 0, crop },
         context,
       ).state;
       expect(state.coins).toBe(100 - crops[crop].seed);
-      expect(start).toEqual(establishedFarm());
+      expect(start.seeds).toEqual(initialMicroState().seeds);
       expect(() => actOnFarm(state, { type: "harvest", plot: 0 })).toThrow();
       expect(() =>
         actOnFarm(state, { type: "plant", plot: 0, crop }),
@@ -47,8 +56,12 @@ describe("farming loop", () => {
       expect(ripe.plots[0]).not.toBeNull();
       expect(() => actOnFarm(state, { type: "harvest", plot: 0 })).toThrow();
       expect(
-        actOnFarm(state, { type: "plant", plot: 0, crop }, context).state
-          .plots[0]?.growth,
+        actOnFarm(
+          actOnFarm(state, { type: "buySeeds", crop, quantity: 1 }, context)
+            .state,
+          { type: "plant", plot: 0, crop },
+          context,
+        ).state.plots[0]?.growth,
       ).toBe(0);
     },
   );
@@ -72,6 +85,11 @@ describe("farming loop", () => {
     expect(state.coins).toBe(470);
     state = actOnFarm(state, { type: "improve" }).state;
     expect(state.coins).toBe(390);
+    state = actOnFarm(state, {
+      type: "buySeeds",
+      crop: "turnip",
+      quantity: 1,
+    }).state;
     state = actOnFarm(state, { type: "plant", plot: 9, crop: "turnip" }).state;
     state = completeUpgrades(growCrops(state));
     expect(actOnFarm(state, { type: "harvest", plot: 9 }).state.coins).toBe(
@@ -79,7 +97,11 @@ describe("farming loop", () => {
     );
   });
   it("rejects unavailable actions, bad plots, and invalid imported state", () => {
-    const poor = { ...establishedFarm(), coins: 0 };
+    const poor = {
+      ...establishedFarm(),
+      seeds: initialMicroState().seeds,
+      coins: 0,
+    };
     for (const action of [
       { type: "plant", plot: 0, crop: "corn" },
       { type: "expand" },
@@ -109,13 +131,20 @@ describe("farming loop", () => {
   });
 });
 it("offers a bounded way back when no seeds or crops remain", () => {
-  const poor = { ...establishedFarm(), coins: 0 };
+  const poor = {
+    ...establishedFarm(),
+    seeds: initialMicroState().seeds,
+    coins: 0,
+  };
   const recovered = actOnFarm(poor, { type: "work" }).state;
   expect(recovered.coins).toBe(4);
   expect(() => actOnFarm(recovered, { type: "work" })).toThrow();
   expect(
-    actOnFarm(recovered, { type: "plant", plot: 0, crop: "turnip" }).state
-      .coins,
+    actOnFarm(
+      actOnFarm(recovered, { type: "buySeeds", crop: "turnip", quantity: 1 })
+        .state,
+      { type: "plant", plot: 0, crop: "turnip" },
+    ).state.coins,
   ).toBe(0);
   poor.plots[0] = { crop: "corn", growth: 0 };
   expect(() => actOnFarm(poor, { type: "work" })).toThrow();

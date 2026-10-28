@@ -9,8 +9,15 @@ import {
   seedCost,
   type CropId,
   type MicroState,
+  type Plot,
 } from "./state";
-import { animalProducts, isAnimal, policyCost, type Structure } from "./world";
+import {
+  cellAllowed,
+  animalProducts,
+  isAnimal,
+  policyCost,
+  type Structure,
+} from "./world";
 type Purse = Pick<MicroState, "coins" | "owed">;
 const checkAmount = (amount: number) => {
   if (!Number.isSafeInteger(amount) || amount < 0)
@@ -48,6 +55,20 @@ export function credit<T extends Purse>(
     ),
     toOwed,
   };
+}
+
+/** Unit price paid at the shop, including active discounts and council prices. */
+export function seedQuote(
+  state: MicroState,
+  crop: CropId,
+  policy: FarmPolicy = {},
+  premium = false,
+): number {
+  const seed = Math.ceil(
+    policyCost(seedCost(state, crop, policy), policy) *
+      (policy.seedMultiplier ?? 1),
+  );
+  return premium ? Math.ceil(seed * (policy.premiumSeed?.seed ?? 1)) : seed;
 }
 
 export type PlantQuote = {
@@ -102,12 +123,8 @@ export function plantQuote(
       : reasons.length && !finable
         ? `${reasons[0][0].toUpperCase()}${reasons[0].slice(1)}.`
         : undefined;
-  const seed = Math.ceil(
-    policyCost(seedCost(state, crop, policy), policy) *
-      (policy.seedMultiplier ?? 1),
-  );
   return {
-    seed: premium ? Math.ceil(seed * (policy.premiumSeed?.seed ?? 1)) : seed,
+    seed: seedQuote(state, crop, policy, premium),
     fee: policy.plantingFee ?? 0,
     fine:
       reasons.length && finable
@@ -134,7 +151,13 @@ export function workThreshold(
   const now = unlocked.filter((crop) => canPlant(crop, turn));
   const at = state.plots.length ? state.plots.map((_, i) => i) : [undefined];
   const quotes = (now.length ? now : unlocked).flatMap((crop) =>
-    at.map((plot) => plantQuote(state, crop, policy, turn, false, plot)),
+    at.map((plot) => ({
+      ...plantQuote(state, crop, policy, turn, false, plot),
+      seed:
+        state.seeds[crop] > 0 || state.premiumSeeds[crop] > 0
+          ? 0
+          : seedQuote(state, crop, policy),
+    })),
   );
   const open = quotes.filter((q) => !q.blocked);
   return Math.max(
@@ -148,6 +171,21 @@ export function workThreshold(
 export const canWork = (state: MicroState, policy: FarmPolicy = {}, turn = 1) =>
   policy.allowWork !== false &&
   !state.plots.some(Boolean) &&
+  !state.plots.some(
+    (plot, index) =>
+      !plot &&
+      cellAllowed(state.plotCells[index], policy) &&
+      (Object.keys(crops) as CropId[]).some((crop) => {
+        if (
+          !cropUnlocked(state, crop) ||
+          !canPlant(crop, turn) ||
+          !(state.seeds[crop] || state.premiumSeeds[crop])
+        )
+          return false;
+        const quote = plantQuote(state, crop, policy, turn, false, index);
+        return !quote.blocked && state.coins >= quote.fee + quote.fine;
+      }),
+  ) &&
   state.coins <
     (state.plots.length ? 0 : policyCost(expansionCost(state), policy)) +
       workThreshold(state, policy, turn);
@@ -201,14 +239,18 @@ export function saleQuote(
   policy: FarmPolicy = {},
   turn = 1,
   plot?: number,
+  previewCondition?: NonNullable<Plot>,
 ): SaleQuote {
-  const condition = plot === undefined ? null : state.plots[plot];
+  const condition =
+    previewCondition ?? (plot === undefined ? null : state.plots[plot]);
   let base = policy.fixedPrices?.[crop] ?? harvestValue(state, crop, policy);
   if (policy.averageCap) base = Math.min(base, crops[crop].sale);
   const sale = priceSale(state, crop, base, policy, turn, [
     policy.yieldMultiplier ?? 1,
     condition?.dry ? 0.5 : 1,
-    condition?.premium === "good" ? (policy.premiumSeed?.yield ?? 1) : 1,
+    condition?.premium === "good"
+      ? (condition.premiumYield ?? policy.premiumSeed?.yield ?? 1)
+      : 1,
   ]);
   const above = policy.sellDelay?.[crop];
   return {
@@ -219,6 +261,27 @@ export function saleQuote(
       plantedPlots(state, crop) > above,
   };
 }
+/** Harvest preview for a shop offer or an owned seed, using the same sale chain as harvest. */
+export function previewSaleQuote(
+  state: MicroState,
+  crop: CropId,
+  policy: FarmPolicy = {},
+  turn = 1,
+  premium = false,
+  owned = false,
+): SaleQuote {
+  if (!premium) return saleQuote(state, crop, policy, turn);
+  const terms = owned
+    ? state.premiumSeedBatches?.[crop]?.[0]
+    : policy.premiumSeed;
+  return saleQuote(state, crop, policy, turn, undefined, {
+    crop,
+    growth: 0,
+    premium: "good",
+    premiumYield: terms?.yield ?? 1,
+  });
+}
+
 /** Fruit uses the same chain without yield, dry or premium effects. */
 export function fruitQuote(
   state: MicroState,

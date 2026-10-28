@@ -10,7 +10,7 @@ import {
   salesThisTurn,
   workThreshold,
 } from "./money";
-import { actOnFarm } from "./rules";
+import { actOnFarm as farmAction } from "./rules";
 import {
   canPlant,
   crops,
@@ -19,6 +19,23 @@ import {
   type CropId,
   type MicroState,
 } from "./state";
+/** Existing scenarios exercise the full paid shop-to-plot path. */
+const actOnFarm: typeof farmAction = (state, action, context = 1) => {
+  const bought =
+    action.type === "plant"
+      ? farmAction(
+          state,
+          {
+            type: "buySeeds",
+            crop: action.crop,
+            quantity: 1,
+            ...(action.premium ? { premium: true as const } : {}),
+          },
+          context,
+        ).state
+      : state;
+  return farmAction(bought, action, context);
+};
 function establishedFarm() {
   return parseMicroState({
     ...initialMicroState(),

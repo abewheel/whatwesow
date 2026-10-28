@@ -172,6 +172,7 @@ test("while the council waits, farm actions wait and every popup leads back to i
   // A turnip sown in plot 9 ripens as the council meets.
   const errors = await begin(page, "waiting", "crisis-1", (state) => ({
     ...state,
+    seeds: { ...state.seeds, tomato: 1 },
     plots: state.plots.map((plot, i) =>
       i === 8 ? { crop: "turnip", growth: 0 } : plot,
     ),
@@ -187,9 +188,10 @@ test("while the council waits, farm actions wait and every popup leads back to i
   await expect(notice).toContainText(waiting);
   const tomato = page.locator('#tile-actions [data-crop="tomato"]');
   await expect(tomato).toBeDisabled();
-  await expect(tomato).toContainText("coins");
-  const movePlot = page.getByRole("button", { name: "Move this plot" });
-  await expect(movePlot).toBeDisabled();
+  await expect(tomato).toHaveAccessibleName(/harvest .*coins/);
+  const deletePlot = page.locator("#delete-plot");
+  await expect(deletePlot).toBeDisabled();
+  await expect(page.locator("#move-plot")).toHaveCount(0);
   await shot(page, "ui-waiting-plot-desktop");
   // Open land: preparing a plot and every building plan wait.
   await openCell(page, "22,20");
@@ -203,7 +205,7 @@ test("while the council waits, farm actions wait and every popup leads back to i
   await page.locator('[data-structure="2"]').press("Enter");
   await expect(page.locator("#service-title")).toHaveText("Seed storehouse");
   await expect(notice).toBeVisible();
-  await expect(page.locator("#move-building")).toBeDisabled();
+  await expect(page.locator("#teardown-building")).toBeDisabled();
   // A ripe crop waits too: the farmer does not set off to harvest it.
   await openPlot(page, 8);
   await expect(notice).toContainText(waiting);
@@ -233,7 +235,7 @@ test("while the council waits, farm actions wait and every popup leads back to i
   await expect(harvest).toBeEnabled();
   await openPlot(page, 7);
   await expect(tomato).toBeEnabled();
-  await expect(movePlot).toBeEnabled();
+  await expect(deletePlot).toBeEnabled();
   expect(errors).toEqual([]);
 });
 
@@ -355,4 +357,16 @@ test("the council meeting and its outcome fit a desktop screen", async ({
   await expect(page.locator("#council-rules")).toBeInViewport();
   await shot(page, "ui-council-1280x800");
   expect(errors).toEqual([]);
+});
+
+test("inventory hotkeys do not dismiss or replace the council meeting", async ({
+  page,
+}) => {
+  await begin(page, "inventory-hotkeys", "crisis-1");
+  const dialog = await callCouncil(page);
+  await page.keyboard.press("i");
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("e");
+  await expect(dialog).toBeVisible();
+  await expect(page.locator("#service-title")).not.toHaveText("Inventory");
 });
