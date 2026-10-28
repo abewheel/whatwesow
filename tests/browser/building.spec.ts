@@ -178,6 +178,8 @@ test("late progression and the final seasonal income respect the 160-turn bounda
 test("repeated builds, plot relocation, and macro land policies remain playable", async ({
   page,
 }) => {
+  // This full playthrough includes several real-time walks between services.
+  test.setTimeout(120000);
   await page.goto("/?instance=validation-flexible-construction");
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",

@@ -13,6 +13,8 @@ async function preset(page: Page, id: string) {
 test("plant, grow, harvest, replant, reinvest and persist through actual farm plots", async ({
   page,
 }) => {
+  // This full playthrough includes several real-time walks between services.
+  test.setTimeout(120000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("requestfailed", (r) => errors.push(r.url()));

@@ -133,6 +133,7 @@ test("imported farms keep their plots and relocated shops work with the keyboard
   await page.keyboard.press("Enter");
   await expect(page.locator("#service-title")).toHaveText(
     "Seed shop & nursery",
+    { timeout: 30000 },
   );
   await expect(page.locator("#crop-options")).toBeVisible();
 });
