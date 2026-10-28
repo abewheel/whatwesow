@@ -1,6 +1,6 @@
 # Farming loop
 
-Tap an empty plot, then choose a seasonal crop in its popup to plant. Seeds are paid for at planting. **End turn** advances one season and moves every growing crop forward, including crops planted in earlier seasons. Tap a ripe crop and choose Harvest to collect and sell it on arrival, then plant again when the season allows it. Plot buttons also support Tab and Enter.
+Tap an empty plot, then choose a seasonal crop in its popup to plant. Buy seeds in the shop first; planting uses one seed from inventory. **End turn** advances one season and moves every growing crop forward, including crops planted in earlier seasons. Tap a ripe crop and choose Harvest to collect and sell it on arrival, then plant again when the season allows it. Plot buttons also support Tab and Enter.
 
 | Crop    | Seeds    | Plant in       | Seasons to grow | Base harvest | Thirsty |
 | ------- | -------- | -------------- | --------------- | ------------ | ------- |
@@ -12,6 +12,8 @@ Tap an empty plot, then choose a seasonal crop in its popup to plant. Seeds are 
 | Pumpkin | 14 coins | Summer         | 1               | 32 coins     | Yes     |
 
 Planting windows follow a simplified temperate growing year: spring roots, warm-season summer planting, and fall harvests. Corn still unlocks after harvesting a turnip and a carrot; the other seeds are available from the start. Growth is deterministic with no real-time timers. Wells speed growth. The plot menu forecasts seasons to grow using current irrigation and already commissioned wells and upgrades.
+
+Empty plots in fall and winter say when planting resumes in spring. In the final year’s fall and winter, they explain that no planting seasons remain. Soil improvement costs and benefits have their own full row so locked requirements stay readable on phones.
 
 All field crops, including ripe crops, die when winter begins. Harvest before ending fall; the farmhouse calendar warns how many planted fields will be lost. Empty plots remain ready to replant in spring. Trees survive winter and keep their existing seasonal fruit rules. Greenhouses do not exempt field crops from frost. Older saves retain harvest counts and normalize previously ripe three-step corn to the new two-step maximum.
 
@@ -58,3 +60,5 @@ Every farm has a permanent wild beehive hanging from a tree just outside the top
 Micro saves store optional `honeyReady` readiness, defaulting to true for older saves. Collection saves false; advancing the season resets it to true. Calendar edits in playtest tools do not refill honey. The fixed 12-coin return is unaffected by production policies, preserving recovery income. Delivery work remains available at home for immediate seed recovery.
 
 Wooden beehives are a separate buildable plan, available from the start. The first costs 120 coins, reserves 2 × 2 tiles, finishes next season, and produces 15 coins of honey once per season. That repays the first hive in eight collections, matching the chicken coop's base payback. Further hives use normal rising construction prices. Wooden hives have one level, can be moved, and use normal production policies and loss rules. The farmer visits to collect, and each hive saves its own `product` readiness independently of the wild hive.
+
+Entity names appear through the shared hover tooltip, and click or tap opens their status and actions. Trees, hives, and the starter tent cast ground shadows, as other buildings do; no entity draws a permanent name or status label over the farm.

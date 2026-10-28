@@ -1992,7 +1992,7 @@ button.crisis-card {
 }
 #tile-actions:has(.inventory-grid) > button {
   display: inline-flex;
-  width: calc((100% - 12px) / 3);
+  width: calc((100% - 8px) / 2);
   justify-content: center;
   vertical-align: top;
   margin: 5px 2px 0 0;
@@ -2003,6 +2003,19 @@ button.crisis-card {
 #tile-actions:has(.inventory-grid) > button > .pixel-icon {
   width: 22px;
   height: 22px;
+}
+
+/* Soil benefits need a full row, including the locked and pending states. */
+#tile-actions > #improve {
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 4px;
+}
+#tile-actions > #improve small {
+  flex-basis: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
 }
 
 /* Inventory shares the compact corner controls on every screen size. */
@@ -2175,14 +2188,60 @@ button.crisis-card {
   .corner-controls {
     grid-template-columns: repeat(2, 44px);
   }
-  .hud-top:has(#open-inventory) .corner-controls > button,
+  .hud-top:has(#open-inventory) .corner-controls > button:not(#crisis-test),
   .hud-top:has(#open-inventory) .corner-controls #camera-controls > summary {
     width: 44px;
     height: 44px;
   }
 }
 
+.corner-controls #crisis-test {
+  width: 100%;
+  max-width: none;
+}
+
 .corner-controls #camera-controls .camera-panel {
   max-height: calc(var(--viewport-height, 100dvh) - 140px);
   overflow-y: auto;
+}
+
+/* Short landscape screens keep counts and feedback beside the corner controls. */
+@media (min-width: 600px) and (max-height: 500px) {
+  .hud-right {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 92px;
+    gap: 4px 6px;
+  }
+  .corner-controls {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .farm-overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 170px;
+    gap: 6px;
+  }
+  #farm-status {
+    position: static;
+    min-height: 54px;
+    padding: 3px;
+    gap: 2px;
+  }
+  #farm-status > span {
+    gap: 3px;
+    font-size: 14px;
+  }
+  #farm-status .pixel-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .hud-right .field-note {
+    position: static;
+    grid-column: 1;
+    width: auto;
+    padding: 3px 6px;
+  }
+  #council-meeting {
+    top: calc(100% + 4px);
+  }
 }

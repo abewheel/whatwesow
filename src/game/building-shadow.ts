@@ -2,9 +2,11 @@
 export function createBuildingShadow(
   source: CanvasImageSource,
   frame: { x: number; y: number; width: number; height: number },
+  contact = 0.9,
 ) {
   const resolution = 256;
-  const baseline = resolution * 0.9;
+  // Trees and hives meet the bottom edge; isometric buildings use an inset foundation.
+  const baseline = resolution * contact;
   const silhouette = document.createElement("canvas");
   silhouette.width = silhouette.height = resolution;
   const mask = silhouette.getContext("2d")!;

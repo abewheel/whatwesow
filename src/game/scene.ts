@@ -70,7 +70,6 @@ import {
   structureSize,
   serviceLocations,
   serviceOptions,
-  councilOffice,
   isTree,
   isAnimal,
   cellKey,
@@ -179,7 +178,6 @@ export class FarmScene extends Phaser.Scene {
   private drawHive(
     lot: Cell & { width: number; height: number },
     wild: boolean,
-    ready: boolean,
     working = false,
   ) {
     const point = projectCell(hiveAnchor(lot));
@@ -187,6 +185,7 @@ export class FarmScene extends Phaser.Scene {
     const texture = wild
       ? wildHiveTexture(this.season)
       : woodenHiveTexture(this.season);
+    this.drawSpriteShadow(art.x, art.y, art.width, art.height, texture);
     this.scenery!.add(
       this.add
         .image(art.x, art.y, texture)
@@ -220,26 +219,9 @@ export class FarmScene extends Phaser.Scene {
           art.bottom - dy,
         );
       this.scenery!.add(scaffold);
-    } else if (ready) {
-      this.scenery!.add(
-        this.add
-          .text(
-            point.x + (wild ? 66 : 0),
-            point.y - (wild ? 85 : 87),
-            wild ? "+12" : "Honey",
-            {
-              fontFamily: "Farm Pixel",
-              fontSize: "16px",
-              color: "#fff0ae",
-              backgroundColor: "#65431e",
-              padding: { x: 6, y: 3 },
-            },
-          )
-          .setOrigin(0.5, 1)
-          .setDepth(art.bottom + 1),
-      );
     }
   }
+
   hitsTent(point: { x: number; y: number }, cell: Cell) {
     const anchor = projectCell(cell);
     const x = (point.x - anchor.x + tentWidth / 2) / tentWidth;
@@ -262,9 +244,29 @@ export class FarmScene extends Phaser.Scene {
       height?: number;
     },
     atlas: string,
-    frame: number,
+    frame: string | number,
   ) {
-    const key = `shadow-${atlas}-${frame}`;
+    const top = projectCell(art);
+    this.drawSpriteShadow(
+      top.x,
+      top.y,
+      art.size,
+      art.height ?? art.size,
+      atlas,
+      frame,
+      0.9,
+    );
+  }
+  private drawSpriteShadow(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    atlas: string,
+    frame: string | number = "__BASE",
+    contact = 1,
+  ) {
+    const key = `shadow-${atlas}-${frame}-${contact}`;
     if (!this.textures.exists(key)) {
       const source = this.textures.getFrame(atlas, frame);
       const canvas = createBuildingShadow(
@@ -275,15 +277,16 @@ export class FarmScene extends Phaser.Scene {
           width: source.cutWidth,
           height: source.cutHeight,
         },
+        contact,
       );
       this.textures.addCanvas(key, canvas);
     }
-    const top = projectCell(art);
     this.scenery!.add(
       this.add
-        .image(top.x, top.y, key)
+        .image(x, y, key)
+        .setName(`shadow:${atlas}`)
         .setOrigin(0, 0)
-        .setDisplaySize(art.size * 1.5, (art.height ?? art.size) * 1.25)
+        .setDisplaySize(width * 1.5, height * 1.25)
         .setAlpha(this.season === "winter" ? 0.24 : 0.2)
         .setDepth(-1),
     );
@@ -715,7 +718,6 @@ export class FarmScene extends Phaser.Scene {
         this.drawHive(
           { ...s, width: item.width, height: item.height },
           false,
-          !!s.product,
           !!s.pendingConstruction,
         );
         continue;
@@ -771,6 +773,14 @@ export class FarmScene extends Phaser.Scene {
           .setOrigin(0.5, 1)
           .setScale([0.13, 0.17, 0.18][stage]);
         if (sealed) crown.setTint(sealedLook.tint);
+        this.drawSpriteShadow(
+          x - crown.displayWidth / 2,
+          y - crown.displayHeight,
+          crown.displayWidth,
+          crown.displayHeight,
+          `tree-${kind}`,
+          treeFrame(s, this.season),
+        );
         tree.add(crown);
         if (s.product)
           for (const [dx, dy] of productPositions[kind])
@@ -781,22 +791,6 @@ export class FarmScene extends Phaser.Scene {
             );
         this.treeViews.set(s.id, tree);
         scenery.add(tree);
-        scenery.add(
-          this.add
-            .text(
-              x,
-              y + 8,
-              `${item.name}${s.product ? " · Harvest" : stage === 0 ? " · Sapling" : stage === 1 ? " · Growing" : ""}`,
-              {
-                fontSize: "11px",
-                color: "#493621",
-                backgroundColor: "#fff0ca",
-                padding: { x: 3, y: 2 },
-              },
-            )
-            .setOrigin(0.5, 0)
-            .setDepth(y + 1),
-        );
         continue;
       }
       const distinctFrame = distinctStructures[s.kind];
@@ -925,7 +919,7 @@ export class FarmScene extends Phaser.Scene {
         continue;
       }
       if (service.id === "hive") {
-        this.drawHive(service, true, this.farm.honeyReady !== false);
+        this.drawHive(service, true);
         continue;
       }
       if (service.tent) {
@@ -933,6 +927,13 @@ export class FarmScene extends Phaser.Scene {
           x: point.x - tentWidth / 2,
           y: point.y + 24 - tentHeight,
         };
+        this.drawSpriteShadow(
+          top.x,
+          top.y,
+          tentWidth,
+          tentHeight,
+          "starter-tent",
+        );
         scenery.add(
           this.add
             .image(point.x, point.y + 24, "starter-tent")
@@ -984,9 +985,19 @@ export class FarmScene extends Phaser.Scene {
       );
     }
     this.groundArt!.finish();
-    // Readable development evidence of crisis marks, like the farmer's data attributes.
+    // Development evidence of entity presentation and crisis marks.
     if (import.meta.env.DEV) {
       const data = this.game.canvas.dataset;
+      data.sceneLabels = String(
+        scenery.list.filter(
+          (object) => object instanceof Phaser.GameObjects.Text,
+        ).length,
+      );
+      data.sceneShadows = JSON.stringify(
+        scenery.list
+          .filter((object) => object.name.startsWith("shadow:"))
+          .map((object) => object.name.slice(7)),
+      );
       data.sceneDry = String(marks.dry);
       data.sceneWithered = String(marks.withered);
       data.sceneTaken = String(marks.taken);
@@ -1064,17 +1075,5 @@ export class FarmScene extends Phaser.Scene {
       size: 100 * k,
       front,
     });
-    scenery.add(
-      this.add
-        .text(cx, cy + 22 * k, councilOffice.name, {
-          fontFamily: "Farm Pixel",
-          fontSize: "14px",
-          color: "#493621",
-          backgroundColor: "#fff0ca",
-          padding: { x: 7, y: 4 },
-        })
-        .setOrigin(0.5, 0)
-        .setDepth(WORLD_HEIGHT + cy),
-    );
   }
 }

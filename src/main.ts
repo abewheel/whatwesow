@@ -133,9 +133,12 @@ app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 
 </section></main>`;
 const menu = document.querySelector<HTMLDialogElement>("#farm-menu")!;
-document
-  .querySelector("#open-menu")!
-  .addEventListener("click", () => menu.showModal());
+const menuButton = document.querySelector<HTMLButtonElement>("#open-menu")!;
+menuButton.addEventListener("click", () => {
+  // Safari does not focus buttons on click; dialogs restore their prior focus.
+  menuButton.focus({ preventScroll: true });
+  menu.showModal();
+});
 document
   .querySelector("#resume")!
   .addEventListener("click", () => menu.close());
@@ -883,6 +886,13 @@ function refreshContext() {
           note(
             `${crops[last].name} grew here last; the council's rotation rule applies.`,
           );
+        if (!(Object.keys(crops) as CropId[]).some((id) => canPlant(id, turn)))
+          note(
+            state.year === 40
+              ? "No planting seasons remain."
+              : "Planting resumes in spring.",
+            "planting-season-note",
+          );
         const grid = document.createElement("div");
         grid.className = "seed-grid inventory-grid";
         tileActions.append(grid);
@@ -936,7 +946,7 @@ function refreshContext() {
       }
       const offer = `soil${state.soilLevel + 1}` as Opportunity,
         available = state.soilLevel < 3 && hasOpportunity(state, offer);
-      tileButton(
+      const soilButton = tileButton(
         state.pendingSoilUpgrade
           ? "Soil improvement underway · next season"
           : state.soilLevel === 3
@@ -963,6 +973,7 @@ function refreshContext() {
         "teardown",
         icon("teardown"),
       );
+      tileActions.append(soilButton);
     } else if (debrisAt(state.debris, cell)) {
       const item = debrisAt(state.debris, cell)!;
       const spec = debrisTypes[item.kind];

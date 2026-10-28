@@ -4,9 +4,10 @@ import { homesteadState } from "../../src/game/state";
 // Most regression paths exercise an established farm. Startup has its own suite.
 export const test = base.extend({
   page: async ({ page }, use) => {
-    await page.route("**/src/main.ts", async (route) => {
-      await page
-        .evaluate(async (seed) => {
+    await page.route(
+      (url) => url.pathname === "/src/main.ts",
+      async (route) => {
+        await page.evaluate(async (seed) => {
           const instance =
             new URLSearchParams(location.search).get("instance") ?? "default";
           await new Promise<void>((resolve, reject) => {
@@ -29,10 +30,10 @@ export const test = base.extend({
               transaction.onerror = () => reject(transaction.error);
             };
           });
-        }, homesteadState())
-        .catch(() => {});
-      await route.continue();
-    });
+        }, homesteadState());
+        await route.continue();
+      },
+    );
     await use(page);
   },
 });
