@@ -17,8 +17,8 @@ export function mountInventoryControls(controls: InventoryControls): {
   button.setAttribute("aria-keyshortcuts", "E I");
   button.innerHTML = `${icon("seeds")}<span class="sr-only">Inventory</span>`;
   document
-    .querySelector(".hud-right")!
-    .insertBefore(button, document.querySelector("#open-menu"));
+    .querySelector(".corner-controls")!
+    .insertBefore(button, document.querySelector("#open-shop"));
 
   const render = () => {
     const open = controls.isOpen();

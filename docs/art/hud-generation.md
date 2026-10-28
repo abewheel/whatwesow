@@ -18,3 +18,9 @@ Use case stylized-concept. Production game icon atlas matching the supplied rich
 `public/art/icons/view.png` is a transparent 256px icon generated with the built-in image tool using the leather journal icon as a style reference, then resized for the HUD.
 
 Prompt: One isolated magnifying glass with a round aged-brass rim, pale blue reflective lens, and short carved wooden handle angled down-right. Match the journal's detailed painted texture, warm upper-left highlights, and deep brown outlines. Keep a compact silhouette readable at 32px, with transparent margins and no text, scenery, external shadows, or button frame.
+
+## Shop shortcut icon
+
+`public/art/icons/shop.png` is a transparent 256px icon generated with the built-in image tool, using the leather journal as a style reference.
+
+Prompt: One isolated timber seed market stall with a cream and muted red striped awning, wooden counter, and two small seed sacks. Match the journal's detailed painted pixel texture, warm upper-left lighting, deep brown outlines, and material highlights. Keep a compact silhouette readable at 32px, centered with transparent margins. No text, scenery, button frame, or external shadow.

@@ -2032,13 +2032,6 @@ button.crisis-card {
     flex-wrap: wrap;
     gap: 2px 4px;
   }
-  .hud-top:has(#open-inventory) #open-inventory,
-  .hud-top:has(#open-inventory) #open-menu,
-  .hud-top:has(#open-inventory) #camera-controls > summary {
-    width: 44px;
-    height: 48px;
-    flex-basis: 44px;
-  }
 }
 .stock-grid {
   display: grid;
@@ -2150,4 +2143,46 @@ button.crisis-card {
   #startup #begin-farm {
     margin-top: 12px;
   }
+}
+
+/* Read left to right: View, Menu, Inventory, Shop. */
+.corner-controls {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, 48px);
+  gap: 4px;
+  pointer-events: auto;
+  flex: 0 0 auto;
+}
+.corner-controls #open-menu,
+.corner-controls #open-inventory,
+.corner-controls #open-shop,
+.corner-controls #camera-controls > summary {
+  width: 48px;
+  height: 48px;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+}
+.corner-controls #camera-controls {
+  position: static;
+}
+.corner-controls .pixel-icon {
+  width: 32px;
+  height: 32px;
+}
+@media (max-width: 600px), (max-height: 500px) {
+  .corner-controls {
+    grid-template-columns: repeat(2, 44px);
+  }
+  .hud-top:has(#open-inventory) .corner-controls > button,
+  .hud-top:has(#open-inventory) .corner-controls #camera-controls > summary {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+.corner-controls #camera-controls .camera-panel {
+  max-height: calc(var(--viewport-height, 100dvh) - 140px);
+  overflow-y: auto;
 }

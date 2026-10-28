@@ -56,7 +56,7 @@ for (const viewport of [
 
       expect(
         (await page.locator(".hud-top").boundingBox())!.height,
-      ).toBeLessThan(80);
+      ).toBeLessThan(120);
       await buySeeds(page, "turnip");
       await page.locator('[data-cell="16,16"]').tap();
       await page.locator("#expand").tap();

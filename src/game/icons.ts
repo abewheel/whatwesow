@@ -18,6 +18,7 @@ export type Icon =
   | "fall"
   | "winter"
   | "view"
+  | "shop"
   | "menu"
   | "home"
   | "build"
