@@ -144,6 +144,14 @@ Build incrementally, prioritizing a playable game over architectural complexity.
 
 Start with [docs/session-start.md](docs/session-start.md) for implemented scope and a task-to-code map. Read [docs/development.md](docs/development.md) for setup, playtest state, architecture boundaries, and Cloudflare Pages configuration. Use `pnpm dev --instance validation-<task-id>` for your own local instance, then run `pnpm validate` after substantive changes. Inspect changed UI paths with Playwright, capture and inspect current screenshots, and stop your instance after validation. Keep playtest tools gated by `import.meta.env.DEV` so production builds exclude them.
 
+## Keep Validation Fast and Reliable
+
+- Iterate with focused tests; run `pnpm validate` on the settled candidate.
+- Run every browser test through `scripts/browser-shards.mjs` in CI; refresh timing hints after major suite changes. Never hide failures with retries or omitted tests.
+- Assert observable completion. Observe brief transitions in-page; avoid fixed sleeps and assumptions about frame rates.
+- Preserve pnpm/browser caches, superseded-run cancellation, and one PR run per update. Use the pinned runner's Chromium libraries instead of redundant system-package installs.
+- Keep the required `validate` gate dependent on every shard and production checks.
+
 ## Micro and Macro Work
 
 Before changing game rules, read [ownership and contracts](docs/game-boundaries.md). Work in the owning domain and coordinate shared contract changes. Use [playtesting recipes](docs/playtesting.md) for isolated domain states and focused tests; start with [development](docs/development.md) for setup.
