@@ -82,7 +82,10 @@ Sources: [Pages Git integration](https://developers.cloudflare.com/pages/configu
 
 The `Validate` workflow runs build/unit checks and 19 browser shards in parallel.
 Each shard runs two workers, keeping the original per-runner load; `fullyParallel`
-lets Playwright distribute individual tests rather than whole files. The final
+lets Playwright run individual tests in parallel. `scripts/browser-shards.mjs`
+discovers the full suite and deals tests round-robin across runners, spreading
+tests from expensive features instead of grouping them in consecutive shards.
+It preserves complete titles and projects, including parameterized tests. The final
 `validate` job keeps the existing required-check name and requires every shard and
 the production checks to pass. No test is omitted and automatic retries are off.
 The build already checks types, so CI does not run a second standalone typecheck.
