@@ -21,6 +21,11 @@ test("production /video serves the demo with a playable home link", async ({
   });
   expect(media.status()).toBe(206);
   expect(media.headers()["content-type"]).toContain("video/mp4");
-  await page.getByRole("link", { name: "Play", exact: true }).click();
-  await expect(page).toHaveTitle("What We Sow");
+  const [game] = await Promise.all([
+    page.context().waitForEvent("page"),
+    page.getByRole("link", { name: "Play", exact: true }).click(),
+  ]);
+  await expect(game).toHaveTitle("What We Sow");
+  await expect(page).toHaveTitle("Watch What We Sow");
+  expect(await game.evaluate(() => window.opener)).toBeNull();
 });

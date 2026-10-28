@@ -42,9 +42,14 @@ for (const viewport of [
     await expect
       .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
       .toBe(true);
-    await play.click();
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator("#startup")).toBeVisible();
+    const [game] = await Promise.all([
+      context.waitForEvent("page"),
+      play.click(),
+    ]);
+    await expect(game).toHaveURL(/\/$/);
+    await expect(game.locator("#startup")).toBeVisible();
+    await expect(page).toHaveURL(/\/video$/);
+    expect(await game.evaluate(() => window.opener)).toBeNull();
     expect(errors).toEqual([]);
     await context.close();
   });
