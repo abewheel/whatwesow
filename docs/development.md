@@ -82,16 +82,16 @@ Sources: [Pages Git integration](https://developers.cloudflare.com/pages/configu
 
 The `Validate` workflow runs build/unit checks and 19 browser shards in parallel.
 Each shard runs two workers, keeping the original per-runner load; `fullyParallel`
-lets Playwright distribute individual tests rather than whole files. A fixed
-shuffle seed spreads tests from the same feature across shards reproducibly. The final
+lets Playwright distribute individual tests rather than whole files. The final
 `validate` job keeps the existing required-check name and requires every shard and
 the production checks to pass. No test is omitted and automatic retries are off.
 The build already checks types, so CI does not run a second standalone typecheck.
 
 Pull requests run once per update; pushes to `main` and manual runs also validate.
 New commits cancel obsolete runs for the same event and ref. Browser downloads
-are cached by OS, architecture, and lockfile; system dependencies are still
-installed on each runner. Failed jobs retain screenshots, traces, and browser
+are cached by OS, architecture, and lockfile; the pinned Ubuntu 24.04 hosted image already
+provides Chromium’s system libraries, so jobs avoid a redundant apt update and
+installation. A missing library fails browser launch rather than hiding it. Failed jobs retain screenshots, traces, and browser
 HTML reports for seven days. Traces omit DOM snapshots and continuous screenshots because copying the
 estate’s 4,096 interactive targets and reading rendered frames adds overhead.
 Call, network, and timing traces remain available, along with failure screenshots. Download a failure artifact and run

@@ -29,7 +29,7 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps --only-shell chromium
+      - run: pnpm exec playwright install --only-shell chromium
       - run: pnpm test:production
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -59,9 +59,8 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps --only-shell chromium
-      # Spread tests from the same feature across shards, reproducibly.
-      - run: pnpm test:browser --shuffle=42 --shard=${{ matrix.shard }}/19
+      - run: pnpm exec playwright install --only-shell chromium
+      - run: pnpm test:browser --shard=${{ matrix.shard }}/19
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
