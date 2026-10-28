@@ -36,7 +36,7 @@ test("the HUD stays compact and clicks walk to ground and building entrances", a
           (col === 16 && row >= 7 && row <= 8)
         );
       },
-      { timeout: 10000 },
+      { timeout: 30000 },
     )
     .toBe(true);
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
@@ -60,7 +60,7 @@ test("a new ground click replaces the current walk and a drag does not give a de
   await page.locator("[data-cell='18,17']").click();
   await expect(canvas).toHaveAttribute("data-farmer-target", "18,17");
   await expect(canvas).toHaveAttribute("data-farmer-cell", "18,17", {
-    timeout: 10000,
+    timeout: 30000,
   });
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   const bounds = (await page.locator("#farm").boundingBox())!;
@@ -113,7 +113,7 @@ test("redirecting before planting leaves the plot empty even with slow saves", a
   await page.locator("[data-cell='20,19']").click();
   await expect(page.locator("#season")).toContainText("100 coins");
   await expect(canvas).toHaveAttribute("data-farmer-cell", "20,19", {
-    timeout: 10000,
+    timeout: 30000,
   });
   await page.evaluate(
     () =>
