@@ -1602,3 +1602,228 @@ button:not(.plot-hit):disabled {
 #building-tooltip[hidden] {
   display: none;
 }
+
+/* Development-only council test for the crisis layer. */
+#crisis-test {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+@media (max-width: 800px) {
+  /* Below the season bar, so the farm title keeps its width. */
+  #crisis-test {
+    order: 4;
+    min-height: 36px;
+    margin-left: auto;
+    padding: 2px 8px;
+    font-size: 14px;
+  }
+}
+#crisis-trial {
+  width: min(1180px, calc(100% - 32px));
+  overflow: auto;
+}
+#crisis-trial h2 {
+  font-size: 26px;
+}
+#crisis-title:focus {
+  outline: none;
+}
+#crisis-trial h3 {
+  font-size: 20px;
+  margin: 20px 0 4px;
+}
+.crisis-body {
+  font-size: 16px;
+  line-height: 1.45;
+}
+.crisis-trigger {
+  font-size: 18px;
+}
+.crisis-note {
+  margin: 4px 0;
+  color: var(--muted);
+}
+.crisis-hand {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+button.crisis-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  justify-items: center;
+  align-content: start;
+  gap: 8px;
+  padding: 14px 12px;
+  text-align: left;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.crisis-card strong {
+  font-size: 18px;
+}
+.crisis-card > span:last-child {
+  justify-self: stretch;
+}
+.crisis-portrait {
+  display: block;
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border: 3px solid var(--wood);
+  box-shadow: 0 2px 0 #49342080;
+}
+.crisis-portrait svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.crisis-speech {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 2px solid #c9a974;
+  background: #fff8e3;
+}
+.crisis-speech.opposing {
+  background: #f1e3c4;
+}
+.crisis-speech blockquote {
+  margin: 0;
+}
+.crisis-speech figcaption {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 15px;
+}
+.crisis-line {
+  margin: 8px 0;
+}
+.crisis-attribution {
+  padding-left: 12px;
+  border-left: 3px solid #c9a974;
+}
+.council-meter {
+  margin: 16px 0;
+}
+.meter-track {
+  position: relative;
+  height: 28px;
+  border: 2px solid var(--wood);
+  background: #e7d3a5;
+}
+.meter-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: #8fbf7aa6;
+}
+.meter-window.after {
+  background: none;
+  border: 2px dashed #3f6b35;
+}
+.meter-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #80533180;
+}
+.meter-mood {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid var(--paper);
+  background: var(--ink);
+}
+.meter-mood.after {
+  background: #3f6b35;
+}
+.meter-ends {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 13px;
+}
+.meter-policies {
+  display: flex;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.25;
+}
+.meter-policies li {
+  flex: none;
+  padding: 0 4px;
+  color: var(--muted);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.meter-policies li.marked {
+  color: var(--ink);
+  font-weight: 700;
+}
+.meter-policies em {
+  display: block;
+  color: #3f6b35;
+  font-style: normal;
+}
+.council-meter figcaption {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.crisis-effects {
+  margin: 12px 0;
+  font-size: 14px;
+}
+.crisis-effects summary {
+  cursor: pointer;
+}
+.crisis-standing {
+  padding-left: 20px;
+}
+.crisis-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.crisis-report {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+.crisis-report li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #c9a974;
+}
+.crisis-report .crisis-portrait {
+  width: 44px;
+  height: 44px;
+  border-width: 2px;
+}
+.crisis-report span {
+  display: block;
+  color: var(--muted);
+}
+@media (max-width: 600px) {
+  .crisis-speech {
+    flex-direction: column;
+  }
+  .meter-policies {
+    font-size: 12px;
+  }
+}

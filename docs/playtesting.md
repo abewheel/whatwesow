@@ -16,6 +16,10 @@ Keep its printed query string. Open **Playtest tools**, choose **Work on**, and 
 
 **Load preset** fills the editor for the selected scope without applying it. Presets cover a new farm, year 20 fall, year 40 winter, [each farming stage](micro-game.md#iterate), and [construction and policy scenarios](construction.md#iterate). For arbitrary supported states, edit those values. Extra fields are stripped, including fields owned by the other domain. Applying the macro scope also reconciles land revocation through `applyMacroChange`; micro edits preserve the current date and policy. Export save downloads the complete state for sharing; Import save accepts a complete version 3 save or migrates version 1 and 2 saves.
 
+## Crisis content
+
+In local development, **Crisis test** in the top bar plays a [crisis layer](../crisis-layer/INTEGRATION.md) run one crisis at a time. Each crisis shows five arguments from named speakers. After a pick it shows the outcome and any deal to accept or decline, then moves to the next crisis, and a summary follows the last one. It calls `crisis-layer/engine.js` with `crisis-layer/content.json` and does not change the farm or its save. Picks are kept in this browser across reloads; **Start over** clears them. To change wording or numbers, edit `content.json`, then in `crisis-layer/` run `npm run content` (keeps the prototype page in step) and `npm test`, and reload. Speaker names and portraits live in `src/dev/crisis-trial.ts` and `src/dev/crisis-portraits.ts`, keyed by card key.
+
 ## Fast rule iteration
 
 ```sh
