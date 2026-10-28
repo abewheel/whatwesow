@@ -7,7 +7,7 @@ export default defineConfig({
     headless: true,
     // The estate has 4,096 DOM targets. Snapshotting that tree at every
     // action dominates these tests; retain call/network/timing evidence instead.
-    trace: { mode: "retain-on-failure", snapshots: false },
+    trace: { mode: "retain-on-failure", snapshots: false, screenshots: false },
     screenshot: "only-on-failure",
   },
   webServer: {
