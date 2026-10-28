@@ -1,3 +1,4 @@
+import { prepareSeizedArtwork, drawSeizedLand } from "./seized-artwork";
 import { isolateAtlas, gridFrames } from "./atlas-isolation";
 import {
   hiveAnchor,
@@ -52,13 +53,7 @@ import {
 } from "./boundary";
 import { prepareLaneArtwork } from "./lane-artwork";
 import { borderDetailRect } from "./border-artwork";
-import {
-  GroundLayer,
-  drawReservoir,
-  groundTint,
-  shoreSides,
-  takenCell,
-} from "./terrain";
+import { GroundLayer, groundTint, takenCell } from "./terrain";
 import { Farmer, farmerFrames, femaleFarmerFrames } from "./farmer";
 import { farmerDepth, type BuildingOccluder } from "./farmer-depth";
 import { farmerTaskForAction } from "./farmer-task";
@@ -345,6 +340,7 @@ export class FarmScene extends Phaser.Scene {
 
     this.load.image("debris-seasons", "/art/debris-seasons.png");
     this.load.image("starter-tent", "/art/starter-tent.png");
+    this.load.image("seized-land", "/art/seized-land.png");
     this.load.image("ground-materials", "/art/ground-materials.png");
     this.load.image("border-details", "/art/border-details-seasons.png");
     this.load.image("tree-apple", "/art/apple-stages.png");
@@ -398,6 +394,7 @@ export class FarmScene extends Phaser.Scene {
         ),
       ),
     );
+    prepareSeizedArtwork(this);
     prepareLaneArtwork(this);
     prepareDebrisArtwork(this);
 
@@ -669,16 +666,9 @@ export class FarmScene extends Phaser.Scene {
           index === undefined ? "grass" : "soil",
           groundTint({ row, col }, this.policy),
         );
-        // Land given up for the county's reservoir lies under water.
         if (takenCell({ row, col }, this.policy)) {
           marks.taken++;
-          drawReservoir(
-            g,
-            { row, col },
-            { x, y },
-            this.season,
-            shoreSides({ row, col }, this.policy),
-          );
+          drawSeizedLand(this, scenery, { row, col }, { x, y }, this.season);
         }
         if (index === undefined) continue;
         const plot = this.farm.plots[index];
