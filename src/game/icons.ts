@@ -7,6 +7,7 @@ export type Icon =
   | "carrot"
   | "corn"
   | "grow"
+  | "sprout"
   | "expand"
   | "improve"
   | "coin"
@@ -23,6 +24,6 @@ export type Icon =
 export function icon(name: Icon, className = "") {
   const path = ["radish", "tomato", "pumpkin"].includes(name)
     ? `/art/${name}-icon.png`
-    : `/art/icons/${name}.png`;
+    : `/art/icons/${name}.${name === "sprout" ? "svg" : "png"}`;
   return `<span class="pixel-icon ${className}" aria-hidden="true" style="background-image:url('${path}')"></span>`;
 }

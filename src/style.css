@@ -261,7 +261,7 @@ dialog,
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-width: 0;
+  min-width: 252px;
   pointer-events: none;
 }
 #season {
@@ -344,16 +344,16 @@ dialog,
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  gap: 12px;
-  min-width: 100px;
+  gap: 8px;
   min-height: 56px;
-  justify-content: space-between;
   padding: 8px;
   pointer-events: none;
 }
 #empty-plots,
+#growing-plots,
 #harvest-ready {
   display: flex;
   align-items: center;
@@ -362,9 +362,37 @@ dialog,
   white-space: nowrap;
 }
 #empty-plots .pixel-icon,
+#growing-plots .pixel-icon,
 #harvest-ready .pixel-icon {
   width: 24px;
   height: 24px;
+}
+#empty-plots {
+  justify-self: start;
+}
+#growing-plots {
+  justify-self: center;
+}
+#harvest-ready {
+  justify-self: end;
+}
+#farm-status > span > span:last-child {
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 600px) {
+  #farm-status {
+    gap: 4px;
+  }
+  #farm-status > span {
+    gap: 3px;
+    font-size: 14px;
+  }
+  #farm-status .pixel-icon {
+    width: 18px;
+    height: 18px;
+  }
 }
 .farm-tools {
   max-width: 100%;
@@ -807,6 +835,7 @@ dialog::backdrop {
   }
   .farm-overview {
     margin-left: 0;
+    min-width: 0;
     flex: 1;
   }
   #season {
