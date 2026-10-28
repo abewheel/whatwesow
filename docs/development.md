@@ -81,8 +81,8 @@ Sources: [Pages Git integration](https://developers.cloudflare.com/pages/configu
 ## GitHub validation performance
 
 The `Validate` workflow runs build/unit checks and 19 browser shards in parallel.
-Each shard runs two workers, keeping the original per-runner load; `fullyParallel`
-lets Playwright run individual tests in parallel. `scripts/browser-shards.mjs`
+Each shard runs one browser to avoid competing software renderers on a runner.
+`fullyParallel` keeps individual tests independent. `scripts/browser-shards.mjs`
 discovers the full suite and schedules estimated longest tests on the least-loaded
 runner, using `scripts/browser-timings.json`. These local timings are scheduling
 hints; new or renamed tests get a ten-second estimate and still run. Refresh the
