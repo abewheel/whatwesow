@@ -68,12 +68,19 @@ export function buildingArtwork(lot: Lot, frame: number, distinct = false) {
   const [minRow, minCol, maxRow, maxCol] = (
     distinct ? distinctGroundBounds : groundBounds
   )[frame];
+  // Smaller utility buildings should not rival the barn or farmhouse.
+  // Keep the same ground anchor for every season and construction state.
+  const proportion = distinct
+    ? [1, 0.92, 0.8, 1, 0.88, 0.9, 0.82][frame]
+    : ({ 0: 1, 1: 1, 3: 0.62, 4: 0.78 }[frame] ?? 1);
   const inset = 0.08;
-  const size = Math.min(
-    (lot.width + lot.height) * 32 * 0.94,
-    ((lot.height - inset * 2) * 64) / (maxRow - minRow),
-    ((lot.width - inset * 2) * 64) / (maxCol - minCol),
-  );
+  const size =
+    proportion *
+    Math.min(
+      (lot.width + lot.height) * 32 * 0.94,
+      ((lot.height - inset * 2) * 64) / (maxRow - minRow),
+      ((lot.width - inset * 2) * 64) / (maxCol - minCol),
+    );
   return {
     row: lot.row + (lot.height - 1) / 2 - ((minRow + maxRow) * size) / 128,
     col: lot.col + (lot.width - 1) / 2 - ((minCol + maxCol) * size) / 128,

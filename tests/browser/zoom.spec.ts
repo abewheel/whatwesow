@@ -44,6 +44,8 @@ test("zoom controls preserve a centered land cell and clamp at their limits", as
 test("farming, multi-cell building previews and distant placements work at both zoom extremes", async ({
   page,
 }) => {
+  // This path includes travel across the estate at both zoom limits and a reload.
+  test.setTimeout(120000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("requestfailed", (r) => errors.push(r.url()));

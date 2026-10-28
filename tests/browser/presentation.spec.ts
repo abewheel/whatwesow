@@ -84,6 +84,8 @@ test("farmer sorts ahead of both farmhouse front edges and behind its rear", asy
   page,
 }) => {
   await page.goto("/?instance=validation-farmer-depth");
+  // Keyboard events must wait until the startup cover releases the farm.
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
   const canvas = page.locator("canvas");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   // The farmhouse's bottom corner projects to y=624. Both side paths have

@@ -1,3 +1,4 @@
+import { createBuildingShadow } from "./building-shadow";
 import {
   buildingArtwork,
   hitsBuildingArtwork,
@@ -103,6 +104,35 @@ export class FarmScene extends Phaser.Scene {
         atlas,
         selectedFrame,
       ) > 32
+    );
+  }
+  private drawBuildingShadow(
+    art: { row: number; col: number; size: number },
+    atlas: string,
+    frame: number,
+  ) {
+    const key = `shadow-${atlas}-${frame}`;
+    if (!this.textures.exists(key)) {
+      const source = this.textures.getFrame(atlas, frame);
+      const canvas = createBuildingShadow(
+        source.source.image as HTMLImageElement,
+        {
+          x: source.cutX,
+          y: source.cutY,
+          width: source.cutWidth,
+          height: source.cutHeight,
+        },
+      );
+      this.textures.addCanvas(key, canvas);
+    }
+    const top = projectCell(art);
+    this.scenery!.add(
+      this.add
+        .image(top.x, top.y, key)
+        .setOrigin(0, 0)
+        .setDisplaySize(art.size * 1.5, art.size * 1.25)
+        .setAlpha(this.season === "winter" ? 0.24 : 0.2)
+        .setDepth(-1),
     );
   }
   private get buildingAtlas() {
@@ -464,6 +494,15 @@ export class FarmScene extends Phaser.Scene {
       const working = !!(s.pendingConstruction || s.pendingUpgrade);
       const stateAtlas = working && distinctFrame === undefined;
       const frame = item.frame;
+      this.drawBuildingShadow(
+        art,
+        distinctFrame !== undefined
+          ? "distinct-buildings"
+          : stateAtlas
+            ? "farm-states"
+            : atlas,
+        distinctFrame ?? frame,
+      );
       scenery.add(
         this.add
           .image(
@@ -575,6 +614,11 @@ export class FarmScene extends Phaser.Scene {
         service,
         distinctServices[service.id] ?? service.frame,
         service.id !== "home",
+      );
+      this.drawBuildingShadow(
+        art,
+        service.id === "home" ? atlas : "distinct-buildings",
+        distinctServices[service.id] ?? service.frame,
       );
       const top = projectCell(art);
       const front = projectCell({

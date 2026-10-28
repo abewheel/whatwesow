@@ -129,6 +129,7 @@ test("imported farms keep their plots and relocated shops work with the keyboard
     "data-cell",
     "7,14",
   );
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
   await page.locator("[data-service=seeds]").focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#service-title")).toHaveText(

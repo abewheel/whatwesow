@@ -195,6 +195,7 @@ test("unreachable buildings do not open their menus", async ({ page }) => {
     "data-cell",
     "7,19",
   );
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
   await page.locator("[data-service=builder]").focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#farm-message")).toContainText("No walking path");
