@@ -1672,7 +1672,7 @@ button.crisis-card {
   right: 12px;
 }
 .farm-card:has(#service-panel:not([hidden])) #open-menu {
-  display: block;
+  display: grid;
 }
 
 /* The calendar and balance fill their row; feedback shares the full right rail. */

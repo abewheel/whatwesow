@@ -83,3 +83,71 @@ for (const viewport of [
     expect(errors).toEqual([]);
   });
 }
+
+test("crossing silhouettes stay whole and cannot leak into the next frame", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const samples = await page.evaluate(async () => {
+    const modulePath = "/src/game/atlas-isolation.ts";
+    const { isolateAtlas, gridFrames } = await import(
+      /* @vite-ignore */ modulePath
+    );
+    const source = document.createElement("canvas");
+    source.width = 120;
+    source.height = 60;
+    const context = source.getContext("2d")!;
+    // Red crosses the nominal 60px cell boundary, blue stays in the next cell.
+    context.fillStyle = "red";
+    context.fillRect(10, 10, 54, 40);
+    context.fillStyle = "blue";
+    context.fillRect(80, 10, 30, 40);
+    const isolated = isolateAtlas(source, gridFrames(120, 60, 2, 1));
+    const pixels = isolated.getContext("2d")!.getImageData(0, 0, 120, 60).data;
+    let red = 0,
+      blue = 0,
+      leaked = 0;
+    for (let y = 0; y < 60; y++)
+      for (let x = 0; x < 120; x++) {
+        const offset = (y * 120 + x) * 4;
+        if (!pixels[offset + 3]) continue;
+        if (pixels[offset]) {
+          red++;
+          if (x >= 60) leaked++;
+        }
+        if (pixels[offset + 2]) {
+          blue++;
+          if (x < 60) leaked++;
+        }
+      }
+    return { red, blue, leaked };
+  });
+  expect(samples).toEqual({ red: 54 * 40, blue: 30 * 40, leaked: 0 });
+});
+
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 320, height: 568 },
+  { width: 667, height: 375 },
+]) {
+  test(`book stays centered when opening the farm menu at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    const button = page.locator("#open-menu");
+    await button.scrollIntoViewIfNeeded();
+    const offset = () =>
+      button.evaluate((element) => {
+        const outer = element.getBoundingClientRect();
+        const inner = element
+          .querySelector(".pixel-icon")!
+          .getBoundingClientRect();
+        return { x: inner.x - outer.x, y: inner.y - outer.y };
+      });
+    const before = await offset();
+    await button.click();
+    await expect(page.locator("#farm-menu")).toBeVisible();
+    expect(await offset()).toEqual(before);
+  });
+}

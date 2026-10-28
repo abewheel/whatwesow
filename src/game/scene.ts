@@ -1,3 +1,4 @@
+import { isolateAtlas, gridFrames } from "./atlas-isolation";
 import {
   hiveAnchor,
   hiveBounds,
@@ -359,6 +360,37 @@ export class FarmScene extends Phaser.Scene {
     this.load.image("farm-winter", "/art/farm-atlas-winter.png");
   }
   create() {
+    // Normalize uneven generated gutters before rendering, shadows or hit tests.
+    for (const [key, columns, rows] of [
+      ["farm-spring", 3, 2],
+      ["farm-fall", 3, 2],
+      ["farm-winter", 3, 2],
+      ["farm-states", 3, 2],
+      ["animal-buildings", 3, 4],
+      ["woodland", 2, 2],
+      ["woodland-variation", 2, 2],
+    ] as const) {
+      const source = this.textures.get(key).getSourceImage();
+      this.textures
+        .get(key)
+        .source[0].updateSource(
+          isolateAtlas(
+            source as HTMLImageElement,
+            gridFrames(source.width, source.height, columns, rows),
+          ),
+        );
+    }
+    const buildingSource = this.textures
+      .get("distinct-buildings")
+      .getSourceImage();
+    this.textures.get("distinct-buildings").source[0].updateSource(
+      isolateAtlas(
+        buildingSource as HTMLImageElement,
+        distinctBuildingRects.map((_, i) =>
+          distinctBuildingRect(i, buildingSource.width, buildingSource.height),
+        ),
+      ),
+    );
     prepareLaneArtwork(this);
 
     for (const [key, rects] of [

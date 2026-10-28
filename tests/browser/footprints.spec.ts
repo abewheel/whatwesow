@@ -17,6 +17,10 @@ test("seasonal, construction and distinct sprite bases stay inside occupied tile
 }) => {
   await page.goto("/?instance=validation-artwork-bounds");
   const measured = await page.evaluate(async (distinctRects) => {
+    const modulePath = "/src/game/atlas-isolation.ts";
+    const { isolateAtlas, gridFrames } = await import(
+      /* @vite-ignore */ modulePath
+    );
     const result: {
       frame: number;
       distinct: boolean;
@@ -39,7 +43,16 @@ test("seasonal, construction and distinct sprite bases stay inside occupied tile
       canvas.width = image.width;
       canvas.height = image.height;
       const context = canvas.getContext("2d")!;
-      context.drawImage(image, 0, 0);
+      const frames =
+        file === "distinct-buildings.png"
+          ? distinctRects.map(([x, y, width, height]) => ({
+              x,
+              y,
+              width,
+              height,
+            }))
+          : gridFrames(image.width, image.height, 3, 2);
+      context.drawImage(isolateAtlas(image, frames), 0, 0);
       const pixels = context.getImageData(0, 0, image.width, image.height).data;
       const distinct = file === "distinct-buildings.png";
       const rects = distinct
@@ -47,10 +60,10 @@ test("seasonal, construction and distinct sprite bases stay inside occupied tile
             .slice(0, 7)
             .map((r, frame) => [
               frame,
-              Math.round((r[0] * image.width) / 1280),
-              Math.round((r[1] * image.height) / 1280),
-              Math.round((r[2] * image.width) / 1280),
-              Math.round((r[3] * image.height) / 1280),
+              Math.round((r[0] * image.width) / 1254),
+              Math.round((r[1] * image.height) / 1254),
+              Math.round((r[2] * image.width) / 1254),
+              Math.round((r[3] * image.height) / 1254),
             ])
         : [0, 1, 3, 4].map((frame) => [
             frame,

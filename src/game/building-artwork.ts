@@ -19,7 +19,7 @@ export const distinctBuildingRects = [
   [40, 20, 365, 410],
   [405, 55, 435, 380],
   [840, 70, 440, 370],
-  [0, 435, 405, 400],
+  [0, 431, 425, 405],
   [425, 500, 415, 330],
   [840, 480, 440, 360],
   [20, 880, 380, 310],
@@ -33,47 +33,80 @@ export function distinctBuildingRect(
 ) {
   const [x, y, width, height] = distinctBuildingRects[frame];
   return {
-    x: Math.round((x * sourceWidth) / 1280),
-    y: Math.round((y * sourceHeight) / 1280),
-    width: Math.round((width * sourceWidth) / 1280),
-    height: Math.round((height * sourceHeight) / 1280),
+    x: Math.round((x * sourceWidth) / 1254),
+    y: Math.round((y * sourceHeight) / 1254),
+    width: Math.round((width * sourceWidth) / 1254),
+    height: Math.round((height * sourceHeight) / 1254),
   };
 }
 type Lot = Cell & { width: number; height: number };
 type Point = { x: number; y: number };
 // Measured source pixels, using a single scale on both axes.
 const atlasMetrics = {
-  farm0: { bounds: [0.70703, 1.7168, 1.70703, 2.77734], ratio: 1.0 },
-  farm1: { bounds: [0.68555, 1.70117, 1.79102, 2.78516], ratio: 1.0 },
-  farm3: { bounds: [0.80664, 1.86914, 1.56836, 2.57617], ratio: 1.0 },
-  farm4: { bounds: [0.81055, 1.86328, 1.52148, 2.58594], ratio: 1.0 },
+  farm0: {
+    bounds: [0.708984375, 1.716796875, 1.697265625, 2.75390625],
+    ratio: 1,
+  },
+  farm1: {
+    bounds: [0.69921875, 1.712890625, 1.755859375, 2.7421875],
+    ratio: 1,
+  },
+  farm3: {
+    bounds: [0.806640625, 1.869140625, 1.568359375, 2.576171875],
+    ratio: 1,
+  },
+  farm4: {
+    bounds: [0.822265625, 1.86328125, 1.521484375, 2.5859375],
+    ratio: 1,
+  },
   distinct0: {
-    bounds: [0.90223, 1.9162, 2.01955, 3.03911],
-    ratio: 1.1229050279329609,
+    bounds: [
+      0.9205479452054794, 1.9178082191780823, 1.9835616438356165,
+      2.978082191780822,
+    ],
+    ratio: 1.1232876712328768,
   },
   distinct1: {
-    bounds: [0.50469, 1.52113, 1.42019, 2.43897],
-    ratio: 0.8732394366197183,
+    bounds: [
+      0.5908045977011495, 1.5402298850574712, 1.4045977011494253,
+      2.367816091954023,
+    ],
+    ratio: 0.8735632183908046,
   },
   distinct2: {
-    bounds: [0.48956, 1.53596, 1.35035, 2.34571],
-    ratio: 0.839907192575406,
+    bounds: [
+      0.5863636363636363, 1.518181818181818, 1.309090909090909,
+      2.265909090909091,
+    ],
+    ratio: 0.8409090909090909,
   },
   distinct3: {
-    bounds: [0.66499, 1.6801, 1.74055, 2.87657],
-    ratio: 0.9874055415617129,
+    bounds: [
+      0.611764705882353, 1.628235294117647, 1.5905882352941176,
+      2.6611764705882353,
+    ],
+    ratio: 0.9529411764705882,
   },
   distinct4: {
-    bounds: [0.34152, 1.33661, 1.44472, 2.34152],
-    ratio: 0.7936117936117936,
+    bounds: [
+      0.455421686746988, 1.5132530120481928, 1.2313253012048193,
+      2.2265060240963854,
+    ],
+    ratio: 0.7951807228915663,
   },
   distinct5: {
-    bounds: [0.43619, 1.47564, 1.34107, 2.33179],
-    ratio: 0.8190255220417634,
+    bounds: [
+      0.5727272727272726, 1.6545454545454545, 1.2431818181818182,
+      2.3477272727272727,
+    ],
+    ratio: 0.8181818181818182,
   },
   distinct6: {
-    bounds: [0.39516, 1.4328, 1.31989, 2.40323],
-    ratio: 0.8172043010752689,
+    bounds: [
+      0.5078947368421053, 1.6526315789473685, 1.1973684210526314,
+      2.2578947368421054,
+    ],
+    ratio: 0.8157894736842105,
   },
 } as const;
 export function buildingArtwork(lot: Lot, frame: number, distinct = false) {
