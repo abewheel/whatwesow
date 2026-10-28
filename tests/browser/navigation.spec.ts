@@ -3,7 +3,7 @@ import { choosePlotWork } from "./helpers";
 import { expect, test } from "./fixtures";
 import { clickCamera } from "./helpers";
 
-test("the HUD stays compact and opening the shop leaves the farmer in place", async ({
+test("the HUD stays compact, inventory stays put, and the shop is visited", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -25,9 +25,14 @@ test("the HUD stays compact and opening the shop leaves the farmer in place", as
   });
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.locator("#open-inventory").click();
+  await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20");
+  await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.locator("#open-seed-shop").click();
   await expect(page.locator("#service-panel")).toBeVisible();
-  await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20");
+  await expect(page.locator("#service-title")).toHaveText("Seed shop");
+  await expect(canvas).toHaveAttribute("data-farmer-cell", "10,16", {
+    timeout: 30000,
+  });
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await clickCamera(page, "#zoom-out");
   await expect(page.locator("#zoom-level")).toHaveText("75%");
