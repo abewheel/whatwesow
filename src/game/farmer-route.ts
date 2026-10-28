@@ -1,4 +1,5 @@
 import {
+  debrisCells,
   structureSize,
   cellAllowed,
   cellKey,
@@ -17,6 +18,7 @@ export type FarmerWorld = { layout: Layout; policy?: FarmPolicy };
 const blocker = (world: FarmerWorld) => {
   const occupied = new Set(
     [
+      ...debrisCells(world.layout.debris),
       ...world.layout.structures.flatMap((s) =>
         footprint(s, structureSize(s).width, structureSize(s).height),
       ),

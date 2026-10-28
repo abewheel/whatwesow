@@ -5,6 +5,8 @@ import {
   wildHiveTexture,
   woodenHiveTexture,
 } from "./hive-artwork";
+
+import { prepareDebrisArtwork, drawDebris } from "./debris-artwork";
 import { createBuildingShadow } from "./building-shadow";
 import {
   animalArtwork,
@@ -337,6 +339,8 @@ export class FarmScene extends Phaser.Scene {
       );
     this.load.image("beehive-winter", "/art/beehive-winter.png");
     this.load.image("beehive", "/art/beehive.png");
+
+    this.load.image("debris-seasons", "/art/debris-seasons.png");
     this.load.image("starter-tent", "/art/starter-tent.png");
     this.load.image("ground-materials", "/art/ground-materials.png");
     this.load.image("border-details", "/art/border-details-seasons.png");
@@ -392,6 +396,7 @@ export class FarmScene extends Phaser.Scene {
       ),
     );
     prepareLaneArtwork(this);
+    prepareDebrisArtwork(this);
 
     for (const [key, rects] of [
       ["animal-buildings", penFrameRects],
@@ -633,6 +638,14 @@ export class FarmScene extends Phaser.Scene {
       projectCell,
       this.view,
       this.groundArt!,
+    );
+    drawDebris(
+      this,
+      scenery,
+      this.farm.debris ?? [],
+      this.season,
+      projectCell,
+      this.policy,
     );
     const plotMap = new Map(this.farm.plotCells.map((c, i) => [cellKey(c), i]));
     const targets: PlotTarget[] = [];

@@ -75,3 +75,7 @@ The beginning tent uses `starter-tent.png`, a detailed canvas shelter with timbe
 At the topmost corner, a permanent tree has a natural golden hive hanging from its branch. Four transparent sprites show spring blossoms, summer foliage, autumn leaves, and bare snowy winter branches. Foreground woodland and the first hedge spans leave the tree visible. Extra camera headroom keeps this corner reachable below the phone HUD, including at minimum zoom.
 
 The wooden hive artwork is now used only for paid 2 × 2 structures. Construction fades the sprite and adds timber scaffolding; winter uses the snowy wooden hive. Drawing, alpha hit tests, menu bounds, and depth sorting share `src/game/hive-artwork.ts`. Both kinds show a readiness badge. [Assets and generation prompts](../public/art/beehive.md).
+
+## Clearable debris
+
+Starting farms contain seasonal berry bushes, weeds, stones, logs, boulders, rocky outcrops, and L-shaped fallen trees. The debris renderer uses detailed transparent woodland sprites, with one-, two-, four-, five-, and nine-tile footprints. [Asset layout, rendering contract, and generation prompt](art/debris-generation.md).

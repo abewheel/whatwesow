@@ -11,6 +11,8 @@ import {
 import { WORLD_CELLS, mix } from "../contracts/world";
 import { parseFarmPolicy, type FarmPolicy } from "../contracts/farm-policy";
 import {
+  debrisTypes,
+  debrisAt,
   buildings,
   constructionCost,
   isTree,
@@ -52,6 +54,7 @@ import {
 } from "./money";
 export type FarmAction =
   | { type: "buySeeds"; crop: CropId; quantity: number; premium?: true }
+  | { type: "clearDebris"; cell: Cell }
   | { type: "plant"; plot: number; crop: CropId; premium?: true }
   | { type: "harvest"; plot: number }
   | { type: "harvestFruit"; id: number }
@@ -135,6 +138,18 @@ export function actOnFarm(
         });
     }
     message = `${action.quantity} ${crops[action.crop].name} seeds bought. −${price} coins.`;
+  } else if (action.type === "clearDebris") {
+    const item = debrisAt(state.debris, action.cell);
+    if (!item) throw new Error("That debris has already been cleared.");
+    const spec = debrisTypes[item.kind];
+    if (!cellAllowed(action.cell, policy))
+      throw new Error("This debris is outside the current land grant.");
+    if (state.coins < spec.cost)
+      throw new Error(`Clearing this costs ${spec.cost} coins.`);
+    state.debris = state.debris!.filter((d) => d !== item);
+    if (spec.cost < 0) state = credit(state, -spec.cost).state;
+    else state.coins -= spec.cost;
+    message = `${spec.name} cleared${spec.cost < 0 ? ` · +${-spec.cost} coins` : spec.cost === 0 ? " for free" : ` · −${spec.cost} coins`}.`;
   } else if (action.type === "plant" || action.type === "harvest") {
     if (
       !Number.isInteger(action.plot) ||

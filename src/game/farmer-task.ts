@@ -22,7 +22,8 @@ export function farmerTaskForAction(
   )
     return undefined;
   let target: Cell | undefined;
-  if ("plot" in action) target = current.plotCells[action.plot];
+  if (action.type === "clearDebris") target = action.cell;
+  else if ("plot" in action) target = current.plotCells[action.plot];
   else if (
     action.type === "harvestFruit" ||
     action.type === "build" ||

@@ -186,3 +186,20 @@ it("refuses physically enclosed ground and locations outside the map", () => {
     farmerWalkRoute({ row: 0, col: 0 }, { row: 64, col: 0 }, world),
   ).toBeUndefined();
 });
+
+it("routes around large debris while leaving the L-shaped tree's inner corner walkable", () => {
+  const layout = {
+    selfBuilt: true as const,
+    plots: [],
+    plotCells: [],
+    structures: [],
+    debris: [
+      { kind: "fallenTree" as const, row: 30, col: 30 },
+      { kind: "rockpile" as const, row: 40, col: 40 },
+    ],
+  };
+  expect(farmerBlocked({ row: 32, col: 30 }, { layout })).toBe(true);
+  expect(farmerBlocked({ row: 30, col: 32 }, { layout })).toBe(true);
+  expect(farmerBlocked({ row: 31, col: 31 }, { layout })).toBe(false);
+  expect(farmerBlocked({ row: 42, col: 42 }, { layout })).toBe(true);
+});

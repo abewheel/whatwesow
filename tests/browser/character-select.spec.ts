@@ -86,7 +86,8 @@ test("female farmer keeps her appearance in the alternating walking gait", async
     .click();
   await page.locator("#begin-farm").click();
   const canvas = page.locator("canvas");
-  await page.locator('[data-cell="20,20"]').click();
+  // The starter clearing leaves this destination open even with field debris.
+  await page.locator('[data-cell="19,20"]').click();
   await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
   const frames = new Set<string>();
   await expect

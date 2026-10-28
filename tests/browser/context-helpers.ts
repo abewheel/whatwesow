@@ -1,16 +1,9 @@
 import { expect, type Page } from "@playwright/test";
 export async function closeActions(page: Page) {
-  if (await page.locator("#close-service").isVisible())
-    await page.locator("#close-service").click();
-  if (await page.locator("#farm-mode").isVisible())
-    await page.locator("#farm-mode").click();
-  if (
-    await page
-      .locator("#camera-controls")
-      .evaluate((e: HTMLDetailsElement) => e.open)
-  )
-    await page.locator("#close-camera").click();
+  // Escape also cancels placement and View controls without scrolling the page.
+  await page.keyboard.press("Escape");
 }
+
 export async function openCell(page: Page, cell: string) {
   await expect(page.locator("main")).toHaveJSProperty("inert", false);
   await closeActions(page);
@@ -63,10 +56,22 @@ export async function setFarm(page: Page, state: unknown) {
   );
 }
 export async function fits(page: Page, selector = "#service-panel") {
-  const box = (await page.locator(selector).boundingBox())!,
-    viewport = page.viewportSize()!;
-  expect(box.x).toBeGreaterThanOrEqual(0);
-  expect(box.y).toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
-  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+  // Viewport changes schedule layout and resize observers asynchronously.
+  // Keep all four bounds required, but observe the settled layout.
+  await expect
+    .poll(
+      async () => {
+        const box = await page.locator(selector).boundingBox(),
+          viewport = page.viewportSize()!;
+        return (
+          !!box &&
+          box.x >= 0 &&
+          box.y >= 0 &&
+          box.x + box.width <= viewport.width + 1 &&
+          box.y + box.height <= viewport.height + 1
+        );
+      },
+      { message: `${selector} stays inside the viewport after layout settles` },
+    )
+    .toBe(true);
 }

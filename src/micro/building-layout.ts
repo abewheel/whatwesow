@@ -1,6 +1,7 @@
 import type { MicroState } from "./state";
 import {
   buildings,
+  debrisCells,
   cellKey,
   footprint,
   inBounds,
@@ -16,6 +17,7 @@ export function enlargeBuildingLots(farm: MicroState, policy: FarmPolicy = {}) {
   const structures = farm.structures.map((s) => ({ ...s }));
   const used = new Set(
     [
+      ...debrisCells(farm.debris),
       ...farm.plotCells,
       ...structures.flatMap((s) =>
         footprint(s, structureSize(s).width, structureSize(s).height),

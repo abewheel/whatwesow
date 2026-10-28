@@ -28,7 +28,9 @@ import {
 } from "../micro/state";
 import {
   buildings,
-  canPlace,
+  occupiedCells,
+  footprint,
+  cellKey,
   constructionCost,
   upgradeCost,
   type BuildingKind,
@@ -47,13 +49,18 @@ it("earns the complete farming progression within a lifetime from the bare start
   };
   const site = (kind: BuildingKind) => {
     const item = buildings[kind];
-    for (let row = 22; row < 60; row += 5)
-      for (let col = 10; col < 60; col += 5)
-        if (canPlace(state, { row, col }, item.width, item.height))
+    const used = occupiedCells(state);
+    for (let row = 22; row < 60; row++)
+      for (let col = 10; col < 60; col++)
+        if (
+          footprint({ row, col }, item.width, item.height).every(
+            (cell) => !used.has(cellKey(cell)),
+          )
+        )
           return { row, col };
     throw new Error("No building site");
   };
-  act({ type: "build", kind: "home", cell: { row: 5, col: 25 } });
+  act({ type: "build", kind: "home", cell: { row: 10, col: 17 } });
   for (let turn = 1; turn <= 160; turn++) {
     for (let plot = 0; plot < state.plots.length; plot++) {
       const crop = state.plots[plot];

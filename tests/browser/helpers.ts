@@ -5,16 +5,9 @@ export async function visitBuilding(
   service: string,
   timeout = 20000,
 ) {
-  const cancel = page.locator("#farm-mode");
-  if (await cancel.isVisible()) await cancel.click();
-  const close = page.locator("#close-service");
-  if (await close.isVisible()) await close.click();
-  if (
-    await page
-      .locator("#camera-controls")
-      .evaluate((el: HTMLDetailsElement) => el.open)
-  )
-    await page.locator("#camera-controls summary").click();
+  // Closing with Escape does not scroll back from the playtest editor, which
+  // can dismiss an anchored menu before a click on its close button lands.
+  await page.keyboard.press("Escape");
   const target =
     service === "home"
       ? page

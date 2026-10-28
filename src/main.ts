@@ -1,5 +1,11 @@
 import { hiveAnchor, hiveBounds } from "./game/hive-artwork";
 import {
+  cellAllowed,
+  debrisTypes,
+  debrisFootprint,
+  debrisAt,
+} from "./micro/world";
+import {
   buildingArtwork,
   distinctStructures,
   distinctServices,
@@ -179,7 +185,9 @@ let planCategory = "farm";
 function closeService() {
   if (contextTarget) navigationVersion++;
   contextTarget = null;
-  document.querySelector("[data-context]")?.removeAttribute("data-context");
+  document
+    .querySelectorAll("[data-context]")
+    .forEach((el) => el.removeAttribute("data-context"));
   if (!servicePanel.hidden) viewport.focus({ preventScroll: true });
   servicePanel.hidden = true;
   inventoryControls?.render();
@@ -510,8 +518,13 @@ function refreshContext() {
       ? document.activeElement.id
       : "";
   tileActions.replaceChildren();
-  document.querySelector("[data-context]")?.removeAttribute("data-context");
-  cellButtons.get(cellKey(cell))?.setAttribute("data-context", "true");
+  document
+    .querySelectorAll("[data-context]")
+    .forEach((el) => el.removeAttribute("data-context"));
+  for (const selected of debrisAt(state.debris, cell)
+    ? debrisFootprint(debrisAt(state.debris, cell)!)
+    : [cell])
+    cellButtons.get(cellKey(selected))?.setAttribute("data-context", "true");
   const { turn, policy } = rules(),
     final = turn === 160,
     waiting = pendingCrisis(state) !== undefined;
@@ -944,6 +957,25 @@ function refreshContext() {
         "delete-plot",
         "teardown",
         icon("teardown"),
+      );
+    } else if (debrisAt(state.debris, cell)) {
+      const item = debrisAt(state.debris, cell)!;
+      const spec = debrisTypes[item.kind];
+      title.textContent = spec.name;
+      note(
+        `${debrisFootprint(item).length} ${debrisFootprint(item).length === 1 ? "tile" : "tiles"}${item.kind === "fallenTree" ? " · L-shaped" : ` · ${spec.width}×${spec.height}`} · Clear to make room for fields and buildings.`,
+      );
+      tileButton(
+        spec.cost < 0
+          ? `Gather berries & clear · +${-spec.cost} coins`
+          : spec.cost === 0
+            ? "Clear · Free"
+            : `Clear · ${spec.cost} coins`,
+        () => void act({ type: "clearDebris", cell }),
+        waiting ||
+          final ||
+          state.coins < spec.cost ||
+          !cellAllowed(cell, policy),
       );
     } else {
       if (policy.takenCells?.some((c) => cellKey(c) === cellKey(cell)))
@@ -1823,6 +1855,11 @@ scene.onLayout = (targets) => {
   const taken = new Set((policy.takenCells ?? []).map(cellKey));
   const sealed = new Set(policy.sealedBuildings ?? []);
   const plotMap = new Map(state.plotCells.map((c, i) => [cellKey(c), i]));
+  const debrisMap = new Map(
+    (state.debris ?? []).flatMap((d) =>
+      debrisFootprint(d).map((c) => [cellKey(c), d] as const),
+    ),
+  );
   const structureMap = new Map(
     state.structures.flatMap((s) =>
       footprint(s, structureSize(s).width, structureSize(s).height).map(
@@ -1911,7 +1948,9 @@ scene.onLayout = (targets) => {
             : `${buildings[structure.kind].name} ${structure.id}, ${isProducer(structure.kind) ? `${structure.pendingConstruction ? `under construction, ${readyIn(structure.wait)}` : structure.product ? `${buildingProducts[structure.kind].product} ready to collect` : "collected, return next season"}` : isTree(structure.kind) ? treeStatus(structure) : structure.pendingConstruction ? `under construction, ${readyIn(structure.wait)}` : `level ${structure.level}${sealed.has(structure.kind) ? ", sealed by the council" : ""}`}`
           : service
             ? `Visit ${service.name}`
-            : `Land ${target.row},${target.col}${taken.has(key) ? ", taken by the county" : ""}`;
+            : debrisMap.has(key)
+              ? `${debrisTypes[debrisMap.get(key)!.kind].name}, ${debrisFootprint(debrisMap.get(key)!).length} tiles, ${debrisTypes[debrisMap.get(key)!.kind].cost < 0 ? `gather for ${-debrisTypes[debrisMap.get(key)!.kind].cost} coins` : `clear for ${debrisTypes[debrisMap.get(key)!.kind].cost} coins`}`
+              : `Land ${target.row},${target.col}${taken.has(key) ? ", taken by the county" : ""}`;
     if (button.getAttribute("aria-label") !== label) {
       button.setAttribute("aria-label", label);
       // Accessible names remain available without visible building labels.

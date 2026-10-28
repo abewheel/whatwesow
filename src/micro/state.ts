@@ -6,6 +6,10 @@ import {
 import { WORLD_CELLS } from "../contracts/world";
 import type { FarmPolicy } from "../contracts/farm-policy";
 import {
+  debrisTypes,
+  debrisCells,
+  initialDebris,
+  type Debris,
   buildings,
   structureSize,
   compactBuildingSizes,
@@ -88,6 +92,7 @@ export type Plot = {
   premiumYield?: number;
 } | null;
 export type MicroState = {
+  debris?: Debris[];
   selfBuilt?: true;
   seeds: Record<CropId, number>;
   premiumSeeds: Record<CropId, number>;
@@ -148,6 +153,7 @@ export const homesteadMicroState = (): MicroState => ({
 export const initialMicroState = (): MicroState => ({
   ...homesteadMicroState(),
   selfBuilt: true,
+  debris: initialDebris(),
   coins: 240,
   plots: [],
   plotCells: [],
@@ -361,7 +367,20 @@ export function parseMicroState(value: unknown): MicroState {
   });
   if (new Set(structures.map((s) => s.id)).size !== structures.length)
     throw new Error("Building IDs must be unique.");
+  if (
+    s.debris !== undefined &&
+    (!Array.isArray(s.debris) || s.debris.length > WORLD_CELLS)
+  )
+    throw new Error("Invalid debris.");
+  const debris = (s.debris as unknown[] | undefined)?.map((value): Debris => {
+    if (!value || typeof value !== "object") throw new Error("Invalid debris.");
+    const d = value as Record<string, unknown>;
+    if (typeof d.kind !== "string" || !Object.hasOwn(debrisTypes, d.kind))
+      throw new Error("Unknown debris.");
+    return { ...parseCell(d), kind: d.kind as Debris["kind"] };
+  });
   const cells = [
+    ...debrisCells(debris),
     ...plotCells,
     ...structures.flatMap((b) =>
       footprint(b, structureSize(b).width, structureSize(b).height),
@@ -510,6 +529,7 @@ export function parseMicroState(value: unknown): MicroState {
   const result: MicroState = {
     honeyReady: s.honeyReady !== false,
     ...(s.selfBuilt === true ? { selfBuilt: true as const } : {}),
+    ...(debris === undefined ? {} : { debris }),
     ...council,
     seeds,
     premiumSeeds,

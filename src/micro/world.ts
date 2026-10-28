@@ -1,5 +1,5 @@
 import type { FarmPolicy } from "../contracts/farm-policy";
-import { WORLD_SIZE } from "../contracts/world";
+import { WORLD_SIZE, mix } from "../contracts/world";
 export { WORLD_SIZE } from "../contracts/world";
 export type Cell = { row: number; col: number };
 export const animalProducts = {
@@ -280,7 +280,58 @@ export const serviceOptions = (policy: FarmPolicy = {}): ServiceOptions => ({
   council: policy.permitsRequired === true,
   taken: policy.takenCells,
 });
+export const debrisTypes = {
+  berries: { name: "Berry bush", width: 1, height: 1, cost: -5 },
+  weeds: { name: "Weeds", width: 1, height: 1, cost: 0 },
+  stones: { name: "Loose stones", width: 1, height: 1, cost: 4 },
+  log: { name: "Fallen log", width: 2, height: 1, cost: 12 },
+  boulder: { name: "Boulder", width: 2, height: 2, cost: 24 },
+  rockpile: { name: "Rocky outcrop", width: 3, height: 3, cost: 54 },
+  fallenTree: { name: "Fallen tree", width: 3, height: 3, cost: 36 },
+} as const;
+export type Debris = Cell & { kind: keyof typeof debrisTypes };
+/** Actual occupied tiles; the fallen tree leaves its inner 2×2 corner open. */
+export function debrisFootprint(item: Debris): Cell[] {
+  const spec = debrisTypes[item.kind];
+  return footprint(item, spec.width, spec.height).filter(
+    (c) =>
+      item.kind !== "fallenTree" || c.row === item.row || c.col === item.col,
+  );
+}
+export const debrisCells = (items: readonly Debris[] = []) =>
+  items.flatMap(debrisFootprint);
+export const debrisAt = (items: readonly Debris[] | undefined, cell: Cell) =>
+  items?.find((d) =>
+    debrisFootprint(d).some((c) => cellKey(c) === cellKey(cell)),
+  );
+/** Stable scattered patches, with clear starter lots and room between large objects. */
+export function initialDebris(): Debris[] {
+  const items: Debris[] = [],
+    used = new Set<string>();
+  const kinds = Object.keys(debrisTypes) as Debris["kind"][];
+  const reserved = (c: Cell) =>
+    (c.row >= 8 && c.row <= 19 && c.col >= 11 && c.col <= 21) ||
+    (c.row % 18 >= 4 &&
+      c.row % 18 <= 10 &&
+      c.col % 18 >= 4 &&
+      c.col % 18 <= 10);
+  for (let row = 5; row < 59; row += 3)
+    for (let col = 5; col < 59; col += 3) {
+      if ((row * 7 + col * 11) % 5 === 0) continue;
+      const item: Debris = {
+        row: row + (mix(row, col) % 2),
+        col: col + (mix(col, row) % 2),
+        kind: kinds[mix(row + 97, col) % kinds.length],
+      };
+      const cells = debrisFootprint(item);
+      if (cells.some((c) => reserved(c) || used.has(cellKey(c)))) continue;
+      items.push(item);
+      for (const c of cells) used.add(cellKey(c));
+    }
+  return items;
+}
 export type Layout = {
+  debris?: Debris[];
   selfBuilt?: true;
   plotCells: Cell[];
   structures: Structure[];
@@ -308,6 +359,7 @@ export function serviceLocations(
 ): ServiceLocation[] {
   const used = new Set(
     [
+      ...debrisCells(layout.debris),
       ...layout.plotCells,
       ...layout.structures.flatMap((s) =>
         footprint(s, structureSize(s).width, structureSize(s).height),
@@ -412,6 +464,7 @@ export function occupiedCells(
       ...serviceLocations(layout, options).flatMap((s) =>
         footprint(s, s.width, s.height),
       ),
+      ...debrisCells(layout.debris),
       ...layout.plotCells,
       ...layout.structures.flatMap((s) =>
         footprint(s, structureSize(s).width, structureSize(s).height),

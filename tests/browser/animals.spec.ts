@@ -172,7 +172,7 @@ test("new farmhouses reserve a 5 by 4 lot through construction and reload", asyn
   );
   await openCell(page, "14,14");
   await expect(page.locator('[data-build="home"]')).toBeDisabled();
-  await openCell(page, "7,8");
+  await openCell(page, "10,17");
   await page.locator('[data-build="home"]').click();
   await expect(page.getByRole("button", { name: /^Farmhouse 1,/ })).toHaveCount(
     20,

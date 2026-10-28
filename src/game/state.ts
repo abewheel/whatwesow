@@ -136,6 +136,7 @@ export function replaceDomain(
     ...state,
     ...(domain === "micro"
       ? {
+          debris: undefined,
           pendingSoilUpgrade: undefined,
           owed: undefined,
           held: undefined,
