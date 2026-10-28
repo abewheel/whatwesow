@@ -46,6 +46,7 @@ import Phaser from "phaser";
 import { icon } from "./game/icons";
 import {
   FarmScene,
+  TENT_CENTER_OFFSET,
   projectCell,
   WORLD_WIDTH,
   WORLD_HEIGHT,
@@ -489,9 +490,24 @@ for (const [direction, left, top] of [
   });
 }
 function centerFarm() {
-  const p = projectCell({ row: 16, col: 16 });
+  const tent = serviceLocations(state).find((service) => service.tent);
+  const p = projectCell(tent ?? { row: 16, col: 16 });
   viewport.scrollLeft = p.x * zoom - viewport.clientWidth / 2;
-  viewport.scrollTop = p.y * zoom - viewport.clientHeight / 2;
+  let centerY = viewport.clientHeight / 2;
+  if (tent) {
+    const viewportTop = viewport.getBoundingClientRect().top;
+    const top = Math.max(
+      ...[".hud-top", "#farm-status"].map(
+        (selector) =>
+          document.querySelector(selector)!.getBoundingClientRect().bottom,
+      ),
+    );
+    const bottom = document
+      .querySelector(".hud-bottom")!
+      .getBoundingClientRect().top;
+    centerY = (top + bottom) / 2 - viewportTop + TENT_CENTER_OFFSET * zoom;
+  }
+  viewport.scrollTop = p.y * zoom - centerY;
 }
 document.querySelector("#home-view")!.addEventListener("click", centerFarm);
 viewport.addEventListener("keydown", (event) => {
@@ -605,7 +621,15 @@ viewport.addEventListener(
     const y = (e.clientY - bounds.top + viewport.scrollTop) / zoom;
     // Match the visible artwork as well as its keyboard-accessible ground tiles.
     const services = serviceLocations(state).filter((s) =>
-      scene.hitsBuilding({ x, y }, s, s.frame, false, distinctServices[s.id]),
+      s.tent
+        ? scene.hitsTent({ x, y }, s)
+        : scene.hitsBuilding(
+            { x, y },
+            s,
+            s.frame,
+            false,
+            distinctServices[s.id],
+          ),
     );
     const structures = state.structures.filter((s) => {
       const item = { ...buildings[s.kind], ...structureSize(s) };

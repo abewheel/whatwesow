@@ -54,6 +54,9 @@ export const WORLD_WIDTH = WORLD_SIZE * 64 + 512,
   WORLD_HEIGHT = WORLD_SIZE * 32 + 512;
 // Preserve the shared logical projection; the scrollable view scales tiles to 64px.
 const renderScale = 64 / TILE_WIDTH;
+const tentWidth = 160;
+const tentHeight = tentWidth * (2 / 3);
+export const TENT_CENTER_OFFSET = tentHeight / 2 - 24;
 const worldPoint = (p: { x: number; y: number }) => ({
   x: WORLD_WIDTH / 2 + p.x * renderScale,
   y: 160 + p.y * renderScale,
@@ -119,6 +122,20 @@ export class FarmScene extends Phaser.Scene {
         Math.floor(((point.y - top.y) / art.height) * source.cutHeight),
         atlas,
         selectedFrame,
+      ) > 32
+    );
+  }
+  hitsTent(point: { x: number; y: number }, cell: Cell) {
+    const anchor = projectCell(cell);
+    const x = (point.x - anchor.x + tentWidth / 2) / tentWidth;
+    const y = (point.y - anchor.y - 24 + tentHeight) / tentHeight;
+    if (x < 0 || x >= 1 || y < 0 || y >= 1) return false;
+    const source = this.textures.getFrame("starter-tent");
+    return (
+      this.textures.getPixelAlpha(
+        Math.floor(x * source.cutWidth),
+        Math.floor(y * source.cutHeight),
+        "starter-tent",
       ) > 32
     );
   }
@@ -199,6 +216,8 @@ export class FarmScene extends Phaser.Scene {
 
     this.load.image("animal-buildings", "/art/animal-buildings-seasons.png");
     this.load.image("livestock", "/art/livestock-sprites.png");
+
+    this.load.image("starter-tent", "/art/starter-tent.png");
     this.load.image("ground-materials", "/art/ground-materials.png");
     this.load.image("border-details", "/art/border-details-seasons.png");
     this.load.image("tree-apple", "/art/apple-stages.png");
@@ -658,54 +677,23 @@ export class FarmScene extends Phaser.Scene {
         });
       if (!visible(point.x, point.y)) continue;
       if (service.tent) {
-        const tent = this.add.graphics().setDepth(point.y + 24);
-        tent.fillStyle(0x59452f).fillEllipse(point.x, point.y + 18, 105, 34);
-        tent
-          .fillStyle(0xe9c58a)
-          .fillTriangle(
-            point.x - 48,
-            point.y + 18,
-            point.x,
-            point.y - 52,
-            point.x + 48,
-            point.y + 18,
-          );
-        tent
-          .fillStyle(0xb88850)
-          .fillTriangle(
-            point.x,
-            point.y - 52,
-            point.x + 48,
-            point.y + 18,
-            point.x + 13,
-            point.y + 8,
-          );
-        tent
-          .fillStyle(0x403e2a)
-          .fillTriangle(
-            point.x - 16,
-            point.y + 18,
-            point.x,
-            point.y - 24,
-            point.x + 16,
-            point.y + 18,
-          );
-        tent
-          .lineStyle(3, 0x785534)
-          .lineBetween(point.x, point.y - 58, point.x, point.y - 45);
-        scenery.add(tent);
+        const top = {
+          x: point.x - tentWidth / 2,
+          y: point.y + 24 - tentHeight,
+        };
         scenery.add(
           this.add
-            .text(point.x, point.y + 28, service.name, {
-              fontFamily: "Farm Pixel",
-              fontSize: "14px",
-              color: "#493621",
-              backgroundColor: "#fff0ca",
-              padding: { x: 7, y: 4 },
-            })
-            .setOrigin(0.5, 0)
-            .setDepth(WORLD_HEIGHT + point.y),
+            .image(point.x, point.y + 24, "starter-tent")
+            .setOrigin(0.5, 1)
+            .setDisplaySize(tentWidth, tentHeight)
+            .setDepth(point.y + 24),
         );
+        this.buildingOccluders.push({
+          ...top,
+          size: tentWidth,
+          height: tentHeight,
+          front: { x: point.x, y: point.y + 24 },
+        });
         continue;
       }
       const art = buildingArtwork(

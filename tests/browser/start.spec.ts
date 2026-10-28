@@ -133,3 +133,35 @@ for (const saved of [false, true]) {
     }
   });
 }
+
+for (const viewport of [
+  { width: 1280, height: 720 },
+  { width: 320, height: 568 },
+  { width: 667, height: 375 },
+]) {
+  test(`the detailed tent stays in view and opens from its canvas at ${viewport.width}×${viewport.height}`, async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ viewport, hasTouch: true });
+    const page = await context.newPage();
+    await page.goto(`/?instance=validation-tent-art-${viewport.width}`);
+    await page.locator("#begin-farm").click();
+    const target = await page.locator('[data-service="home"]').boundingBox();
+    expect(target).not.toBeNull();
+    // Tap opaque canvas above the service's ground tile, away from the HUD.
+    const x = target!.x + target!.width / 2 + 10;
+    const y = target!.y + target!.height / 2 - 40;
+    expect(x).toBeGreaterThan(80);
+    expect(x).toBeLessThan(viewport.width - 70);
+    expect(y).toBeGreaterThan(90);
+    const hud = await page.locator("#farm-status").boundingBox();
+    // The entire 160 × 106⅔ tent, anchored 24px below its service, clears the HUD.
+    expect(
+      target!.y + target!.height / 2 - (160 * (2 / 3) - 24),
+    ).toBeGreaterThan(hud!.y + hud!.height);
+    await page.touchscreen.tap(x, y);
+    await expect(page.locator("#service-panel")).toBeVisible();
+    await expect(page.locator("#service-title")).toHaveText("Your tent");
+    await context.close();
+  });
+}
