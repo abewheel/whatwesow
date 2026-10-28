@@ -290,9 +290,11 @@ export function actOnFarm(
 export function growCrops(
   current: MicroState,
   policy: FarmPolicy = {},
+  winter = false,
 ): MicroState {
   const state = parseMicroState(current);
   state.plots = state.plots.map((plot, index) => {
+    if (winter) return null;
     if (!cellAllowed(state.plotCells[index], policy)) return plot;
     if (!plot || plot.growth === crops[plot.crop].steps) return plot;
     return {

@@ -22,7 +22,7 @@ export const crops = {
     seed: 4,
     sale: 9,
     steps: 1,
-    plantingSeasons: ["spring", "fall"],
+    plantingSeasons: ["spring", "summer"],
     color: 0xf4d5b6,
   },
   carrot: {
@@ -30,16 +30,40 @@ export const crops = {
     seed: 7,
     sale: 18,
     steps: 2,
-    plantingSeasons: ["spring", "summer"],
+    plantingSeasons: ["spring"],
     color: 0xec8c39,
   },
   corn: {
     name: "Corn",
     seed: 12,
     sale: 34,
-    steps: 3,
+    steps: 2,
     plantingSeasons: ["spring"],
     color: 0xf1ce55,
+  },
+  radish: {
+    name: "Radish",
+    seed: 3,
+    sale: 7,
+    steps: 1,
+    plantingSeasons: ["spring"],
+    color: 0xd54d68,
+  },
+  tomato: {
+    name: "Tomato",
+    seed: 9,
+    sale: 21,
+    steps: 1,
+    plantingSeasons: ["summer"],
+    color: 0xd94b38,
+  },
+  pumpkin: {
+    name: "Pumpkin",
+    seed: 14,
+    sale: 32,
+    steps: 1,
+    plantingSeasons: ["summer"],
+    color: 0xe79832,
   },
 } as const;
 export type CropId = keyof typeof crops;
@@ -59,7 +83,7 @@ export type MicroState = {
   nextPlotId: number;
 };
 export const homesteadMicroState = (): MicroState => ({
-  harvests: { turnip: 0, carrot: 0, corn: 0 },
+  harvests: { radish: 0, tomato: 0, pumpkin: 0, turnip: 0, carrot: 0, corn: 0 },
   opportunities: [],
   coins: 100,
   plots: Array.from({ length: 9 }, () => null),
@@ -114,10 +138,10 @@ export function parseMicroState(value: unknown): MicroState {
     if (
       !Number.isInteger(p.growth) ||
       Number(p.growth) < 0 ||
-      Number(p.growth) > crops[crop].steps
+      Number(p.growth) > (crop === "corn" ? 3 : crops[crop].steps)
     )
       throw new Error("Crop growth is outside its grow steps.");
-    return { crop, growth: p.growth as number };
+    return { crop, growth: Math.min(p.growth as number, crops[crop].steps) };
   });
   if (
     !Array.isArray(s.plotCells) ||
@@ -243,7 +267,14 @@ export function parseMicroState(value: unknown): MicroState {
     s.plotIds.some((id) => id >= Number(s.nextPlotId))
   )
     throw new Error("Plots need unique stable IDs below nextPlotId.");
-  const harvests = { turnip: 0, carrot: 0, corn: 0 };
+  const harvests = {
+    radish: 0,
+    tomato: 0,
+    pumpkin: 0,
+    turnip: 0,
+    carrot: 0,
+    corn: 0,
+  };
   if (s.harvests !== undefined) {
     if (
       !s.harvests ||
@@ -252,7 +283,11 @@ export function parseMicroState(value: unknown): MicroState {
     )
       throw new Error("Invalid harvest history.");
     for (const crop of Object.keys(harvests) as CropId[]) {
-      const n = (s.harvests as Record<string, unknown>)[crop];
+      const value = (s.harvests as Record<string, unknown>)[crop];
+      const n =
+        value === undefined && ["radish", "tomato", "pumpkin"].includes(crop)
+          ? 0
+          : value;
       if (!Number.isSafeInteger(n) || Number(n) < 0)
         throw new Error("Invalid harvest count.");
       harvests[crop] = n as number;

@@ -31,7 +31,7 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
 
   await visitBuilding(page, "seeds");
-  await page.locator('[data-crop="carrot"]').click();
+  await page.locator('[data-crop="turnip"]').click();
   const farm = initialMicroState();
   farm.plotCells[0] = { row: 18, col: 16 };
   await page.getByLabel("Work on").selectOption("micro");

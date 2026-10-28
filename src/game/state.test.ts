@@ -198,7 +198,7 @@ it("grows crops only across seasonal turns and pays crop coins at harvest", asyn
       .coins,
   ).toBe(111);
   expect(planted.plots[0]?.growth).toBe(0);
-  expect(advanceSeason(fall).state.plots[0]?.growth).toBe(2);
+  expect(advanceSeason(fall).state.plots[0]).toBeNull();
 });
 
 it("charges upgrades once, persists pending work, then completes before new-turn benefits", async () => {
@@ -209,7 +209,14 @@ it("charges upgrades once, persists pending work, then completes before new-turn
     ...initialState(),
     year: 4,
     coins: 1000,
-    harvests: { turnip: 30, carrot: 1, corn: 12 },
+    harvests: {
+      radish: 0,
+      tomato: 0,
+      pumpkin: 0,
+      turnip: 30,
+      carrot: 1,
+      corn: 12,
+    },
   };
   state.structures.push(
     { id: 2, kind: "shed", row: 0, col: 0, level: 1 },
@@ -261,7 +268,14 @@ it("reserves and saves paid construction, activating benefits only next season",
     ...initialState(),
     year: 32,
     coins: 20000,
-    harvests: { turnip: 160, carrot: 1, corn: 12 },
+    harvests: {
+      radish: 0,
+      tomato: 0,
+      pumpkin: 0,
+      turnip: 160,
+      carrot: 1,
+      corn: 12,
+    },
   };
   for (const [index, kind] of (
     ["shed", "barn", "market", "apple"] as const
@@ -328,7 +342,14 @@ it("harvests mature fruit each fall, keeps the tree, and never pays automaticall
     ...initialState(),
     year: 2,
     coins: 1000,
-    harvests: { turnip: 6, carrot: 0, corn: 0 },
+    harvests: {
+      radish: 0,
+      tomato: 0,
+      pumpkin: 0,
+      turnip: 6,
+      carrot: 0,
+      corn: 0,
+    },
   };
   state = replaceDomain(
     state,

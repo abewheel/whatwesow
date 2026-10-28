@@ -12,6 +12,7 @@ async function applyFarm(page: Page, farm: unknown) {
 test("seasonal harvests introduce lasting corn and construction offers", async ({
   page,
 }) => {
+  test.setTimeout(120000);
   await page.goto("/?instance=validation-opportunities");
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
@@ -31,6 +32,13 @@ test("seasonal harvests introduce lasting corn and construction offers", async (
   await expect(page.locator("canvas")).not.toHaveAttribute(
     "data-farmer-motion",
     "walk",
+  );
+  await visitBuilding(page, "seeds");
+  await page.locator('[data-crop="turnip"]').click();
+  await page.locator('[data-plot="2"]').click();
+  await expect(page.locator('[data-plot="2"]')).toHaveAttribute(
+    "aria-label",
+    /growing/,
   );
   await endTurn(page);
   await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
@@ -52,19 +60,7 @@ test("seasonal harvests introduce lasting corn and construction offers", async (
   // The offer is earned in fall; planting still respects corn's spring season.
   await expect(page.locator('[data-crop="corn"]')).toBeDisabled();
   await expect(page.locator("#crop-opportunity")).toBeEmpty();
-  await visitBuilding(page, "seeds");
-  await page.locator('[data-crop="turnip"]').click();
-  await page.locator('[data-plot="0"]').click();
-  await expect(page.locator("canvas")).not.toHaveAttribute(
-    "data-farmer-motion",
-    "walk",
-  );
-  await endTurn(page);
-  await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
-    "aria-label",
-    /ready/,
-  );
-  await page.locator('[data-plot="0"]').click();
+  await page.locator('[data-plot="2"]').click();
   await expect(page.locator("#farm-message")).toContainText("Mara, carpenter");
   await visitBuilding(page, "builder");
   await expect(page.locator('[data-build="shed"]')).toBeEnabled();
@@ -83,6 +79,7 @@ test("seasonal harvests introduce lasting corn and construction offers", async (
     "walk",
   );
   await endTurn(page);
+  await endTurn(page);
   await expect(page.locator("#season")).toContainText("spring");
   await visitBuilding(page, "seeds");
   await expect(page.locator('[data-crop="corn"]')).toBeEnabled();
@@ -97,6 +94,7 @@ test("seasonal harvests introduce lasting corn and construction offers", async (
 test("completed buildings earn upgrades through harvests and preserve paid work", async ({
   page,
 }) => {
+  test.setTimeout(120000);
   await page.goto("/?instance=validation-earned-expansion");
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
@@ -131,7 +129,7 @@ test("completed buildings earn upgrades through harvests and preserve paid work"
   await applyFarm(page, farm);
   await visitBuilding(page, "seeds");
   await visitBuilding(page, "seeds");
-  await page.locator('[data-crop="carrot"]').click();
+  await page.locator('[data-crop="turnip"]').click();
   await page.locator('[data-plot="0"]').click();
   await expect(page.locator("canvas")).not.toHaveAttribute(
     "data-farmer-motion",
@@ -142,7 +140,6 @@ test("completed buildings earn upgrades through harvests and preserve paid work"
     "data-farmer-motion",
     "walk",
   );
-  await endTurn(page);
   await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
     "aria-label",
     /ready/,

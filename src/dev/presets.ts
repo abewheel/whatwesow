@@ -27,7 +27,7 @@ export function presetState(id: string): GameState {
       col: 60,
       level: 1,
     });
-    state.plots.push({ crop: "corn", growth: 3 });
+    state.plots.push({ crop: "corn", growth: 2 });
     state.plotCells.push({ row: 63, col: 63 });
     state.plotIds.push(state.nextPlotId++);
     return parseState(state);
@@ -73,6 +73,9 @@ export function presetState(id: string): GameState {
             ? 15000
             : 150000;
     state.harvests = {
+      radish: 0,
+      tomato: 0,
+      pumpkin: 0,
       turnip:
         id === "homestead"
           ? 3
@@ -137,7 +140,14 @@ export function presetState(id: string): GameState {
   }
   if (id === "reinvesting") {
     state.coins = 250;
-    state.harvests = { turnip: 2, carrot: 1, corn: 0 };
+    state.harvests = {
+      radish: 0,
+      tomato: 0,
+      pumpkin: 0,
+      turnip: 2,
+      carrot: 1,
+      corn: 0,
+    };
   }
   return parseState(state);
 }

@@ -41,7 +41,14 @@ it("requires harvests after each individual building level, and corn for a mill"
   let s = parseMicroState({
     ...initialMicroState(),
     coins: 20000,
-    harvests: { turnip: 30, carrot: 1, corn: 12 },
+    harvests: {
+      radish: 0,
+      tomato: 0,
+      pumpkin: 0,
+      turnip: 30,
+      carrot: 1,
+      corn: 12,
+    },
   });
   s = actOnFarm(s, {
     type: "build",
@@ -75,7 +82,14 @@ it("keeps earned opportunities after land and building losses and enforces soil 
   let s = parseMicroState({
     ...initialMicroState(),
     coins: 1000,
-    harvests: { turnip: 90, carrot: 1, corn: 12 },
+    harvests: {
+      radish: 0,
+      tomato: 0,
+      pumpkin: 0,
+      turnip: 90,
+      carrot: 1,
+      corn: 12,
+    },
   });
   expect(canBuild(s, "well")).toBe(false);
   s = actOnFarm(s, { type: "expand" }).state;
@@ -101,10 +115,28 @@ it("migrates old saves without inventing harvest history and rejects corrupt pro
   expect(parseMicroState(old).opportunities).toContain("corn");
   expect(totalHarvests(parseMicroState(old))).toBe(0);
   for (const patch of [
-    { harvests: { turnip: -1, carrot: 0, corn: 0 } },
+    {
+      harvests: {
+        radish: 0,
+        tomato: 0,
+        pumpkin: 0,
+        turnip: -1,
+        carrot: 0,
+        corn: 0,
+      },
+    },
     { harvests: [] },
     { opportunities: ["unknown"] },
-    { harvests: { turnip: Number.MAX_SAFE_INTEGER, carrot: 1, corn: 0 } },
+    {
+      harvests: {
+        radish: 0,
+        tomato: 0,
+        pumpkin: 0,
+        turnip: Number.MAX_SAFE_INTEGER,
+        carrot: 1,
+        corn: 0,
+      },
+    },
   ])
     expect(() =>
       parseMicroState({ ...initialMicroState(), ...patch }),
@@ -114,7 +146,7 @@ it("checks every later opportunity at its farming boundary", () => {
   const farm = (turnip: number, carrot = 0, corn = 0, soilLevel = 0) =>
     parseMicroState({
       ...initialMicroState(),
-      harvests: { turnip, carrot, corn },
+      harvests: { radish: 0, tomato: 0, pumpkin: 0, turnip, carrot, corn },
       soilLevel,
     });
   expect(canBuild(farm(5), "apple")).toBe(false);
@@ -144,7 +176,14 @@ it("checks every later opportunity at its farming boundary", () => {
     canBuild(
       parseMicroState({
         ...withMarket,
-        harvests: { turnip: 299, carrot: 0, corn: 0 },
+        harvests: {
+          radish: 0,
+          tomato: 0,
+          pumpkin: 0,
+          turnip: 299,
+          carrot: 0,
+          corn: 0,
+        },
       }),
       "hall",
     ),

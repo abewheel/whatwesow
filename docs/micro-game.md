@@ -2,13 +2,21 @@
 
 Choose a crop in the seed basket, then click an empty plot to plant. Seeds are paid for at planting. **End turn** advances one season and moves every growing crop forward, including crops planted in earlier seasons. Click a ripe crop to harvest and sell it immediately, then plant again when the season allows it. Plot buttons also support Tab and Enter.
 
-| Crop | Seeds | Seasons to grow | Base harvest |
-| --- | --- | --- | --- |
-| Turnip | 4 coins | 1 | 9 coins |
-| Carrot | 7 coins | 2 | 18 coins |
-| Corn | 12 coins | 3 | 34 coins |
+| Crop | Seeds | Plant in | Seasons to grow | Base harvest |
+| --- | --- | --- | --- | --- |
+| Turnip | 4 coins | Spring, summer | 1 | 9 coins |
+| Carrot | 7 coins | Spring | 2 | 18 coins |
+| Corn | 12 coins | Spring | 2 | 34 coins |
+| Radish | 3 coins | Spring | 1 | 7 coins |
+| Tomato | 9 coins | Summer | 1 | 21 coins |
+| Pumpkin | 14 coins | Summer | 1 | 32 coins |
 
-Ripe crops keep indefinitely. The seed basket shows the number of seasons your current irrigation needs, including already commissioned wells and upgrades that finish after the next growth step. Growth is manual and deterministic; there are no timers, withering, or offscreen progress. Plant turnips in spring or fall, carrots in spring or summer, and corn in spring. Crops continue growing across seasons, including winter. The farmhouse’s **End turn** control advances the calendar and pays seasonal building income; crop money arrives only when harvested. See [construction](construction.md) for placeable plots, repeated buildings, upgrades, and the full progression track.
+Planting windows follow a simplified temperate growing year: spring roots, warm-season summer planting, and fall harvests. Corn still unlocks after harvesting a turnip and a carrot; the other seeds are available from the start. Growth is deterministic with no real-time timers. Wells speed growth. The seed basket forecasts seasons to grow using current irrigation and already commissioned wells and upgrades.
+
+All field crops, including ripe crops, die when winter begins. Harvest before ending fall; the farmhouse calendar warns how many planted fields will be lost. Empty plots remain ready to replant in spring. Trees survive winter and keep their existing seasonal fruit rules. Greenhouses do not exempt field crops from frost. Older saves retain harvest counts and normalize previously ripe three-step corn to the new two-step maximum.
+
+The farmhouse’s **End turn** control advances the calendar and pays seasonal building income; crop money arrives only when harvested.
+
 
 Start with 240 coins, a tent, and bare land. Commission your house for 120 coins and prepare fields from the tent menu. Each of the first ten plots costs 30 coins; each plot after that costs 5 coins more than the previous one. The farm has 4,096 cells shared by plots and building footprints. Soil improvements cost 80, 160, then 240 coins; each level adds 3 coins to every harvest, including crops already planted. Both investments persist. If you have fewer than 4 coins and no planted crops, helping with a delivery earns one packet of turnip seeds' worth of coins so you can resume.
 

@@ -38,7 +38,7 @@ export const opportunities = {
       'Ruth, orchard grower: "You know how to care for the ground. Let me show you a glasshouse that can protect your next crop."',
   },
   market: {
-    need: "Harvest 160 crops, including all 3 varieties",
+    need: "Harvest 160 crops, including turnips, carrots, and corn",
     story:
       'Eli, baker: "People come here for all sorts of produce now. A regular farm market would make those visits worth more."',
   },

@@ -98,7 +98,9 @@ export function advanceSeason(state: GameState): {
 } {
   const current = parseState(state);
   const macro = nextSeason(current);
-  const farm = completeUpgrades(growCrops(current, current.farmPolicy));
+  const farm = completeUpgrades(
+    growCrops(current, current.farmPolicy, macro.season === "winter"),
+  );
   const income = policyProduction(seasonalIncome(farm), current.farmPolicy);
   const next = parseState({
     ...current,
@@ -110,7 +112,7 @@ export function advanceSeason(state: GameState): {
   });
   return {
     state: next,
-    message: `Turn ${turnNumber(next)}/160 · Year ${next.year}, ${seasons[(turnNumber(next) - 1) % 4]}. Crops grew. Ready crops keep until harvest. Seasonal income: +${income} coins.`,
+    message: `Turn ${turnNumber(next)}/160 · Year ${next.year}, ${seasons[(turnNumber(next) - 1) % 4]}. ${macro.season === "winter" ? "Winter frost cleared all field crops. Trees remain." : "Crops grew. Harvest before winter frost."} Seasonal income: +${income} coins.`,
   };
 }
 

@@ -1,5 +1,8 @@
 /** Atlas cells share the farm buildings' painted material and lighting reference. */
 const sprites = {
+  radish: [0, 0],
+  tomato: [0, 0],
+  pumpkin: [0, 0],
   turnip: [0, 0],
   carrot: [1, 0],
   corn: [2, 0],
@@ -19,6 +22,8 @@ const sprites = {
 } as const;
 export type Icon = keyof typeof sprites;
 export function icon(name: Icon, className = "") {
+  if (["radish", "tomato", "pumpkin"].includes(name))
+    return `<span class="pixel-icon ${className}" aria-hidden="true" style="background-image:url('/art/${name}-icon.png');background-size:contain;background-position:center"></span>`;
   const [col, row] = sprites[name];
   return `<span class="pixel-icon ${className}" aria-hidden="true" style="background-position:${(col * 100) / 3}% ${(row * 100) / 3}%"></span>`;
 }

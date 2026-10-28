@@ -12,7 +12,17 @@ it.each([
   "grows %s by seasons and harvests once each fall",
   (kind, maturity, value) => {
     let state = actOnFarm(
-      { ...initialMicroState(), harvests: { turnip: 6, carrot: 0, corn: 0 } },
+      {
+        ...initialMicroState(),
+        harvests: {
+          radish: 0,
+          tomato: 0,
+          pumpkin: 0,
+          turnip: 6,
+          carrot: 0,
+          corn: 0,
+        },
+      },
       { type: "build", kind, cell: { row: 0, col: 0 } },
       5,
     ).state;

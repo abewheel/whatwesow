@@ -5,7 +5,7 @@ Read this after the repository's `AGENTS.md` and `README.md`. It describes the i
 ## Current playable scope
 
 - Start on bare land with a tent and 240 coins. Use the tent for house plans, fields, seeds, and End turn. The house takes one season to build and replaces the tent; the same services then live in the farmhouse menu. Existing developed saves retain their village services.
-- Plant turnips, carrots, and corn in their allowed seasons; end a turn to grow crops across seasons; harvest crops and ripe fruit for coins; buy plots and soil improvements.
+- Plant turnips, carrots, corn, radishes, tomatoes, and pumpkins in their allowed seasons; end a turn to grow crops across seasons; harvest crops and ripe fruit for coins; buy plots and soil improvements. All field crops die when winter begins; trees survive.
 - Place, repeat, move, and upgrade structures on a 64 × 64 estate. Pan, jump to coordinates, and zoom from 25% to 200%.
 - Advance through four seasons across 40 years, ending at turn 160. Construction and upgrades charge immediately, complete next season, and then apply their benefits. Apple trees mature after three years and oaks after ten; mature trees produce harvestable apples or acorns each fall. Markets pay seasonal income. Authored construction unlocks work, with a tested earning path through the complete construction track over 160 turns.
 - Apply macro farm policies and explicit losses through integration. Narrative dialogue, authored community decisions, relationships, animals, and the legacy ending are still future work.

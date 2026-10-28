@@ -14,7 +14,7 @@ import {
   treeFrame,
   treeStage,
 } from "./tree-sprites";
-import { cropFrames, cropStages } from "./crop-sprites";
+import { cropFrames, seasonalCropFrames, cropArtwork } from "./crop-sprites";
 import { project, footprint as renderFootprint, TILE_WIDTH } from "./layout";
 import Phaser from "phaser";
 import { drawBoundary } from "./boundary";
@@ -155,6 +155,7 @@ export class FarmScene extends Phaser.Scene {
     this.load.image("tree-apple", "/art/apple-stages.png");
     this.load.image("tree-oak", "/art/oak-stages.png");
     this.load.image("tree-products", "/art/tree-products.png");
+    this.load.image("seasonal-crops", "/art/seasonal-crops.png");
     this.load.image("crop-stages", "/art/crop-stages.png");
     this.load.image("woodland", "/art/woodland-seasons.png");
     this.load.image(
@@ -210,6 +211,9 @@ export class FarmScene extends Phaser.Scene {
     for (const [index, frame] of cropFrames.entries()) {
       cropTexture.add(index, 0, frame.x, frame.y, frame.width, frame.height);
     }
+    const seasonalCrops = this.textures.get("seasonal-crops");
+    for (const [index, frame] of seasonalCropFrames.entries())
+      seasonalCrops.add(index, 0, frame.x, frame.y, frame.width, frame.height);
     for (const key of [
       "farm-spring",
       "farm-fall",
@@ -411,6 +415,7 @@ export class FarmScene extends Phaser.Scene {
         if (index === undefined) continue;
         const plot = this.farm.plots[index];
         if (!plot) continue;
+        const art = cropArtwork(plot.crop, plot.growth);
         for (const [offset, depth] of [
           [-14, -2],
           [0, -7],
@@ -418,14 +423,9 @@ export class FarmScene extends Phaser.Scene {
         ]) {
           scenery.add(
             this.add
-              .image(
-                x + offset,
-                y + depth,
-                "crop-stages",
-                cropStages[plot.crop][plot.growth],
-              )
+              .image(x + offset, y + depth, art.texture, art.frame)
               .setOrigin(0.5, 0.95)
-              .setScale(0.1)
+              .setScale(art.scale)
               .setDepth(y + depth),
           );
         }

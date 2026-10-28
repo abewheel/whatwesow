@@ -113,7 +113,7 @@ test("seed forecasts match irrigation and the crop ripens in the advertised seas
     "Saved on this browser",
   );
   const state = homesteadState();
-  state.harvests = { turnip: 1, carrot: 1, corn: 0 };
+  state.harvests = { ...state.harvests, turnip: 1, carrot: 1, corn: 0 };
   state.structures.push({ id: 2, kind: "well", row: 18, col: 20, level: 2 });
   state.nextStructureId = 3;
   await page.getByLabel("Game state JSON").fill(JSON.stringify(state));

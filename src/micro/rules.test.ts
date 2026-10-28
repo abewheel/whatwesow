@@ -9,7 +9,14 @@ import {
 function establishedFarm() {
   return parseMicroState({
     ...initialMicroState(),
-    harvests: { turnip: 300, carrot: 1, corn: 12 },
+    harvests: {
+      radish: 0,
+      tomato: 0,
+      pumpkin: 0,
+      turnip: 300,
+      carrot: 1,
+      corn: 12,
+    },
     opportunities: ["well", "market", "hall", "greenhouse"],
   });
 }
@@ -18,7 +25,14 @@ describe("farming loop", () => {
     "plants, grows, harvests, and replants %s without mutation",
     (crop) => {
       const start = establishedFarm();
-      let state = actOnFarm(start, { type: "plant", plot: 0, crop }).state;
+      const context = {
+        turn: crops[crop].plantingSeasons[0] === "summer" ? 2 : 1,
+      };
+      let state = actOnFarm(
+        start,
+        { type: "plant", plot: 0, crop },
+        context,
+      ).state;
       expect(state.coins).toBe(100 - crops[crop].seed);
       expect(start).toEqual(establishedFarm());
       expect(() => actOnFarm(state, { type: "harvest", plot: 0 })).toThrow();
@@ -33,8 +47,8 @@ describe("farming loop", () => {
       expect(ripe.plots[0]).not.toBeNull();
       expect(() => actOnFarm(state, { type: "harvest", plot: 0 })).toThrow();
       expect(
-        actOnFarm(state, { type: "plant", plot: 0, crop }).state.plots[0]
-          ?.growth,
+        actOnFarm(state, { type: "plant", plot: 0, crop }, context).state
+          .plots[0]?.growth,
       ).toBe(0);
     },
   );
@@ -48,7 +62,7 @@ describe("farming loop", () => {
     for (let i = 0; i < 3; i++) state = growCrops(state);
     expect(state.plots.slice(0, 2)).toEqual([
       { crop: "turnip", growth: 1 },
-      { crop: "corn", growth: 3 },
+      { crop: "corn", growth: 2 },
     ]);
   });
   it("spends earnings on land and permanent harvest improvements", () => {
@@ -105,4 +119,36 @@ it("offers a bounded way back when no seeds or crops remain", () => {
   ).toBe(0);
   poor.plots[0] = { crop: "corn", growth: 0 };
   expect(() => actOnFarm(poor, { type: "work" })).toThrow();
+});
+
+it.each(Object.keys(crops) as CropId[])(
+  "enforces every planting season for %s",
+  (crop) => {
+    for (const [index, season] of [
+      "spring",
+      "summer",
+      "fall",
+      "winter",
+    ].entries()) {
+      const plant = () =>
+        actOnFarm(
+          establishedFarm(),
+          { type: "plant", plot: 0, crop },
+          { turn: index + 1 },
+        );
+      if ((crops[crop].plantingSeasons as readonly string[]).includes(season))
+        expect(plant().state.plots[0]?.crop).toBe(crop);
+      else expect(plant).toThrow(/can be planted/);
+    }
+  },
+);
+it("winter clears ripe and growing crops even on restricted land without touching trees", () => {
+  const state = establishedFarm();
+  for (const [index, crop] of (Object.keys(crops) as CropId[]).entries())
+    state.plots[index] = { crop, growth: 0 };
+  state.plots[0] = { crop: "turnip", growth: 1 };
+  const winter = growCrops(state, { land: [] }, true);
+  expect(winter.plots.every((plot) => plot === null)).toBe(true);
+  expect(winter.structures).toEqual(state.structures);
+  expect(state.plots[0]).not.toBeNull();
 });

@@ -20,7 +20,7 @@ Every building and plant needs all four seasons: **spring, summer, fall, winter*
 
 An advanced building can be dilapidated; a base building can be maintained. Snow must not hide the difference between conditions. Damage must not change the grid footprint, pivot, or camera angle. A dilapidated structure keeps its recognizable identity. A dormant winter tree is maintained unless it also has visible damage.
 
-Healthy crop stages must remain readable in every season because the current rules allow every crop in every season. Ripe crops currently keep indefinitely. This checklist adds art requirements, not automatic decay, crop death, seasonal planting restrictions, repair costs, or yield penalties. Those behaviors need authored micro rules and explicit integration later.
+Healthy crop stages must remain readable through the spring, summer, and fall growing year. Planting windows are crop-specific, and winter frost clears all field crops, including ripe crops. Trees survive winter. This checklist does not add repair costs or yield penalties.
 
 ## Buildings: 10 types
 
@@ -53,20 +53,22 @@ Every type needs sapling, young, and mature stages, each in all seasons and cond
 | `oak` | Oak tree | Implemented, currently reuses flowering-tree art | 1 × 1 | Leafy spring/summer, amber autumn, dormant winter; distinct silhouette from orchard trees |
 | `evergreen-tree` | Evergreen tree | Reference: small conifer silhouettes around paths | 2 × 2 proposed | Evergreen needles, seasonal light and snow; no bare winter canopy |
 
-## Crops: 10 types
+## Crops: 12 types
 
-Existing crops have exact authored growth ranges. Preserve those counts; do not add grow steps merely to fit an art sheet. New crops provisionally use four art stages: planted, sprout, growing, ripe. Their timing and economics are not yet defined. Grapes include a trellis inside the crop tile; the trellis also needs decaying and dilapidated appearances.
+Existing crops have exact authored growth ranges. Preserve those counts; do not add grow steps merely to fit an art sheet. Radishes, tomatoes, and pumpkins use two authored stages: seedling and ripe. Remaining proposed crops provisionally use four art stages: planted, sprout, growing, ripe. Their timing and economics are not yet defined. Grapes include a trellis inside the crop tile; the trellis also needs decaying and dilapidated appearances.
 
 | ID | Crop | Status and source | Growth values requiring art | Footprint |
 | --- | --- | --- | --- | --- |
 | `turnip` | Turnip | Playable crop in code | 0 planted, 1 ripe | 1 × 1 |
 | `carrot` | Carrot | Playable crop; reference | 0 planted, 1 growing, 2 ripe | 1 × 1 |
-| `corn` | Corn | Playable crop in code | 0 planted, 1 sprout, 2 growing, 3 ripe | 1 × 1 |
+| `corn` | Corn | Playable crop in code | 0 planted, 1 growing, 2 ripe | 1 × 1 |
+| `radish` | Radish | Playable; authored growth sprites and produce icon | 0 seedling, 1 ripe | 1 × 1 |
+| `pumpkin` | Pumpkin | Playable; authored growth sprites and produce icon | 0 seedling, 1 ripe | 1 × 1 |
 | `cabbage` | Cabbage | Reference: green cabbage bed | 0–3 proposed | 1 × 1 |
 | `strawberry` | Strawberry | Reference: strawberry bed | 0–3 proposed | 1 × 1 |
 | `sunflower` | Sunflower | Reference: sunflower bed | 0–3 proposed | 1 × 1 |
 | `wheat` | Wheat | Reference: golden grain bed | 0–3 proposed | 1 × 1 |
-| `tomato` | Tomato | Reference: red tomato bed | 0–3 proposed | 1 × 1 |
+| `tomato` | Tomato | Playable; authored growth sprites and produce icon | 0 seedling, 1 ripe | 1 × 1 |
 | `blueberry` | Blueberry bush | Reference: blue berry bed | 0–3 proposed | 1 × 1 |
 | `grape` | Grape vine | Reference: purple fruit on trellises | 0–3 proposed | 1 × 1 |
 
@@ -84,18 +86,18 @@ All three still require four seasons and three conditions. Flowers attached to a
 
 ## Coverage and production counts
 
-The inventory contains **28 asset types: 10 buildings, 5 trees, 10 crops, and 3 other plants**. For the proposed tiers and stages above:
+The inventory contains **30 asset types: 10 buildings, 5 trees, 12 crops, and 3 other plants**. For the proposed tiers and stages above:
 
 | Group | State calculation | Required visual combinations |
 | --- | --- | --- |
 | Buildings | (1 farmhouse tier + 7 implemented buildings × 3 tiers + 2 proposed buildings × 3 tiers) × 4 seasons × 3 conditions | 336 |
 | Tree maturity | (3 apple tiers + 4 other tree types) × 3 maturity stages × 4 seasons × 3 conditions | 252 |
 | Orchard fruit overlays | (3 apple tiers + 1 citrus tier) × 4 seasons × 3 conditions, mature only | 48 |
-| Crops | (2 turnip + 3 carrot + 4 corn + 7 new crops × 4 stages) × 4 seasons × 3 conditions | 444 |
+| Crops | (2 turnip + 3 carrot + 3 corn + 3 seasonal crops × 2 stages + 6 proposed crops × 4 stages) × 4 seasons × 3 conditions | 456 |
 | Other plants | 3 types × 4 seasons × 3 conditions | 36 |
-| Total | Base combinations plus fruit-ready overlays | 1,116 |
+| Total | Base combinations plus fruit-ready overlays | 1,128 |
 
-These are coverage requirements, not a demand for 1,116 separate PNG files. Modular seasonal, damage, and fruit overlays may cover multiple combinations when the final composite is visually correct. Every valid combination still needs a reviewable preview. For orchard fruit, the unladen mature sprite is in the tree-maturity count; a fruit-ready overlay is additional. Its snow/frost treatment must match the season. Fruit currently regrows every season, including winter; the state atlas does not yet provide a complete seasonal family.
+These are coverage requirements, not a demand for 1,128 separate PNG files. Modular seasonal, damage, and fruit overlays may cover multiple combinations when the final composite is visually correct. Every valid combination still needs a reviewable preview. For orchard fruit, the unladen mature sprite is in the tree-maturity count; a fruit-ready overlay is additional. Its snow/frost treatment must match the season. Fruit currently regrows every season, including winter; the state atlas does not yet provide a complete seasonal family.
 
 The proposed upgrade count and new plant stages are production assumptions. If a design changes, revise the table and counts before generating art. Existing soil levels 0–3 affect harvest value but do not upgrade the crop silhouette. Soil, fences, paths, gates, and irrigation need their own supporting terrain/prop checklist; animals, characters, and product icons also remain separate from this building-and-plant inventory. The animated farmer and current HUD artwork are documented in [art assets](art-assets.md#farmer-and-hud).
 
@@ -103,7 +105,7 @@ The proposed upgrade count and new plant stages are production assumptions. If a
 
 - The three existing atlases contain six maintained, base/adult sprite cells each: farmhouse, barn, apple tree, well, garden shed, flowering tree. This is 18 authored cells. Spring artwork is reused with a tint for summer; there is no dedicated summer atlas.
 - The orchard tree now has ripe and picked visuals, and a sapling visual while growing. The state atlas also supplies four construction silhouettes used by the current building families. These variants are not yet a complete seasonal or upgrade art family.
-- Current crops use generic procedural stems and colored ripe produce, not crop-specific authored growth sprites. There are 9 logical growth values across the three playable crops, but the silhouettes still need distinct art.
+- All six playable crops have authored growth sprites. Radish, tomato, and pumpkin have distinct seedlings, ripe plants, and produce icons in the seasonal crop sheet. Additional seasonal and disrepair appearances remain future art work.
 - The old grid preview includes a procedural flower garden; it is not yet a placeable construction item. It needs distinct seasonal and condition artwork.
 - Building ownership and upgrade levels are now persisted. The atlas still lacks distinct upgrade art, tree maturity, decaying, and dilapidated families. Condition mechanics are not implemented.
 - Reference-only buildings and plants, plus the implemented mill, greenhouse, market, legacy hall, and oak, need their own first distinct artwork as well as their state families.
@@ -122,7 +124,7 @@ Keep a fixed 2:1 camera, lighting direction, logical pixel scale, footprint, piv
 
 A state family is complete only when every listed combination resolves to an asset or an explicit layer recipe, every composite has been inspected on the farm grid, and maintained/decaying/dilapidated silhouettes remain distinguishable at game scale. Check spring-to-summer differences, all upgrades under snow, and damaged plants during normal winter dormancy. Never silently substitute a maintained sprite for a missing damage state.
 
-Produce distinct artwork for the implemented eight buildings, two construction tree types, and three crops first. Add the reference-only production buildings next, then the remaining crops and environment plants. Keep the farming slice playable while the art library grows. Future mechanics should consume the state dimensions through the owning domain; this document does not change the save schema or farming rules.
+Produce distinct artwork for the implemented eight buildings, two construction tree types, and six playable crops first. Add the reference-only production buildings next, then the remaining crops and environment plants. Keep the farming slice playable while the art library grows. Future mechanics should consume the state dimensions through the owning domain; this document does not change the save schema or farming rules.
 
 ## Estate boundary set
 

@@ -73,8 +73,9 @@ app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><output id="season"></output><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button></header>
 <div class="hud-bottom"><div class="field-note"><strong id="farm-message" role="status">Click a building to visit, or an empty plot to plant.</strong><span id="farm-summary" class="sr-only"></span><div id="farm-stats" aria-hidden="true"></div></div>
 <section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><button id="seed-selection" aria-label="Choose seeds"></button><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
-<div id="service-controls" hidden><div class="seed-shop"><div id="crop-options"></div><p id="crop-opportunity"></p></div><button id="next-season">End turn</button><p id="progression"></p><button id="work" hidden>Unload a seed delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><button id="move-plot">Move a plot</button><details id="build-shop"><summary>Building plans</summary><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></details><p id="selected-building"></p><button id="upgrade-building" hidden></button><button id="move-building" hidden></button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="63" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="63" value="16"></label><button id="go-to-cell">Go to land</button></div>
+<div id="service-controls" hidden><div class="seed-shop"><div id="crop-options"></div><p id="crop-opportunity"></p></div><button id="next-season">End turn</button><p id="progression"></p><p id="frost-warning"></p><button id="work" hidden>Unload a seed delivery · +4 coins</button><button id="expand"></button><button id="improve"></button><button id="move-plot">Move a plot</button><details id="build-shop"><summary>Building plans</summary><details id="farm-news"><summary>Farm news</summary><div id="opportunity-notes"></div></details><div id="build-options"></div></details><p id="selected-building"></p><button id="upgrade-building" hidden></button><button id="move-building" hidden></button><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span><label>Row <input id="view-row" aria-label="View row" type="number" min="0" max="63" value="16"></label><label>Column <input id="view-col" aria-label="View column" type="number" min="0" max="63" value="16"></label><button id="go-to-cell">Go to land</button></div>
 <dialog id="farm-menu" aria-labelledby="menu-title"><form method="dialog" class="menu-heading"><h2 id="menu-title">Your farm</h2><button aria-label="Close farm menu">✕</button></form><div class="save-bar"><span id="save-status" role="status">Opening your farm…</span><div><button id="export">Export save</button><button id="import-trigger">Import save</button><input id="import" type="file" accept="application/json,.json" hidden /></div></div><button id="resume">Back to the farm</button></dialog>
+
 </section></main>`;
 const menu = document.querySelector<HTMLDialogElement>("#farm-menu")!;
 document
@@ -104,7 +105,11 @@ function moveControls(target: string, selectors: string[]) {
   for (const selector of selectors)
     document.querySelector(target)!.append(document.querySelector(selector)!);
 }
-moveControls("#home-actions", ["#next-season", "#progression"]);
+moveControls("#home-actions", [
+  "#next-season",
+  "#progression",
+  "#frost-warning",
+]);
 const seasonGuide = document.createElement("p");
 seasonGuide.id = "season-guide";
 const nextOpportunity = document.createElement("p");
@@ -113,6 +118,7 @@ const goals = document.createElement("details");
 goals.innerHTML = "<summary>Next unlocks</summary>";
 goals.append(nextOpportunity);
 document.querySelector("#home-actions")!.append(seasonGuide, goals);
+
 moveControls("#seed-actions", [".seed-shop", "#work"]);
 moveControls("#field-actions", ["#expand", "#improve", "#move-plot"]);
 moveControls("#builder-actions", ["#build-shop"]);
@@ -1111,6 +1117,10 @@ function render() {
     policy = state.farmPolicy ?? {};
   document.querySelector<HTMLButtonElement>("#next-season")!.disabled =
     turn === 160;
+  document.querySelector("#frost-warning")!.textContent =
+    state.season === "fall"
+      ? `Winter is next. Harvest now: all ${state.plots.filter(Boolean).length} field crops will die, including ripe crops. Trees survive.`
+      : "Field crops die when winter begins. Harvest before ending fall.";
   document.querySelector("#next-season")!.textContent =
     turn === 160 ? "Final season · 160/160" : `End turn · ${turn}/160`;
   document.querySelector("#progression")!.innerHTML =
@@ -1127,7 +1137,7 @@ function render() {
   seasonGuide.textContent =
     turn === 160
       ? `Final winter · ${ready} ready to harvest`
-      : `${ready} ready · ${growing} growing · ${planting.length ? `Plant ${planting.join(" or ")}` : "Winter · no planting"}`;
+      : `${ready} ready · ${growing} growing · ${planting.length ? `Plant ${planting.join(" or ")}` : state.season === "winter" ? "Winter · no planting" : "No planting this season"}`;
   nextOpportunity.textContent =
     turn === 160
       ? ""
@@ -1274,7 +1284,8 @@ function render() {
     const seasons = growthSeasons(state, id);
     const detail = !cropUnlocked(state, id)
       ? `${crop.name}: ${opportunities.corn.need}. Eli can find you seeds.`
-      : `${crop.name}: ${policyCost(seedCost(state, id), policy)} coins to plant, ${seasons} season${seasons === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")}, harvest ${policyProduction(harvestValue(state, id), policy)} coins.`;
+      : `${crop.name}: ${policyCost(seedCost(state, id), policy)} coins to plant, ${seasons} season${seasons === 1 ? "" : "s"} to grow · Plant ${crop.plantingSeasons.join(" / ")}, harvest ${policyProduction(harvestValue(state, id), policy)} coins. Harvest before winter frost.`;
+
     button.querySelector(".seed-price")!.innerHTML =
       `${icon("coin")}${policyCost(seedCost(state, id), policy)}`;
     button.disabled = !cropUnlocked(state, id) || !canPlant(id, turn);

@@ -25,7 +25,7 @@ test("plant, grow, harvest, replant, reinvest and persist through actual farm pl
   for (const [crop, steps, balance] of [
     ["Turnip", 1, 105],
     ["Carrot", 2, 116],
-    ["Corn", 3, 138],
+    ["Corn", 2, 138],
   ] as const) {
     await page.getByLabel("Work on").selectOption("macro");
     await page
@@ -91,7 +91,7 @@ test("plant, grow, harvest, replant, reinvest and persist through actual farm pl
   await expect(page.locator("#farm-summary")).toContainText("10 plots");
   await expect(page.locator("#farm-summary")).toContainText("Soil level 1/3");
   await expect(page.locator("#season")).toContainText(
-    "Year 2 · spring · 28 coins",
+    "Year 1 · winter · 28 coins",
   );
   expect(errors).toEqual([]);
 });
@@ -208,7 +208,7 @@ test("rapid plot clicks and grow steps queue through slow saves", async ({
   await expect(page.getByRole("button", { name: /Corn, growing/ })).toHaveCount(
     3,
   );
-  for (let i = 0; i < 3; i++) await endTurn(page);
+  for (let i = 0; i < 2; i++) await endTurn(page);
   await expect(
     page.getByRole("button", { name: /ready to harvest/ }),
   ).toHaveCount(3);
