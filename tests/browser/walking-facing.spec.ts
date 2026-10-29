@@ -45,7 +45,7 @@ for (const variant of ["male", "female"] as const) {
   });
 }
 
-test("rear gait trades the supporting boot instead of holding one raised pose", async ({
+test("painted walking rigs keep every pose inside its frame", async ({
   page,
 }) => {
   await page.route("**/gait-inspection", (route) =>
@@ -58,46 +58,39 @@ test("rear gait trades the supporting boot instead of holding one raised pose", 
   const variants = await page.evaluate(async () => {
     const modulePath = "/src/game/farmer-gait.ts";
     const { createFarmerGait } = await import(modulePath);
-    const result = [];
-    for (const female of [false, true]) {
-      const source = new Image();
-      source.src = `/art/${female ? "farmer-female-sprites" : "farmer-sprites"}.png`;
-      await source.decode();
+    const source = new Image();
+    source.src = "/art/farmer-rig.png";
+    await source.decode();
+    return [false, true].map((female) => {
       const context = createFarmerGait(source, female).getContext("2d")!;
-      const contacts = [];
-      for (const frame of [0, 2, 6]) {
-        const pixels = context.getImageData(frame * 128, 192, 128, 192).data;
-        const boots: number[][] = [[], []];
-        for (let y = 140; y < 190; y++)
+      return Array.from({ length: 16 }, (_, frame) => {
+        const pixels = context.getImageData(
+          (frame % 8) * 128,
+          Math.floor(frame / 8) * 192,
+          128,
+          192,
+        ).data;
+        let opaque = 0;
+        let edge = 0;
+        let hash = 0;
+        for (let y = 0; y < 192; y++)
           for (let x = 0; x < 128; x++) {
             const i = (y * 128 + x) * 4;
-            if (
-              pixels[i + 3] > 160 &&
-              pixels[i] > pixels[i + 1] * 1.15 &&
-              pixels[i] > pixels[i + 2] * 1.3
-            )
-              boots[x < 66 ? 0 : 1].push(y);
+            if (pixels[i + 3] > 100) {
+              opaque++;
+              if (x === 0 || x === 127 || y === 0 || y === 191) edge++;
+              hash = (Math.imul(hash, 31) + i + pixels[i]) | 0;
+            }
           }
-        // Ignore sparse painted ground flecks, while retaining each boot's
-        // own perspective-dependent contact height.
-        contacts.push(
-          boots.map(
-            (values) =>
-              values.sort((a, b) => a - b)[Math.floor(values.length * 0.95)],
-          ),
-        );
-      }
-      result.push({ female, contacts });
-    }
-    return result;
+        return { opaque, edge, hash };
+      });
+    });
   });
-  for (const {
-    contacts: [neutral, rightSwing, leftSwing],
-  } of variants) {
-    expect(neutral.every(Number.isFinite)).toBe(true);
-    expect(rightSwing[1]).toBeLessThanOrEqual(neutral[1] - 3);
-    expect(rightSwing[0]).toBeGreaterThanOrEqual(neutral[0] - 1);
-    expect(leftSwing[0]).toBeLessThanOrEqual(neutral[0] - 3);
-    expect(leftSwing[1]).toBeGreaterThanOrEqual(neutral[1] - 1);
+  for (const frames of variants) {
+    expect(new Set(frames.map((frame) => frame.hash)).size).toBe(16);
+    for (const frame of frames) {
+      expect(frame.opaque).toBeGreaterThan(5000);
+      expect(frame.edge).toBe(0);
+    }
   }
 });

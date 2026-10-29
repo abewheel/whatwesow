@@ -281,7 +281,7 @@ export class Farmer {
   constructor(scene: Phaser.Scene) {
     for (const key of ["farmer", "farmer-female"]) {
       if (!scene.textures.exists(`${key}-gait`)) {
-        const source = scene.textures.get(key).getSourceImage();
+        const source = scene.textures.get("farmer-rig").getSourceImage();
         const texture = scene.textures.addCanvas(
           `${key}-gait`,
           createFarmerGait(source as HTMLImageElement, key === "farmer-female"),
@@ -419,8 +419,10 @@ export class Farmer {
       const speed = Math.min(distance, remaining);
       remaining -= speed;
       this.stride += speed * 5;
-      this.facing = dc - dr >= 0 ? 1 : -1;
-      this.back = dc + dr < 0;
+      if (distance > 0) {
+        this.facing = dc - dr >= 0 ? 1 : -1;
+        this.back = dc + dr < 0;
+      }
       if (distance <= speed) {
         this.position = { ...next };
         this.cell = next;
