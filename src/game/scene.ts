@@ -578,8 +578,9 @@ export class FarmScene extends Phaser.Scene {
     });
     this.onReady?.();
   }
-  update(_time: number, delta: number) {
-    this.farmer?.update(delta, projectCell);
+  update() {
+    // Historical frame averaging can make walking surge after a slow render.
+    this.farmer?.update(this.game.loop.rawDelta, projectCell);
     updateBoundaryWalkers(this.boundaryWalkers, this.time.now);
     if (this.farmer) {
       this.farmer.view.setDepth(

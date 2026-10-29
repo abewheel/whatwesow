@@ -22,6 +22,24 @@ for (const viewport of [
         "#open-shop",
       ].map((selector) => page.locator(selector).boundingBox()),
     );
+    for (const selector of [
+      "#camera-controls > summary",
+      "#open-menu",
+      "#open-inventory",
+      "#open-shop",
+    ]) {
+      const control = page.locator(selector);
+      const box = (await control.boundingBox())!;
+      const icon = (await control.locator(".pixel-icon").boundingBox())!;
+      expect(icon.x + icon.width / 2).toBeCloseTo(box.x + box.width / 2, 0);
+      expect(icon.y + icon.height / 2).toBeCloseTo(box.y + box.height / 2, 0);
+      expect(icon.x - box.x).toBeGreaterThanOrEqual(8);
+      expect(icon.y - box.y).toBeGreaterThanOrEqual(8);
+      expect(box.x + box.width - icon.x - icon.width).toBeGreaterThanOrEqual(8);
+      expect(box.y + box.height - icon.y - icon.height).toBeGreaterThanOrEqual(
+        8,
+      );
+    }
     const [view, menu, inventory, shop] = boxes.map((box) => {
       expect(box).not.toBeNull();
       expect(box!.width).toBeGreaterThanOrEqual(44);

@@ -98,3 +98,56 @@ test("painted walking sheets keep every pose inside its frame", async ({
     }
   }
 });
+
+test("walking ignores stale frame averages and queued-work speed boosts", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/?instance=validation-walk-timing");
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
+  await page.locator('[data-cell="20,20"]').press("Enter");
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-farmer-cell",
+    "20,20",
+  );
+  await page.keyboard.press("Escape");
+  await page.locator('[data-cell="20,40"]').press("Enter");
+  const samples = await page.evaluate(async () => {
+    const modulePath = "/src/game/farmer.ts";
+    const { Farmer } = await import(modulePath);
+    const original = Farmer.prototype.update;
+    return new Promise<{ distance: number; seconds: number }[]>((resolve) => {
+      const samples: { distance: number; seconds: number }[] = [];
+      Farmer.prototype.update = function (
+        this: import("../../src/game/farmer").Farmer,
+        ...args: Parameters<import("../../src/game/farmer").Farmer["update"]>
+      ) {
+        const before = { ...this["position"] };
+        const loop = this.view.scene.game.loop;
+        // Model recovery from expensive rendering, while work remains queued.
+        loop.deltaHistory.fill(80);
+        const tasks = this["tasks"];
+        this["tasks"] = Array.from({ length: 4 }, () => ({
+          target: { col: 20, row: 40 },
+          action: "walk" as const,
+        }));
+        original.apply(this, args);
+        this["tasks"] = tasks;
+        samples.push({
+          distance: Math.hypot(
+            this["position"].col - before.col,
+            this["position"].row - before.row,
+          ),
+          seconds: Math.min(loop.rawDelta, 100) / 1000,
+        });
+        if (samples.length === 20) {
+          Farmer.prototype.update = original;
+          loop.deltaHistory.fill(loop.rawDelta);
+          resolve(samples);
+        }
+      };
+    });
+  });
+  for (const sample of samples)
+    expect(sample.distance).toBeCloseTo(5 * sample.seconds, 5);
+});

@@ -2338,6 +2338,14 @@ button.crisis-card {
   border: 8px solid transparent;
   border-image: url("/art/hud-frame-detailed.png") 150 fill / 8px / 0 stretch;
   box-shadow: 1px 3px 2px #30251740;
+  padding: 0;
+  gap: 0;
+}
+.corner-controls #open-menu .pixel-icon,
+.corner-controls #camera-controls > summary .pixel-icon,
+.corner-controls .pixel-icon {
+  width: 32px;
+  height: 32px;
 }
 #season {
   min-height: 56px;
@@ -2353,6 +2361,8 @@ button.crisis-card {
     width: 48px;
     height: 48px;
   }
+  .corner-controls #open-menu .pixel-icon,
+  .corner-controls #camera-controls > summary .pixel-icon,
   .corner-controls .pixel-icon {
     width: 26px;
     height: 26px;

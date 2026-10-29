@@ -391,7 +391,7 @@ export class Farmer {
       }
     }
     const walking = this.route.length > 0;
-    let remaining = (this.tasks.length > 3 ? 9 : 5) * dt;
+    let remaining = 5 * dt;
     while (this.route.length && remaining > 0) {
       const next = this.route[0];
       const dc = next.col - this.position.col,
