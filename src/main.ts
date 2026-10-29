@@ -1487,8 +1487,7 @@ let loadFailed = false;
 let navigationVersion = 0;
 let centered = false;
 const zoomLevels = [0.5, 0.75, 1, 1.25, 1.5, 2];
-let zoomIndex = 2;
-let zoom = zoomLevels[zoomIndex];
+let zoom = 1;
 const viewport = document.querySelector<HTMLElement>("#farm")!;
 const inventoryControls = mountInventoryControls({
   open: openInventory,
@@ -1547,16 +1546,18 @@ viewport.addEventListener("scroll", () => {
 });
 new ResizeObserver(updateViewport).observe(viewport);
 const cellButtons = new Map<string, HTMLButtonElement>();
-function setZoom(index: number) {
-  const nextIndex = Math.max(0, Math.min(zoomLevels.length - 1, index));
-  if (nextIndex === zoomIndex) return;
+function setZoom(
+  value: number,
+  anchor = { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 },
+) {
+  const next = Math.max(0.5, Math.min(2, value));
+  if (next === zoom) return;
+  const previousScroll = { x: viewport.scrollLeft, y: viewport.scrollTop };
   const center = {
-    x: (viewport.scrollLeft + viewport.clientWidth / 2) / zoom,
-    y: (viewport.scrollTop + viewport.clientHeight / 2) / zoom,
+    x: (viewport.scrollLeft + anchor.x) / zoom,
+    y: (viewport.scrollTop + anchor.y) / zoom,
   };
-  zoomIndex = nextIndex;
-  zoom = zoomLevels[zoomIndex];
-  drag = null;
+  zoom = next;
   world.style.width = `${WORLD_WIDTH * zoom}px`;
   world.style.height = `${WORLD_HEIGHT * zoom}px`;
   for (const [key, button] of cellButtons) {
@@ -1569,25 +1570,79 @@ function setZoom(index: number) {
       height: `${32 * zoom}px`,
     });
   }
-  viewport.scrollLeft = center.x * zoom - viewport.clientWidth / 2;
-  viewport.scrollTop = center.y * zoom - viewport.clientHeight / 2;
-  document.querySelector("#zoom-level")!.textContent = `${zoom * 100}%`;
+  viewport.scrollLeft = center.x * zoom - anchor.x;
+  viewport.scrollTop = center.y * zoom - anchor.y;
+  if (drag) {
+    drag.left += viewport.scrollLeft - previousScroll.x;
+    drag.top += viewport.scrollTop - previousScroll.y;
+  }
+  document.querySelector("#zoom-level")!.textContent =
+    `${Math.round(zoom * 100)}%`;
   document.querySelector<HTMLButtonElement>("#zoom-out")!.disabled =
-    zoomIndex === 0;
-  document.querySelector<HTMLButtonElement>("#zoom-in")!.disabled =
-    zoomIndex === zoomLevels.length - 1;
+    zoom === 0.5;
+  document.querySelector<HTMLButtonElement>("#zoom-in")!.disabled = zoom === 2;
   if (hoveredCell) showPreview(hoveredCell);
   updateViewport();
 }
+function stepZoom(direction: number) {
+  stopWheel();
+  const levels = direction > 0 ? zoomLevels : [...zoomLevels].reverse();
+  setZoom(
+    levels.find((level) =>
+      direction > 0 ? level > zoom + 0.001 : level < zoom - 0.001,
+    ) ?? zoom,
+  );
+}
+let wheelFrame = 0;
+let wheelTarget = zoom;
+let wheelAnchor = { x: 0, y: 0 };
+viewport.addEventListener(
+  "wheel",
+  (event) => {
+    event.preventDefault();
+    const bounds = viewport.getBoundingClientRect();
+    wheelAnchor = {
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    };
+    const pixels =
+      event.deltaY *
+      (event.deltaMode === 1
+        ? 16
+        : event.deltaMode === 2
+          ? viewport.clientHeight
+          : 1);
+    wheelTarget = Math.max(
+      0.5,
+      Math.min(
+        2,
+        (wheelFrame ? wheelTarget : zoom) * Math.exp(-pixels * 0.002),
+      ),
+    );
+    if (!wheelFrame) wheelFrame = requestAnimationFrame(animateWheel);
+  },
+  { passive: false },
+);
+function animateWheel() {
+  const next = zoom + (wheelTarget - zoom) * 0.3;
+  const done = Math.abs(wheelTarget - next) < 0.001;
+  setZoom(done ? wheelTarget : next, wheelAnchor);
+  wheelFrame = done ? 0 : requestAnimationFrame(animateWheel);
+}
+function stopWheel() {
+  cancelAnimationFrame(wheelFrame);
+  wheelFrame = 0;
+}
 document
   .querySelector("#zoom-out")!
-  .addEventListener("click", () => setZoom(zoomIndex - 1));
+  .addEventListener("click", () => stepZoom(-1));
 document
   .querySelector("#zoom-in")!
-  .addEventListener("click", () => setZoom(zoomIndex + 1));
-document
-  .querySelector("#zoom-reset")!
-  .addEventListener("click", () => setZoom(2));
+  .addEventListener("click", () => stepZoom(1));
+document.querySelector("#zoom-reset")!.addEventListener("click", () => {
+  stopWheel();
+  setZoom(1);
+});
 let hoveredCell: Cell | null = null;
 const preview = document.createElement("div");
 preview.id = "placement-preview";
@@ -1651,7 +1706,9 @@ viewport.addEventListener("keydown", (event) => {
       event.key === "0")
   ) {
     event.preventDefault();
-    setZoom(event.key === "0" ? 2 : zoomIndex + (event.key === "-" ? -1 : 1));
+    stopWheel();
+    if (event.key === "0") setZoom(1);
+    else stepZoom(event.key === "-" ? -1 : 1);
     return;
   }
   if (delta[event.key]) {
@@ -1668,8 +1725,28 @@ let drag: {
   active: boolean;
 } | null = null;
 let suppressClick = false;
+const touches = new Map<number, { x: number; y: number }>();
+function touchPair() {
+  const [a, b] = [...touches.values()];
+  const bounds = viewport.getBoundingClientRect();
+  return {
+    distance: Math.hypot(b.x - a.x, b.y - a.y),
+    x: (a.x + b.x) / 2 - bounds.left,
+    y: (a.y + b.y) / 2 - bounds.top,
+  };
+}
+let pinch: ReturnType<typeof touchPair> | null = null;
 viewport.addEventListener("pointerdown", (e) => {
-  if (e.pointerType !== "mouse" || e.button !== 0) return;
+  if (e.pointerType === "touch") {
+    stopWheel();
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size >= 2) {
+      pinch = touchPair();
+      drag = null;
+      suppressClick = true;
+      return;
+    }
+  } else if (e.button !== 0) return;
   suppressClick = false;
   drag = {
     x: e.clientX,
@@ -1680,6 +1757,18 @@ viewport.addEventListener("pointerdown", (e) => {
   };
 });
 viewport.addEventListener("pointermove", (e) => {
+  if (touches.has(e.pointerId)) {
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && touches.size >= 2) {
+      const next = touchPair();
+      setZoom((zoom * next.distance) / Math.max(1, pinch.distance), pinch);
+      viewport.scrollLeft -= next.x - pinch.x;
+      viewport.scrollTop -= next.y - pinch.y;
+      pinch = next;
+      updateViewport();
+      return;
+    }
+  }
   if (!drag) return;
   if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 6) {
     drag.active = true;
@@ -1689,12 +1778,22 @@ viewport.addEventListener("pointermove", (e) => {
     viewport.scrollTop = drag.top - (e.clientY - drag.y);
   }
 });
-viewport.addEventListener("pointerup", () => {
+function endPointer(event: PointerEvent) {
+  touches.delete(event.pointerId);
+  if (pinch) suppressClick = true;
+  pinch = touches.size >= 2 ? touchPair() : null;
   drag = null;
-});
-viewport.addEventListener("pointercancel", () => {
-  drag = null;
-});
+  const remaining = [...touches.values()][0];
+  if (remaining)
+    drag = {
+      ...remaining,
+      left: viewport.scrollLeft,
+      top: viewport.scrollTop,
+      active: false,
+    };
+}
+viewport.addEventListener("pointerup", endPointer);
+viewport.addEventListener("pointercancel", endPointer);
 viewport.addEventListener(
   "click",
   (e) => {
