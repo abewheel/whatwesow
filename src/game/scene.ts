@@ -419,7 +419,11 @@ export class FarmScene extends Phaser.Scene {
     );
     this.load.image("hedgerow", "/art/hedgerow-seasons.png");
     this.load.image("farmer", "/art/farmer-sprites.png");
-    this.load.image("farmer-rig", "/art/farmer-rig.png");
+    for (const key of ["farmer", "farmer-female"])
+      this.load.spritesheet(`${key}-walk`, `/art/${key}-walk.png`, {
+        frameWidth: 128,
+        frameHeight: 192,
+      });
     this.load.image("farmer-female", "/art/farmer-female-sprites.png");
     this.load.image("distinct-buildings", "/art/distinct-buildings.png");
     this.load.image("farm-states", "/art/farm-states.png");

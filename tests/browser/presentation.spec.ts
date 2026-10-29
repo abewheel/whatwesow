@@ -58,7 +58,7 @@ test("walking uses changing gait frames in both directions and returns to idle",
       .poll(
         async () => {
           const frame = (await canvas.getAttribute("data-farmer-frame"))!;
-          expect(frame).toMatch(/^farmer-gait:(?:[0-9]|1[0-5])$/);
+          expect(frame).toMatch(/^farmer-walk:[0-7]$/);
           frames.add(frame);
           return frames.size;
         },

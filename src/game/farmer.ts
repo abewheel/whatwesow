@@ -1,5 +1,4 @@
 import Phaser from "phaser";
-import { createFarmerGait } from "./farmer-gait";
 import {
   farmerBlocked,
   farmerSpawn,
@@ -279,24 +278,6 @@ export class Farmer {
   variant: "male" | "female" = "male";
   private back = false;
   constructor(scene: Phaser.Scene) {
-    for (const key of ["farmer", "farmer-female"]) {
-      if (!scene.textures.exists(`${key}-gait`)) {
-        const source = scene.textures.get("farmer-rig").getSourceImage();
-        const texture = scene.textures.addCanvas(
-          `${key}-gait`,
-          createFarmerGait(source as HTMLImageElement, key === "farmer-female"),
-        )!;
-        for (let frame = 0; frame < 16; frame++)
-          texture.add(
-            frame,
-            0,
-            (frame % 8) * 128,
-            Math.floor(frame / 8) * 192,
-            128,
-            192,
-          );
-      }
-    }
     const shadow = scene.add.graphics();
     shadow.fillStyle(0x233226, 0.08).fillEllipse(2, 2, 29, 13);
     shadow.fillStyle(0x233226, 0.13).fillEllipse(1, 1, 23, 10);
@@ -498,7 +479,8 @@ export class Farmer {
     const frame = action
       ? Math.min(5, Math.floor((this.elapsed / 1.15) * 6))
       : 0;
-    const walkFrame = (this.back ? 8 : 0) + (Math.floor(this.stride) % 8);
+    // Four painted contact/passing poses per view, driven by distance.
+    const walkFrame = (this.back ? 4 : 0) + (Math.floor(this.stride / 2) % 4);
     const pose = frame;
     const [cx, originalCy] = contacts[row][pose];
     const frames =
@@ -522,8 +504,8 @@ export class Farmer {
       .setTexture(
         walking
           ? this.variant === "female"
-            ? "farmer-female-gait"
-            : "farmer-gait"
+            ? "farmer-female-walk"
+            : "farmer-walk"
           : this.variant === "female"
             ? "farmer-female"
             : "farmer",
@@ -545,7 +527,7 @@ export class Farmer {
           : this.facing < 0
             ? 1 - (contactX - left) / width
             : (contactX - left) / width,
-        walking ? 178 / 192 : cy / height,
+        walking ? 186 / 192 : cy / height,
       )
       .setFlipX(this.facing < 0);
     this.effect.clear();

@@ -98,7 +98,7 @@ test("female farmer keeps her appearance in the alternating walking gait", async
     .poll(
       async () => {
         const frame = (await canvas.getAttribute("data-farmer-frame"))!;
-        expect(frame).toMatch(/^farmer-female-gait:[0-7]$/);
+        expect(frame).toMatch(/^farmer-female-walk:[0-3]$/);
         frames.add(frame);
         return frames.size;
       },

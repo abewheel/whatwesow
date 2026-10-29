@@ -36,7 +36,7 @@ for (const variant of ["male", "female"] as const) {
       await expect(canvas).toHaveAttribute(
         "data-farmer-frame",
         new RegExp(
-          `^farmer${variant === "female" ? "-female" : ""}-gait:${facing.startsWith("back") ? "(?:[89]|1[0-5])" : "[0-7]"}$`,
+          `^farmer${variant === "female" ? "-female" : ""}-walk:${facing.startsWith("back") ? "[4-7]" : "[0-3]"}$`,
         ),
       );
       await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
@@ -45,7 +45,7 @@ for (const variant of ["male", "female"] as const) {
   });
 }
 
-test("painted walking rigs keep every pose inside its frame", async ({
+test("painted walking sheets keep every pose inside its frame", async ({
   page,
 }) => {
   await page.route("**/gait-inspection", (route) =>
@@ -56,38 +56,42 @@ test("painted walking rigs keep every pose inside its frame", async ({
   );
   await page.goto("/gait-inspection");
   const variants = await page.evaluate(async () => {
-    const modulePath = "/src/game/farmer-gait.ts";
-    const { createFarmerGait } = await import(modulePath);
-    const source = new Image();
-    source.src = "/art/farmer-rig.png";
-    await source.decode();
-    return [false, true].map((female) => {
-      const context = createFarmerGait(source, female).getContext("2d")!;
-      return Array.from({ length: 16 }, (_, frame) => {
-        const pixels = context.getImageData(
-          (frame % 8) * 128,
-          Math.floor(frame / 8) * 192,
-          128,
-          192,
-        ).data;
-        let opaque = 0;
-        let edge = 0;
-        let hash = 0;
-        for (let y = 0; y < 192; y++)
-          for (let x = 0; x < 128; x++) {
-            const i = (y * 128 + x) * 4;
-            if (pixels[i + 3] > 100) {
-              opaque++;
-              if (x === 0 || x === 127 || y === 0 || y === 191) edge++;
-              hash = (Math.imul(hash, 31) + i + pixels[i]) | 0;
+    return Promise.all(
+      ["farmer", "farmer-female"].map(async (key) => {
+        const source = new Image();
+        source.src = `/art/${key}-walk.png`;
+        await source.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = source.width;
+        canvas.height = source.height;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(source, 0, 0);
+        return Array.from({ length: 8 }, (_, frame) => {
+          const pixels = context.getImageData(
+            (frame % 4) * 128,
+            Math.floor(frame / 4) * 192,
+            128,
+            192,
+          ).data;
+          let opaque = 0;
+          let edge = 0;
+          let hash = 0;
+          for (let y = 0; y < 192; y++)
+            for (let x = 0; x < 128; x++) {
+              const i = (y * 128 + x) * 4;
+              if (pixels[i + 3] > 100) {
+                opaque++;
+                if (x === 0 || x === 127 || y === 0 || y === 191) edge++;
+                hash = (Math.imul(hash, 31) + i + pixels[i]) | 0;
+              }
             }
-          }
-        return { opaque, edge, hash };
-      });
-    });
+          return { opaque, edge, hash };
+        });
+      }),
+    );
   });
   for (const frames of variants) {
-    expect(new Set(frames.map((frame) => frame.hash)).size).toBe(16);
+    expect(new Set(frames.map((frame) => frame.hash)).size).toBe(8);
     for (const frame of frames) {
       expect(frame.opaque).toBeGreaterThan(5000);
       expect(frame.edge).toBe(0);
