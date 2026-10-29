@@ -1,3 +1,4 @@
+import { expectAdjacentToCell } from "./context-helpers";
 import { buySeeds } from "./helpers";
 import { expect, test } from "./fixtures";
 import { clickCamera } from "./helpers";
@@ -19,14 +20,12 @@ test("the HUD stays compact, inventory stays put, and the shop is visited", asyn
   await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
   await expect(canvas).toHaveAttribute("data-farmer-target", "20,20");
   await expect(page.locator("#service-panel")).toBeHidden();
-  await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20", {
-    // Keep real travel covered on software-rendered CI browsers.
-    timeout: 30000,
-  });
+  const stance = await expectAdjacentToCell(page, "20,20");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
-  await expect(page.locator("#service-panel")).toBeHidden();
+  await expect(page.locator("#service-panel")).toBeVisible();
+  await expect(page.locator("#service-title")).toHaveText("Open land");
   await page.locator("#open-inventory").click();
-  await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20");
+  await expect(canvas).toHaveAttribute("data-farmer-cell", stance);
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await page.locator("#open-seed-shop").click();
   await expect(page.locator("#service-panel")).toBeVisible();
@@ -53,9 +52,8 @@ test("a new ground click replaces the current walk and a drag does not give a de
   await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
   await page.locator("[data-cell='18,17']").click();
   await expect(canvas).toHaveAttribute("data-farmer-target", "18,17");
-  await expect(canvas).toHaveAttribute("data-farmer-cell", "18,17", {
-    timeout: 30000,
-  });
+  const stance = await expectAdjacentToCell(page, "18,17");
+  await page.keyboard.press("Escape");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   const bounds = (await page.locator("#farm").boundingBox())!;
   await page.mouse.move(
@@ -69,7 +67,7 @@ test("a new ground click replaces the current walk and a drag does not give a de
     { steps: 6 },
   );
   await page.mouse.up();
-  await expect(canvas).toHaveAttribute("data-farmer-cell", "18,17");
+  await expect(canvas).toHaveAttribute("data-farmer-cell", stance);
   await expect(canvas).toHaveAttribute("data-farmer-target", "");
   await expect(page.locator("#season")).toContainText("100 coins");
 });
@@ -112,9 +110,7 @@ test("redirecting before planting leaves the plot empty even with slow saves", a
     document.querySelector<HTMLButtonElement>('[data-cell="20,19"]')!.click();
   });
   await expect(page.locator("#season")).toContainText("96 coins");
-  await expect(canvas).toHaveAttribute("data-farmer-cell", "20,19", {
-    timeout: 30000,
-  });
+  const stance = await expectAdjacentToCell(page, "20,19");
   await page.evaluate(
     () =>
       new Promise<void>((resolve) =>
@@ -124,7 +120,7 @@ test("redirecting before planting leaves the plot empty even with slow saves", a
       ),
   );
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
-  await expect(canvas).toHaveAttribute("data-farmer-cell", "20,19");
+  await expect(canvas).toHaveAttribute("data-farmer-cell", stance);
   await expect(page.locator("[data-plot='0']")).toHaveAttribute(
     "aria-label",
     /empty/,

@@ -75,7 +75,7 @@ for (const viewport of [
       for (const card of await page.locator(".plant-card").all()) {
         await expect(
           card.locator("[data-metric] > span:nth-child(2)"),
-        ).toHaveText(["Seeds", "Seasons", "Harvest"]);
+        ).toHaveText(["Seeds", "Seasons", ""]);
         const rows = await card.locator("[data-metric]").evaluateAll((rows) =>
           rows.map((row) =>
             Array.from(row.children).map((part) => {

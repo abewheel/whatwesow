@@ -232,7 +232,6 @@ export function actOnFarm(
         turn,
         `${crops[plot.crop].name} harvested`,
       ));
-      if (plot.dry) message += " Drought reduced this crop to half yield.";
     }
   } else if (action.type === "collectAnimal" || action.type === "collectHive") {
     const animal = state.structures.find((s) => s.id === action.id);

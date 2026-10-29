@@ -1,5 +1,5 @@
 import { expect, test } from "./fixtures";
-import { openCell, closeActions } from "./context-helpers";
+import { openCell, closeActions, walkToCell } from "./context-helpers";
 import { homesteadMicroState } from "../../src/micro/state";
 import { endTurn } from "./helpers";
 
@@ -130,7 +130,7 @@ test("seasonal pens leave adjacent crops and buildings clickable", async ({
     if (season !== "spring") await endTurn(page);
     const close = page.locator("#close-service");
     if (await close.isVisible()) await close.click();
-    await page.locator('[data-cell="14,17"]').click();
+    await walkToCell(page, "14,17");
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-cell",
       "14,17",

@@ -1,3 +1,4 @@
+import { expectAdjacentToCell, walkToCell } from "./context-helpers";
 import { WORLD_TOP, project, TILE_WIDTH } from "../../src/game/layout";
 import { expect, test } from "./fixtures";
 import { clickCamera } from "./helpers";
@@ -49,6 +50,7 @@ test("walking uses changing gait frames in both directions and returns to idle",
   const canvas = page.locator("canvas");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   for (const cell of ["20,20", "14,14"]) {
+    await page.keyboard.press("Escape");
     await page.locator(`[data-cell="${cell}"]`).click();
     await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
     const frames = new Set<string>();
@@ -65,9 +67,7 @@ test("walking uses changing gait frames in both directions and returns to idle",
         { intervals: [35] },
       )
       .toBeGreaterThanOrEqual(4);
-    await expect(canvas).toHaveAttribute("data-farmer-cell", cell, {
-      timeout: 30000,
-    });
+    await expectAdjacentToCell(page, cell);
     await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
     await expect(canvas).toHaveAttribute("data-farmer-frame", /^farmer:/);
   }
@@ -105,8 +105,7 @@ test("farmer sorts ahead of both farmhouse front edges and behind its rear", asy
   // by feet alone would hide the farmer. Account for camera padding separately.
   const homeFront = WORLD_TOP + project(16.5, 12.5).y * (64 / TILE_WIDTH);
   for (const cell of ["13,15", "12,17", "10,15"]) {
-    await page.locator(`[data-cell="${cell}"]`).press("Enter");
-    await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
+    await walkToCell(page, cell);
     await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
     const depth = Number(await canvas.getAttribute("data-farmer-depth"));
     if (cell === "10,15") expect(depth).toBeLessThan(homeFront);

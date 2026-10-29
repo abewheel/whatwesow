@@ -1,3 +1,4 @@
+import { expectAdjacentToCell } from "./context-helpers";
 import { openCanvasHarness } from "./canvas-harness";
 import { test, expect } from "./fixtures";
 import {
@@ -139,9 +140,7 @@ test("front neighbor tiles remain walkable while building artwork still opens it
   for (const cell of ["13,15", "12,17"]) {
     await page.locator(`[data-cell="${cell}"]`).click();
     await expect(canvas).toHaveAttribute("data-farmer-target", cell);
-    await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
-    await expect(page.locator("#service-panel")).toBeHidden();
-    await page.keyboard.press("e");
+    await expectAdjacentToCell(page, cell);
     await expect(page.locator("#service-panel")).toBeVisible();
     await expect(page.locator("#service-title")).toHaveText("Open land");
     await page.locator("#close-service").click();

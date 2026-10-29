@@ -1,7 +1,13 @@
 import { buySeeds, choosePlotWork, visitBuilding } from "./helpers";
 import { test, expect } from "./fixtures";
 import { homesteadState } from "../../src/game/state";
-import { openCell, setFarm, closeActions, fits } from "./context-helpers";
+import {
+  openCell,
+  setFarm,
+  closeActions,
+  fits,
+  expectAdjacentToCell,
+} from "./context-helpers";
 async function farPlot(page: import("@playwright/test").Page, ripe = false) {
   await page.goto("/?instance=validation-arrival");
   await expect(page.locator("#save-status")).toHaveText(
@@ -21,10 +27,12 @@ test("menus wait for arrival at their selected tile", async ({ page }) => {
   await page.locator('[data-cell="22,20"]').press("Enter");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
   await expect(page.locator("#service-panel")).toBeHidden();
-  await expect(canvas).toHaveAttribute("data-farmer-cell", "22,20");
-  await expect(page.locator("#service-panel")).toBeHidden();
-  await page.keyboard.press("e");
   await expect(page.locator("#service-panel")).toBeVisible();
+  await expectAdjacentToCell(page, "22,20");
+  await expect(page.locator('[data-cell="22,20"]')).toHaveAttribute(
+    "data-context",
+    "true",
+  );
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await expect(page.locator("#walk-here")).toHaveCount(0);
 });

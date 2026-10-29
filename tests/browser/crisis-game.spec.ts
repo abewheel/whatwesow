@@ -80,7 +80,10 @@ test("End turn calls the council, which waits for an answer that changes the far
   // Water rights on a drought turn: five growing corn plots are thirsty.
   await visitBuilding(page, "home");
   await expect(endButton).toBeEnabled();
-  await expect(endButton).not.toHaveAttribute("aria-describedby");
+  await expect(endButton).toHaveAttribute(
+    "aria-describedby",
+    "water-transition",
+  );
   await expect(page.locator("#council-wait")).toBeHidden();
   await expect(page.locator("#council-return")).toBeHidden();
   const council = page.locator("#council-rules");

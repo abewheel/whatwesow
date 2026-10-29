@@ -21,12 +21,10 @@ test("loads behind a cover, starts bare, builds fields and completes a home next
   await expect(page.locator("[data-structure]")).toHaveCount(0);
   await expect(page.locator("[data-service]")).toHaveCount(2);
   await page.locator('[data-cell="16,16"]').click();
-  await page.keyboard.press("e");
   await page.locator("#expand").click();
   await expect(page.locator("[data-plot]")).toHaveCount(1);
   await page.locator("#close-service").click();
   await page.locator('[data-cell="12,18"]').click();
-  await page.keyboard.press("e");
   await page.locator('[data-build="home"]').click();
   await page.locator('[data-cell="12,18"]').press("Enter");
   await expect(page.locator("#farm-message")).toContainText(

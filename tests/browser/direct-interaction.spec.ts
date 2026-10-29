@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures";
 import { homesteadState } from "../../src/game/state";
-import { openCell } from "./context-helpers";
+import { openCell, walkToCell, expectAdjacentToCell } from "./context-helpers";
 
 const farm = homesteadState();
 farm.nextStructureId = 100;
@@ -57,7 +57,7 @@ for (const viewport of [
       "true",
     );
     await page.keyboard.press("Escape");
-    await page.locator('[data-cell="24,24"]').press("Enter");
+    await walkToCell(page, "24,24");
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-cell",
       "24,24",
@@ -98,6 +98,7 @@ for (const viewport of [
     }
     await page.keyboard.press("Space");
     await expect(page.locator("#service-panel")).toBeVisible();
+    await expectAdjacentToCell(page, "24,26");
     await expect(page.locator('[data-cell="24,26"]')).toHaveAttribute(
       "data-context",
       "true",
@@ -130,6 +131,58 @@ test.describe("touch harvest", () => {
         await page.screenshot({
           path: `/tmp/interaction-harvest-${viewport.width}.png`,
         });
+    });
+  }
+});
+
+test.describe("touch selected tile", () => {
+  test.use({ hasTouch: true });
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 667, height: 375 },
+  ]) {
+    test(`tap open land visits adjacent and opens its menu at ${viewport.width}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      page.on("requestfailed", (request) => errors.push(request.url()));
+      await page.goto("/?instance=validation-adjacent-touch");
+      await expect(page.locator("main")).toHaveJSProperty("inert", false);
+      const target = page.locator('[data-cell="20,16"]');
+      await target.tap();
+      await expect(page.locator("canvas")).toHaveAttribute(
+        "data-farmer-motion",
+        "walk",
+      );
+      await expect(page.locator("#service-panel")).toBeHidden();
+      await expect(page.locator("#service-panel")).toBeVisible();
+      await expect(page.locator("#service-title")).toHaveText("Open land");
+      await expectAdjacentToCell(page, "20,16");
+      await expect(target).toHaveAttribute("data-context", "true");
+      if (process.env.INTERACTION_EVIDENCE) {
+        if (viewport.width === 320) {
+          const canvas = page.locator("canvas");
+          const before = JSON.parse(
+            (await canvas.getAttribute("data-farmer-bounds"))!,
+          ).y;
+          await page.locator("#farm").evaluate((element) => {
+            element.scrollTop += 80;
+          });
+          await expect
+            .poll(
+              async () =>
+                JSON.parse((await canvas.getAttribute("data-farmer-bounds"))!)
+                  .y,
+            )
+            .toBeLessThan(before - 60);
+        }
+        await page.screenshot({
+          path: `/tmp/interaction-adjacent-${viewport.width}.png`,
+        });
+      }
+      expect(errors).toEqual([]);
     });
   }
 });

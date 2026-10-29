@@ -148,9 +148,6 @@ describe("council quotes", () => {
     );
     expect(forecast.value).toBe(10);
     expect(harvested.state.coins - ripe.coins).toBe(forecast.value);
-    expect(harvested.message).toContain(
-      "Drought reduced this crop to half yield.",
-    );
     const owing = farmAction(
       { ...ripe, owed: 6 },
       { type: "harvest", plot: 0 },

@@ -70,10 +70,11 @@ import {
   pendingCrisis,
 } from "./game/crisis";
 import { mountCrisisDialog, type CouncilAnswer } from "./crisis/dialog";
-import { councilFacts } from "./crisis/council";
+import { councilFacts, waterFact } from "./crisis/council";
 import { openSaveStore } from "./storage/save";
 import "./style.css";
-import type { FarmAction } from "./micro/rules";
+import { waterCrops, type FarmAction } from "./micro/rules";
+import { waterInput } from "./game/crisis-rules";
 import {
   canWork,
   plantQuote,
@@ -638,9 +639,6 @@ function tileContext(cell: Cell): ContextTarget {
     ? { type: "building", id: building.id }
     : { type: "cell", cell };
 }
-function openTile(cell: Cell) {
-  openContext({ type: "cell", cell });
-}
 function openContext(target: ContextTarget, travel = true) {
   if (travel && harvestTarget(target)) return;
   closeService();
@@ -688,15 +686,11 @@ function openContext(target: ContextTarget, travel = true) {
         : debris
           ? debrisTypes[debris.kind]
           : (service ?? { width: 1, height: 1 });
-    const adjacent =
-      Boolean(debris) ||
-      target.type !== "cell" ||
-      state.plotCells.some((c) => cellKey(c) === cellKey(destination));
     const reached = scene.travelTo(
       debris ?? destination,
       lot.width,
       lot.height,
-      adjacent,
+      true,
       structure && isTree(structure.kind) ? "rear" : "front",
       show,
     );
@@ -871,10 +865,6 @@ function refreshContext() {
     );
   } else if (shop) {
     title.textContent = "Seed shop";
-    note(
-      "Harvest values: healthy crops at current prices. Drought halves thirsty crops; council rules can change prices.",
-      "sale-forecast-note",
-    );
     if (state.owed)
       note(`Sales first repay ${state.owed} coins owed.`, "sale-debt-note");
     if (!policy.premiumSeed) shopPremium = false;
@@ -945,8 +935,22 @@ function refreshContext() {
       if (premium) button.dataset.buyPremium = id;
       else button.dataset.buySeed = id;
       button.dataset.unitPrice = String(unit);
-      button.dataset.saleDescription = earnings(sale);
-      button.innerHTML = `${icon(id)}<strong>${premium ? "★ " : ""}${crops[id].name}</strong><span class="shop-price"></span><span class="seed-stock">${icon("seeds")}${premium ? state.premiumSeeds[id] : state.seeds[id]}</span><span class="control-detail"><span class="resource">${icon("duration")}${growthSeasons(state, id, policy)}</span> ${crops[id].plantingSeasons.map((season) => icon(season === "summer" ? "sun" : season)).join("")} <span class="resource">${icon("harvestValue")}${sale.value}</span>${sale.tax ? `<small>−${sale.tax} tax</small>` : ""}${sale.held ? "<small>Next season</small>" : ""}${sale.overQuota ? "<small>Sales limit</small>" : ""}</span>${rule ? `<span class="crop-rule">${rule}</span>` : ""}${!cropUnlocked(state, id) ? `<span class="crop-rule">${opportunities.corn.need}</span>` : ""}`;
+      const drySale = previewSaleQuote(
+        { ...state, seasonSales: undefined },
+        id,
+        policy,
+        turn,
+        premium,
+        false,
+        true,
+      );
+      const saleRange = crops[id].thirsty
+        ? `<span class="seed-sale-range" data-dry="${drySale.value}" data-wet="${sale.value}" role="img" aria-label="Harvest at current prices: ${earnings(drySale)} if dried during growth; ${earnings(sale)} without drought damage"><span>${icon("dryWater")}${drySale.value}</span><span aria-hidden="true">–</span><span>${icon("water")}${sale.value}</span>${icon("coin")}</span>`
+        : `<span class="resource">${icon("harvestValue")}${sale.value}</span>`;
+      button.dataset.saleDescription = crops[id].thirsty
+        ? `${earnings(sale)} without drought damage, ${earnings(drySale)} dry, at current prices`
+        : earnings(sale);
+      button.innerHTML = `${icon(id)}<strong>${premium ? "★ " : ""}${crops[id].name}</strong><span class="shop-price"></span><span class="seed-stock">${icon("seeds")}${premium ? state.premiumSeeds[id] : state.seeds[id]}</span><span class="control-detail"><span class="resource">${icon("duration")}${growthSeasons(state, id, policy)}</span> ${crops[id].plantingSeasons.map((season) => icon(season === "summer" ? "sun" : season)).join("")} ${saleRange}${sale.tax ? `<small>−${sale.tax} tax</small>` : ""}${sale.held ? "<small>Next season</small>" : ""}${sale.overQuota ? "<small>Sales limit</small>" : ""}</span>${rule ? `<span class="crop-rule">${rule}</span>` : ""}${!cropUnlocked(state, id) ? `<span class="crop-rule">${opportunities.corn.need}</span>` : ""}`;
       grid.append(button);
     }
     const update = () => {
@@ -1127,8 +1131,50 @@ function refreshContext() {
     if (index >= 0) {
       if (plot) {
         const ready = plot.growth >= crops[plot.crop].steps;
-        if (plot.dry || plot.premium || plot.withered)
-          note(sentence(plotCondition(plot)));
+        if (plot.premium || plot.withered)
+          note(sentence(plotCondition({ ...plot, dry: undefined })));
+        if (crops[plot.crop].thirsty && !plot.withered) {
+          const nextPlot =
+            state.season === "fall" || final
+              ? plot
+              : waterCrops(state, waterInput(drought, water)).state.plots[
+                  index
+                ]!;
+          const status = nextPlot.withered
+            ? "withering"
+            : plot.dry
+              ? "dry"
+              : nextPlot.dry
+                ? "danger"
+                : "watered";
+          const affected = status !== "watered";
+          const sale = saleQuote(
+            { ...state, seasonSales: undefined },
+            plot.crop,
+            policy,
+            turn,
+            index,
+            nextPlot,
+          );
+          const forecast = document.createElement("div");
+          forecast.className = "crop-water-status";
+          forecast.dataset.water = status;
+          forecast.setAttribute("role", "img");
+          forecast.setAttribute(
+            "aria-label",
+            status === "dry"
+              ? `Drought damage is permanent. Harvest ${earnings(sale)} at current prices.`
+              : status === "danger"
+                ? `${state.season} drought damages this growing crop when you end this turn. Harvest ${earnings(sale)} at current prices.`
+                : status === "withering"
+                  ? "This crop will wither when you end this turn under the irrigation limit."
+                  : ready
+                    ? `Ripe crop is safe from drought. Harvest ${earnings(sale)} at current prices.`
+                    : `Water available this season. Harvest ${earnings(sale)} at current prices if no later drought damage.`,
+          );
+          forecast.innerHTML = `${icon(plot.crop)}${status === "danger" || status === "withering" ? `${icon(state.season === "summer" ? "sun" : state.season)}<span>→</span>` : ""}${icon(status === "withering" ? "withered" : affected ? "dryWater" : "water")}<span>${status === "withering" ? "0" : sale.value}</span>${icon("coin")}`;
+          tileActions.append(forecast);
+        }
         if (ready && !plot.withered)
           note(
             `Sells for ${earnings(saleQuote(state, plot.crop, policy, turn, index))}.`,
@@ -1158,21 +1204,33 @@ function refreshContext() {
           for (const premium of [false, true]) {
             const count = premium ? state.premiumSeeds[id] : state.seeds[id];
             if (premium && !count) continue;
-            const dry =
-              crops[id].thirsty &&
-              drought &&
-              (water.sold || (!water.atCost && !water.well)) &&
-              !water.bought.includes(state.plotIds[index]);
+            const proposedPlot: NonNullable<Plot> = { crop: id, growth: 0 };
+            const nextPlot =
+              state.season === "fall" || state.season === "winter" || final
+                ? proposedPlot
+                : waterCrops(
+                    {
+                      ...state,
+                      plots: state.plots.map((plot, i) =>
+                        i === index ? proposedPlot : plot,
+                      ),
+                    },
+                    waterInput(drought, water),
+                  ).state.plots[index]!;
+            const dry = !!nextPlot.dry,
+              withering = !!nextPlot.withered;
             const quote = plantQuote(state, id, policy, turn, premium, index),
-              sale = previewSaleQuote(
-                { ...state, seasonSales: undefined },
-                id,
-                policy,
-                turn,
-                premium,
-                true,
-                dry,
-              ),
+              sale = withering
+                ? { value: 0, tax: 0, held: false, overQuota: false }
+                : previewSaleQuote(
+                    { ...state, seasonSales: undefined },
+                    id,
+                    policy,
+                    turn,
+                    premium,
+                    true,
+                    dry,
+                  ),
               seasons = growthSeasons(state, id, policy),
               cost = quote.fee + quote.fine;
             const rule =
@@ -1180,7 +1238,7 @@ function refreshContext() {
               (quote.reasons.length
                 ? `${quote.reasons.map(sentence).join(" ")}${quote.fine ? ` Planting anyway costs a ${quote.fine}-coin fine.` : ""}`
                 : "");
-            const label = `Plant ${premium ? "Premium " : ""}${crops[id].name} · ${count} seeds · ${cost} coins · ${seasons} seasons · harvest ${earnings(sale)}${quote.fee ? ` · includes a ${quote.fee}-coin fee` : ""}${rule ? ` · ${rule}` : ""}${dry ? " · Drought: half yield without water" : crops[id].thirsty ? " · Thirsty" : ""}`;
+            const label = `Plant ${premium ? "Premium " : ""}${crops[id].name} · ${count} seeds · ${cost} coins · ${seasons} seasons · harvest ${earnings(sale)}${quote.fee ? ` · includes a ${quote.fee}-coin fee` : ""}${rule ? ` · ${rule}` : ""}${withering ? " · This crop will wither at End turn under the irrigation limit" : dry ? " · Drought: half yield without water" : crops[id].thirsty ? " · Thirsty" : ""}`;
             const button = tileButton(
               label,
               () => workPlot(cell, id, premium),
@@ -1195,7 +1253,7 @@ function refreshContext() {
             button.dataset.crop = id;
             if (premium) button.dataset.premium = "true";
             button.classList.add("plant-card");
-            button.innerHTML = `<span class="plant-card-heading">${icon(id)}<strong>${premium ? "★ " : ""}${crops[id].name}</strong></span><span class="plant-metrics"><span class="resource" data-metric="seeds">${icon("seeds")}<span>Seeds</span><span class="metric-value">${count}</span></span><span class="resource" data-metric="seasons">${icon("duration")}<span>Seasons</span><span class="metric-value">${seasons}</span></span><span class="resource" data-metric="harvest">${icon("harvestValue")}<span>${dry ? "Dry harvest" : "Harvest"}</span><span class="metric-value">${sale.value}</span></span>${cost ? `<span class="resource" data-metric="cost">${icon("coin")}<span>Planting</span><span class="metric-value">${cost}</span></span>` : ""}</span>${sale.tax || sale.held || sale.overQuota ? `<span class="plant-sale-notes">${sale.tax ? `<small>−${sale.tax} tax</small>` : ""}${sale.held ? "<small>Next season</small>" : ""}${sale.overQuota ? "<small>Sales limit</small>" : ""}</span>` : ""}${dry ? `<span class="crop-rule">Drought: half yield without water.</span>` : ""}${rule ? `<span class="crop-rule">${rule}</span>` : ""}`;
+            button.innerHTML = `<span class="plant-card-heading">${icon(id)}<strong>${premium ? "★ " : ""}${crops[id].name}</strong></span><span class="plant-metrics"><span class="resource" data-metric="seeds">${icon("seeds")}<span>Seeds</span><span class="metric-value">${count}</span></span><span class="resource" data-metric="seasons">${icon("duration")}<span>Seasons</span><span class="metric-value">${seasons}</span></span><span class="resource" data-metric="harvest" data-water="${withering ? "withering" : dry ? "dry" : "watered"}">${icon("harvestValue")}<span>${crops[id].thirsty ? icon(withering ? "withered" : dry ? "dryWater" : "water") : ""}</span><span class="metric-value">${sale.value}</span></span>${cost ? `<span class="resource" data-metric="cost">${icon("coin")}<span>Planting</span><span class="metric-value">${cost}</span></span>` : ""}</span>${sale.tax || sale.held || sale.overQuota ? `<span class="plant-sale-notes">${sale.tax ? `<small>−${sale.tax} tax</small>` : ""}${sale.held ? "<small>Next season</small>" : ""}${sale.overQuota ? "<small>Sales limit</small>" : ""}</span>` : ""}${rule ? `<span class="crop-rule">${rule}</span>` : ""}`;
             grid.append(button);
           }
         }
@@ -1395,6 +1453,29 @@ function refreshContext() {
       "duration",
       `${icon("duration")}<span>${final ? "Final season" : "End turn"} · ${rules().turn}/160</span>`,
     );
+    const waterFee = water.atCost && !water.sold ? water.thirsty : 0;
+    if (!final && (water.drying || water.withering || waterFee)) {
+      const transition = document.createElement("div");
+      transition.id = "water-transition";
+      transition.dataset.drying = String(water.drying);
+      transition.dataset.withering = String(water.withering);
+      transition.setAttribute("role", "img");
+      transition.setAttribute(
+        "aria-label",
+        `Ending ${state.season}: ${water.drying} growing crops receive permanent drought damage${water.withering ? `; ${water.withering} crops wither under the irrigation limit` : ""}${waterFee ? `; water costs ${waterFee} coins at End turn` : ""}. Ripe crops are safe from drought.`,
+      );
+      const nextSeason =
+        state.season === "spring"
+          ? "sun"
+          : state.season === "summer"
+            ? "fall"
+            : state.season === "fall"
+              ? "winter"
+              : "spring";
+      transition.innerHTML = `${water.drying || water.withering ? `<span>${icon(state.season === "summer" ? "sun" : state.season)}${icon(drought ? "drought" : "dryWater")}</span><span>→</span><span>${icon(nextSeason)}</span>${water.drying ? `<span class="water-drying">${icon("sprout")}${icon("dryWater")}<strong>${water.drying}</strong></span>` : ""}${water.withering ? `<span class="water-withering">${icon("withered")}<strong>${water.withering}</strong></span>` : ""}` : ""}${waterFee ? `<span class="water-fee">${icon("water")}<span>−${waterFee}</span>${icon("coin")}</span>` : ""}`;
+      button.after(transition);
+      button.setAttribute("aria-describedby", "water-transition");
+    }
     // Described by the council's note only while that note is true.
     if (waiting) button.setAttribute("aria-describedby", "council-wait");
     if (state.season === "fall")
@@ -1430,6 +1511,8 @@ function refreshContext() {
 /** The farmhouse's council rules: what they mean this season, the trades on offer, and every standing rule. */
 function councilRules(waiting: boolean) {
   const council = councilFacts(state, rules());
+  // Icons carry the visible outlook; retain its precise account for screen readers.
+  const waterOutlook = waterFact(state, rules());
   if (
     !state.crises?.length &&
     !council.facts.length &&
@@ -1456,6 +1539,8 @@ function councilRules(waiting: boolean) {
     "#council-facts",
     council.facts.map((fact) => [fact]),
   );
+  for (const item of section.querySelectorAll("#council-facts li"))
+    if (item.textContent === waterOutlook) item.classList.add("sr-only");
   list(
     "#council-standing",
     council.standing.map((rule) => [
@@ -2423,25 +2508,7 @@ scene.onLayout = (targets) => {
           startConstruction(kind, cell);
           return;
         }
-        const context = tileContext(cell);
-        if (context.type !== "cell") {
-          openContext(context);
-          return;
-        }
-        if (state.plotCells.some((c) => cellKey(c) === key)) {
-          openTile(cell);
-          return;
-        }
-        if (debrisAt(state.debris, cell)) {
-          openTile(cell);
-          return;
-        }
-        closeService();
-        const request = ++navigationVersion;
-        scene.travelTo(cell, 1, 1, false, "front", () => {
-          if (request === navigationVersion)
-            message.textContent = "E or Space interacts with the tile ahead.";
-        });
+        openContext(tileContext(cell));
       });
       button.addEventListener("pointerenter", (event) => {
         if (event.pointerType === "mouse" && !placingKind) showPreview(target);
@@ -2617,9 +2684,10 @@ let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
 let renderedFarmState: GameState | undefined;
 function render() {
   inventoryControls?.render();
-  const owed = state.owed ?? 0;
+  const owed = state.owed ?? 0,
+    drought = rules().drought;
   document.querySelector("#season")!.innerHTML =
-    `<span class="sr-only">Year ${state.year}/40 · ${state.season} · ${state.coins.toLocaleString()} coins${owed ? ` · ${owed.toLocaleString()} coins owed` : ""}</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}/40</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span>${owed ? `<span id="owed">Owed ${owed.toLocaleString()}</span>` : ""}</span>`;
+    `<span class="sr-only">Year ${state.year}/40 · ${state.season} · ${state.coins.toLocaleString()} coins${owed ? ` · ${owed.toLocaleString()} coins owed` : ""}</span><span class="calendar"><span aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}</span><span aria-hidden="true"><small>Year ${state.year}/40</small>${state.season}</span><span id="weather-status" data-weather="${drought ? "drought" : "normal"}" role="img" aria-label="${drought ? `Drought this ${state.season}.${state.season === "fall" ? " Winter clears field crops when this season ends." : " Unwatered growing crops lose yield when this season ends; ripe crops are safe."}` : `No drought this ${state.season}.`}">${icon(drought ? "drought" : "weather")}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span>${owed ? `<span id="owed">Owed ${owed.toLocaleString()}</span>` : ""}</span>`;
   // The scene draws the farm under the rules in force, the council's included.
   if (state !== renderedFarmState) {
     scene.setState({ ...state, farmPolicy: rules().policy });

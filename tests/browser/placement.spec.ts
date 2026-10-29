@@ -1,5 +1,10 @@
 import { test, expect } from "./fixtures";
-import { loadPreset, openCell, readFarm } from "./context-helpers";
+import {
+  loadPreset,
+  openCell,
+  readFarm,
+  expectAdjacentToCell,
+} from "./context-helpers";
 test.use({ hasTouch: true });
 
 for (const viewport of [
@@ -19,12 +24,8 @@ for (const viewport of [
     const before = await readFarm(page);
     const land = page.locator('[data-cell="30,30"]');
     await land.press("Enter");
-    await expect(page.locator("canvas")).toHaveAttribute(
-      "data-farmer-cell",
-      "30,30",
-    );
-    await expect(page.locator("#service-panel")).toBeHidden();
-    await page.locator("#open-actions").tap();
+    await expectAdjacentToCell(page, "30,30");
+    await expect(page.locator("#service-panel")).toBeVisible();
     await page.locator('[data-build="shed"]').click();
     const ghost = page.locator("#placement-ghost"),
       preview = page.locator("#placement-preview");
@@ -73,6 +74,7 @@ test("E opens actions, I opens inventory, and Escape cancels an unplaced ghost",
   await expect(page.locator("#placement-ghost")).toBeHidden();
   await expect(page.locator("#farm-mode")).toBeHidden();
   await page.keyboard.press("e");
+  await expect(page.locator("#service-panel")).toBeVisible();
   await expect(page.locator("#service-title")).toHaveText("Open land");
   await page.keyboard.press("e");
   await expect(page.locator("#service-panel")).toBeHidden();

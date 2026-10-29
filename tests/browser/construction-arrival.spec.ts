@@ -1,5 +1,11 @@
 import { test, expect } from "./fixtures";
-import { loadPreset, openCell, readFarm, setFarm } from "./context-helpers";
+import {
+  loadPreset,
+  openCell,
+  readFarm,
+  setFarm,
+  expectAdjacentToCell,
+} from "./context-helpers";
 
 for (const [kind, category, title] of [
   ["shed", "farm", "Seed storehouse"],
@@ -30,7 +36,7 @@ for (const [kind, category, title] of [
     await openCell(page, "30,30");
     await page.locator(`[data-category="${category}"]`).click();
     const canvas = page.locator("canvas");
-    await expect(canvas).toHaveAttribute("data-farmer-cell", "30,30");
+    await expectAdjacentToCell(page, "30,30");
     await canvas.evaluate((el) => {
       const trace: string[] = [el.dataset.farmerCell!];
       Object.assign(el, { constructionTrace: trace });

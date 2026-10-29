@@ -9,53 +9,65 @@ export async function openCell(page: Page, cell: string) {
   await closeActions(page);
   const target = page.locator(`[data-cell="${cell}"]`);
   await target.press("Enter");
-  if ((await target.getAttribute("aria-label"))?.startsWith("Land ")) {
-    await expect(page.locator("canvas")).toHaveAttribute(
-      "data-farmer-cell",
-      cell,
-      { timeout: 30000 },
-    );
-    await expect(page.locator("canvas")).toHaveAttribute(
-      "data-farmer-motion",
-      "idle",
-    );
-    const [row, col] = cell.split(",").map(Number);
-    const neighbors = [
-      { cell: `${row},${col - 1}`, key: "d" },
-      { cell: `${row - 1},${col}`, key: "s" },
-      { cell: `${row},${col + 1}`, key: "a" },
-      { cell: `${row + 1},${col}`, key: "w" },
-    ];
-    for (const neighbor of neighbors) {
-      const stance = page.locator(`[data-cell="${neighbor.cell}"]`);
-      if (
-        !(await stance.count()) ||
-        !(await stance.getAttribute("aria-label"))?.startsWith("Land ")
-      )
-        continue;
-      await stance.press("Enter");
-      await expect(page.locator("canvas")).toHaveAttribute(
-        "data-farmer-cell",
-        neighbor.cell,
-      );
-      await expect(page.locator("canvas")).toHaveAttribute(
-        "data-farmer-motion",
-        "idle",
-      );
-      // Face and interact in the same input tick, before the next walking frame.
-      await page.locator("#farm").evaluate((element, key) => {
-        element.dispatchEvent(
-          new KeyboardEvent("keydown", { key, bubbles: true }),
-        );
-        element.dispatchEvent(
-          new KeyboardEvent("keydown", { key: "e", bubbles: true }),
-        );
-      }, neighbor.key);
-      break;
-    }
-  }
+
   await expect(page.locator("#service-panel")).toBeVisible();
 }
+/** Assert a completed visit stands beside, and faces, the selected tile. */
+export async function expectAdjacentToCell(
+  page: Page,
+  cell: string,
+): Promise<string> {
+  const canvas = page.locator("canvas");
+  const [row, col] = cell.split(",").map(Number);
+  await expect
+    .poll(
+      async () => {
+        const data = await canvas.evaluate((element) => element.dataset);
+        const [farmerRow, farmerCol] = (data.farmerCell ?? "")
+          .split(",")
+          .map(Number);
+        const facing =
+          row < farmerRow
+            ? "back-right"
+            : row > farmerRow
+              ? "front-left"
+              : col < farmerCol
+                ? "back-left"
+                : "front-right";
+        return (
+          data.farmerMotion === "idle" &&
+          Math.abs(row - farmerRow) + Math.abs(col - farmerCol) === 1 &&
+          data.farmerFacing === facing
+        );
+      },
+      { timeout: 30000, message: `Farmer arrives beside ${cell} and faces it` },
+    )
+    .toBe(true);
+  const stance = (await canvas.getAttribute("data-farmer-cell"))!;
+  return stance;
+}
+
+/** Position fixtures on a precise walkable tile using the player's movement controls. */
+export async function walkToCell(page: Page, cell: string): Promise<void> {
+  await openCell(page, cell);
+  const stance = await expectAdjacentToCell(page, cell);
+  const [row, col] = cell.split(",").map(Number);
+  const [farmerRow, farmerCol] = stance.split(",").map(Number);
+  await closeActions(page);
+  await page.locator("#farm").focus();
+  await page.keyboard.press(
+    row < farmerRow ? "w" : row > farmerRow ? "s" : col < farmerCol ? "a" : "d",
+  );
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-farmer-cell",
+    cell,
+  );
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-farmer-motion",
+    "idle",
+  );
+}
+
 export async function buildAt(page: Page, kind: string, cell: string) {
   await openCell(page, cell);
   const category = ["coop", "dairy", "sheepfold"].includes(kind)

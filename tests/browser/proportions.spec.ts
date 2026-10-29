@@ -1,3 +1,4 @@
+import { walkToCell } from "./context-helpers";
 import { test, expect } from "./fixtures";
 import { visitBuilding } from "./helpers";
 import { homesteadState } from "../../src/game/state";
@@ -58,7 +59,7 @@ test("End Turn visits a compact retained farmhouse using its actual lot", async 
     6,
   );
   await expect(page.locator("#import")).toHaveValue("");
-  await page.locator('[data-cell="13,15"]').press("Enter");
+  await walkToCell(page, "13,15");
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-farmer-cell",
     "13,15",

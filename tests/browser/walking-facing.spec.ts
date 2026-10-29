@@ -1,3 +1,4 @@
+import { expectAdjacentToCell, walkToCell } from "./context-helpers";
 import { openCanvasHarness } from "./canvas-harness";
 import { test, expect } from "./fixtures";
 
@@ -28,8 +29,7 @@ for (const variant of ["male", "female"] as const) {
       );
     }
     const canvas = page.locator("canvas");
-    await page.locator('[data-cell="20,20"]').press("Enter");
-    await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20");
+    await walkToCell(page, "20,20");
     await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
     await page.evaluate(async () => {
       const modulePath = "/src/game/farmer.ts";
@@ -43,8 +43,17 @@ for (const variant of ["male", "female"] as const) {
       ) {
         const walking = this["route"].length > 0;
         const { x, y } = this.view;
+        const direction = { ...this["direction"] };
         original.apply(this, args);
-        if (walking && (this.view.x !== x || this.view.y !== y)) {
+        // A frame can cross a corner before choosing its pose. Compare movement
+        // and artwork on straight walking frames, excluding turns and arrival.
+        if (
+          walking &&
+          this["route"].length > 0 &&
+          direction.row === this["direction"].row &&
+          direction.col === this["direction"].col &&
+          (this.view.x !== x || this.view.y !== y)
+        ) {
           observed.walkSamples.push({
             frame: Number(this["art"].frame.name),
             flipX: this["art"].flipX,
@@ -84,20 +93,29 @@ for (const variant of ["male", "female"] as const) {
           prefix: `farmer${variant === "female" ? "-female" : ""}-walk:`,
         },
       );
-      await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
+      await expectAdjacentToCell(page, cell);
+      await walkToCell(page, cell);
       await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
       const samples = await page.evaluate(
         () => (window as unknown as { walkSamples: WalkSample[] }).walkSamples,
       );
       const rear = facing.startsWith("back");
       const left = facing.endsWith("left");
+      // Adjacent visits may turn around the target before the final keyboard step.
+      // Keep complete-cycle coverage for the intended direction, then verify every
+      // sampled pose against its actual travel direction, including those turns.
+      const directional = samples.filter(
+        (sample) =>
+          Math.sign(sample.dx) === (left ? -1 : 1) &&
+          Math.sign(sample.dy) === (rear ? -1 : 1),
+      );
       expect(
-        [...new Set(samples.map((sample) => sample.frame))].sort(),
+        [...new Set(directional.map((sample) => sample.frame))].sort(),
       ).toEqual(rear ? [4, 5, 6, 7] : [0, 1, 2, 3]);
       for (const sample of samples) {
-        expect(sample.flipX).toBe(left);
-        expect(Math.sign(sample.dx)).toBe(left ? -1 : 1);
-        expect(Math.sign(sample.dy)).toBe(rear ? -1 : 1);
+        expect(sample.flipX).toBe(sample.dx < 0);
+        expect(sample.frame).toBeGreaterThanOrEqual(sample.dy < 0 ? 4 : 0);
+        expect(sample.frame).toBeLessThanOrEqual(sample.dy < 0 ? 7 : 3);
       }
     }
   });
@@ -157,11 +175,7 @@ test("walking ignores stale frame averages and queued-work speed boosts", async 
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto("/?instance=validation-walk-timing");
   await expect(page.locator("main")).toHaveJSProperty("inert", false);
-  await page.locator('[data-cell="20,20"]').press("Enter");
-  await expect(page.locator("canvas")).toHaveAttribute(
-    "data-farmer-cell",
-    "20,20",
-  );
+  await walkToCell(page, "20,20");
   await page.keyboard.press("Escape");
   await page.locator('[data-cell="20,40"]').press("Enter");
   const samples = await page.evaluate(async () => {

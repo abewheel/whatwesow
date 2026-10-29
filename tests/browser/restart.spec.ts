@@ -40,7 +40,6 @@ test("land actions open visual categories and field deletion gives no refund", a
     "data-farmer-motion",
     "walk",
   );
-  await page.keyboard.press("e");
   await expect(page.locator("#service-panel")).toBeVisible();
   await expect(page.locator("#service-title")).toHaveText("Open land");
   await expect(page.locator("canvas")).toHaveAttribute(

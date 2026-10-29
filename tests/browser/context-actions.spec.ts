@@ -62,7 +62,14 @@ test("popup follows its tile and flips away from viewport edges", async ({
     panel = page.locator("#service-panel");
   const before = (await panel.boundingBox())!,
     target = (await cell.boundingBox())!;
-  expect(Math.abs(before.x - (target.x + target.width / 2))).toBeLessThan(330);
+  const targetCenter = target.x + target.width / 2;
+  // Either side is valid: the menu stays across the target from the farmer.
+  expect(
+    Math.min(
+      Math.abs(before.x - targetCenter),
+      Math.abs(before.x + before.width - targetCenter),
+    ),
+  ).toBeLessThan(target.width / 2 + 24);
   await page.locator("#farm").evaluate((e) => (e.scrollLeft += 90));
   await expect
     .poll(async () => Math.round((await panel.boundingBox())!.x))
