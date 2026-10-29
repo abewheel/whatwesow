@@ -39,7 +39,7 @@ function knee(hip: Point, ankle: Point): Point {
   const dy = ankle.y - hip.y;
   const distance = Math.hypot(dx, dy);
   // Equal bone lengths, bending toward the direction of travel.
-  const bend = Math.sqrt(Math.max(0, 31 ** 2 - (distance / 2) ** 2));
+  const bend = Math.sqrt(Math.max(0, 40 ** 2 - (distance / 2) ** 2));
   return {
     x: (hip.x + ankle.x) / 2 + (dy / distance) * bend,
     y: (hip.y + ankle.y) / 2 - (dx / distance) * bend,
@@ -76,27 +76,27 @@ export function createFarmerGait(source: CanvasImageSource, female = false) {
       const steps = [farmerStep(phase), farmerStep(phase + 0.5)];
       const leg = (side: number) => {
         const { reach, lift } = steps[side];
-        const hip = { x: side ? 69 : 56, y: 111 + bob };
+        const hip = { x: side ? 69 : 56, y: 94 + bob };
         const ankle = {
           x: hip.x + reach,
           y: (side ? 172 : 166) + reach * (back ? -0.28 : 0.28) - lift,
         };
         const joint = knee(hip, ankle);
-        bone(thighs[back], hip, joint, female ? 19 : 21);
-        bone(shins[back], joint, ankle, female ? 17 : 19);
+        bone(thighs[back], hip, joint, female ? 25 : 27);
+        bone(shins[back], joint, ankle, female ? 23 : 25);
       };
       const arm = (side: number) => {
         const reach = -steps[side].reach;
         // The torso already includes the shoulder caps. Keep the upper arm
         // beneath them and attach the forearm at the outer sleeve opening.
-        const shoulder = { x: side ? 88 : 39, y: 72 + bob };
-        const elbow = { x: shoulder.x + reach * 0.12, y: 91 + bob };
+        const shoulder = { x: side ? 85 : 43, y: 61 + bob };
+        const elbow = { x: shoulder.x + reach * 0.12, y: 86 + bob };
         const hand = {
           x: shoulder.x + reach * 0.45,
-          y: 119 + bob - Math.abs(reach) * 0.12,
+          y: 126 + bob - Math.abs(reach) * 0.12,
         };
-        bone(sleeve, shoulder, elbow, female ? 15 : 17);
-        bone(forearm, elbow, hand, female ? 15 : 17);
+        bone(sleeve, shoulder, elbow, female ? 19 : 21);
+        bone(forearm, elbow, hand, female ? 19 : 21);
       };
       leg(0);
       leg(1);
@@ -105,7 +105,7 @@ export function createFarmerGait(source: CanvasImageSource, female = false) {
       // hand or duplicate sleeve appear across the farmer's back.
       arm(1);
       arm(0);
-      part(torsos[(female ? 2 : 0) + back], 27, 3 + bob, 73, 116);
+      part(torsos[(female ? 2 : 0) + back], 33, 5 + bob, 62, 96);
       context.restore();
     }
   }
