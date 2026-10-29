@@ -72,8 +72,18 @@ test("quotes repeated construction costs and disables blocked footprints and pol
   await expect(page.locator('[data-build="shed"] .plan-rule')).toHaveText(
     "No more allowed by the council",
   );
-  await openCell(page, "63,63");
+  // Keep the footprint check local to this fixture. Walking from 30,30 to
+  // 63,63 takes more than thirteen seconds even before rendering overhead.
+  // Clear the policy first so a disabled plan proves the occupied footprint.
+  state.farmPolicy = {};
+  await setFarm(page, state);
+  await openCell(page, "30,30");
+  await expect(page.locator('[data-build="barn"]')).toBeEnabled();
+  state.plotCells[0] = { row: 31, col: 31 };
+  await setFarm(page, state);
+  await openCell(page, "30,30");
   await expect(page.locator('[data-build="barn"]')).toBeDisabled();
+  await expect(page.locator('[data-build="barn"] .plan-rule')).toHaveCount(0);
 });
 test("deletes a planted plot immediately without a refund", async ({
   page,

@@ -14,11 +14,24 @@ test("honey rescues an empty farm and can only be collected once until next seas
   const farm = JSON.parse(
     await page.getByLabel("Game state JSON").inputValue(),
   );
-  await page
-    .getByLabel("Game state JSON")
-    .fill(JSON.stringify({ ...farm, coins: 0 }));
+  await page.getByLabel("Game state JSON").fill(
+    JSON.stringify({
+      ...farm,
+      coins: 0,
+      plots: [null],
+      plotCells: [{ row: 6, col: 2 }],
+      plotIds: [1],
+      nextPlotId: 2,
+      structures: [{ id: 1, kind: "home", row: 1, col: 1, level: 1 }],
+      debris: [],
+    }),
+  );
   await page.getByRole("button", { name: "Apply state" }).click();
   await expect(page.locator("#dev-status")).toContainText("applied");
+  // Reload the isolated fixture so the farmer starts beside its one empty
+  // plot. Honey recovery does not need repeated walks across a large estate.
+  await page.reload();
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
   const hive = page.locator('[data-service="hive"]');
   // Center the ground target below the fixed HUD, then let Playwright check
   // that the pointer can actually reach it instead of forcing an obscured hit.
@@ -31,9 +44,7 @@ test("honey rescues an empty farm and can only be collected once until next seas
     "walk",
   );
   await expect(page.locator("#service-panel")).toBeHidden();
-  // A corner visit spans the whole farm; wait for arrival with the same
-  // bounded travel budget as a home visit, rather than the short UI timeout.
-  await expect(page.locator("#service-panel")).toBeVisible({ timeout: 60000 });
+  await expect(page.locator("#service-panel")).toBeVisible();
   await expect(page.locator("#service-title")).toHaveText("Wild beehive");
   await expect(page.locator("#farm canvas")).toHaveAttribute(
     "data-farmer-cell",
@@ -55,7 +66,7 @@ test("honey rescues an empty farm and can only be collected once until next seas
     target.scrollIntoView({ block: "center", inline: "center" }),
   );
   await hive.click();
-  await expect(page.locator("#service-panel")).toBeVisible({ timeout: 60000 });
+  await expect(page.locator("#service-panel")).toBeVisible();
   await expect(page.locator("#collect-honey")).toBeDisabled();
   await page
     .getByRole("button", { name: "Close actions", exact: true })
@@ -66,7 +77,7 @@ test("honey rescues an empty farm and can only be collected once until next seas
     target.scrollIntoView({ block: "center", inline: "center" }),
   );
   await hive.click();
-  await expect(page.locator("#service-panel")).toBeVisible({ timeout: 60000 });
+  await expect(page.locator("#service-panel")).toBeVisible();
   await expect(page.locator("#collect-honey")).toBeEnabled();
   await page.locator("#collect-honey").click();
   await expect(page.locator("#season")).toContainText("24 coins");
