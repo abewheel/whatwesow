@@ -33,7 +33,8 @@ test("land opens visual categories on arrival and field deletion gives no refund
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
-  await page.locator('[data-cell="20,20"]').click();
+  // Nearby open land exercises arrival without a cross-farm timing dependency.
+  await page.locator('[data-cell="14,12"]').click();
   await expect(page.locator("#service-panel")).toBeHidden();
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-farmer-motion",
