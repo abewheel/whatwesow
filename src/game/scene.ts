@@ -132,6 +132,7 @@ export class FarmScene extends Phaser.Scene {
   private policy: MacroState["farmPolicy"];
   private view = { x: 0, y: 0, width: 800, height: 600, zoom: 1 };
   private drawnView?: typeof this.view;
+  private sortedFarmerDepth?: number;
   setViewport(x: number, y: number, width: number, height: number, zoom = 1) {
     this.view = { x, y, width, height, zoom };
     if (this.ground) {
@@ -589,7 +590,12 @@ export class FarmScene extends Phaser.Scene {
       if (import.meta.env.DEV)
         this.game.canvas.dataset.farmerDepth = String(this.farmer.view.depth);
     }
-    this.scenery?.sort("depth");
+    const depth = this.farmer?.view.depth;
+    // Roadside walkers also change depth while the farmer is standing still.
+    if (this.boundaryWalkers.length || depth !== this.sortedFarmerDepth) {
+      this.scenery?.sort("depth");
+      this.sortedFarmerDepth = depth;
+    }
     if (import.meta.env.DEV)
       this.game.canvas.dataset.sceneRemoving = JSON.stringify(
         [...this.fadingViews].map((object) => ({
@@ -762,6 +768,13 @@ export class FarmScene extends Phaser.Scene {
     }
   }
   private draw(publishLayout = true) {
+    this.sortedFarmerDepth = undefined;
+    if (import.meta.env.DEV) {
+      const canvas = this.game.canvas;
+      canvas.dataset.farmDraws = String(
+        Number(canvas.dataset.farmDraws ?? 0) + 1,
+      );
+    }
     // Keep a screen-space gutter so touch scrolling usually moves only the camera.
     const padding = 256;
     const view = {

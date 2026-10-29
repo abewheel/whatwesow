@@ -156,6 +156,39 @@ test.describe("phone forms and gestures", () => {
     await page.locator("#close-camera").tap();
     await expect(page.locator(".camera-panel")).toBeHidden();
   });
+  test("reuses the farm while panning inside the cached margin", async ({
+    page,
+  }) => {
+    await begin(page, "validation-mobile-pan-cache");
+    const canvas = page.locator("#farm canvas");
+    await expect(canvas).toHaveAttribute("data-farm-draws", /[1-9]/);
+    const settleScroll = () =>
+      page.evaluate(
+        () =>
+          new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          ),
+      );
+    await settleScroll();
+    const before = Number(await canvas.getAttribute("data-farm-draws"));
+    await page.locator("#farm").evaluate((farm) => {
+      farm.scrollLeft += 80;
+    });
+    await settleScroll();
+    expect(Number(await canvas.getAttribute("data-farm-draws"))).toBe(before);
+    await page.locator("#farm").evaluate((farm) => {
+      farm.scrollLeft += 300;
+    });
+    await expect
+      .poll(async () => Number(await canvas.getAttribute("data-farm-draws")))
+      .toBeGreaterThan(before);
+    await page.getByLabel("View controls", { exact: true }).tap();
+    await page.locator("#zoom-in").tap();
+    await expect(page.locator("#zoom-level")).toHaveText("125%");
+    await expect
+      .poll(async () => Number(await canvas.getAttribute("data-farm-draws")))
+      .toBeGreaterThan(before + 1);
+  });
   test("touch panning moves the estate without planting or scrolling the page", async ({
     page,
     context,

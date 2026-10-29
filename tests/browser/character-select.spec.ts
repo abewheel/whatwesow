@@ -20,7 +20,19 @@ for (const variant of ["male", "female"] as const) {
       "data-farmer-frame",
       `${texture}:42`,
     );
-    await page.reload();
+    let releaseArtwork!: () => void;
+    const artworkGate = new Promise<void>((resolve) => {
+      releaseArtwork = resolve;
+    });
+    await page.route("**/art/farm-atlas.png", async (route) => {
+      await artworkGate;
+      await route.continue();
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("#save-status")).toHaveText(
+      "Saved on this browser",
+    );
+    releaseArtwork();
     await expect(page.locator("#startup")).toBeHidden();
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-frame",

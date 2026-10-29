@@ -1479,8 +1479,12 @@ characterSelect
   });
 const loadingProgress =
   document.querySelector<HTMLProgressElement>("#loading-progress")!;
+let sceneCreated = false;
 const sceneReady = new Promise<void>((resolve) => {
-  scene.onReady = resolve;
+  scene.onReady = () => {
+    sceneCreated = true;
+    resolve();
+  };
 });
 scene.onProgress = (value) => {
   loadingProgress.value = value;
@@ -2219,6 +2223,13 @@ scene.onLayout = (targets) => {
       cellButtons.delete(key);
     }
   const services = villageServices();
+  const serviceMap = new Map(
+    services.flatMap((service) =>
+      footprint(service, service.width, service.height).map(
+        (cell) => [cellKey(cell), service] as const,
+      ),
+    ),
+  );
   const { policy } = rules();
   const taken = new Set((policy.takenCells ?? []).map(cellKey));
   const sealed = new Set(policy.sealedBuildings ?? []);
@@ -2308,9 +2319,7 @@ scene.onLayout = (targets) => {
     else delete button.dataset.structure;
     if (index !== undefined) button.dataset.plot = String(index);
     else delete button.dataset.plot;
-    const service = services.find((s) =>
-      footprint(s, s.width, s.height).some((c) => cellKey(c) === key),
-    );
+    const service = serviceMap.get(key);
     if (service && target.row === service.row && target.col === service.col)
       button.dataset.service = service.id;
     else delete button.dataset.service;
@@ -2454,13 +2463,17 @@ const instance = import.meta.env.DEV
   : "player";
 const namespace = import.meta.env.DEV ? `dev-${instance}` : "player";
 let store: Awaited<ReturnType<typeof openSaveStore>> | undefined;
+let renderedFarmState: GameState | undefined;
 function render() {
   inventoryControls?.render();
   const owed = state.owed ?? 0;
   document.querySelector("#season")!.innerHTML =
     `<span class="sr-only">Year ${state.year}/40 · ${state.season} · ${state.coins.toLocaleString()} coins${owed ? ` · ${owed.toLocaleString()} coins owed` : ""}</span><span class="calendar" aria-hidden="true">${icon(state.season === "summer" ? "sun" : state.season)}<span><small>Year ${state.year}/40</small>${state.season}</span></span><span class="coin-balance" aria-hidden="true">${icon("coin")}<span id="coin-count">${harvestFeedback.balance(state.coins).toLocaleString()}</span>${owed ? `<span id="owed">Owed ${owed.toLocaleString()}</span>` : ""}</span>`;
   // The scene draws the farm under the rules in force, the council's included.
-  scene.setState({ ...state, farmPolicy: rules().policy });
+  if (state !== renderedFarmState) {
+    scene.setState({ ...state, farmPolicy: rules().policy });
+    renderedFarmState = sceneCreated ? state : undefined;
+  }
   councilMeeting.hidden = pendingCrisis(state) === undefined;
   crisisDialog.refresh();
   const placing = placingKind !== null;
