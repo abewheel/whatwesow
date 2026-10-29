@@ -1,8 +1,15 @@
 import { openCanvasHarness } from "./canvas-harness";
 import { test, expect } from "./fixtures";
 
+type WalkSample = {
+  frame: number;
+  flipX: boolean;
+  dx: number;
+  dy: number;
+};
+
 for (const variant of ["male", "female"] as const) {
-  test(`${variant} walks with coherent front and rear poses in all four directions`, async ({
+  test(`${variant} mirrors complete walking sprites to match travel in all four directions`, async ({
     page,
   }) => {
     await page.goto(`/?instance=validation-facing-${variant}`);
@@ -24,6 +31,29 @@ for (const variant of ["male", "female"] as const) {
     await page.locator('[data-cell="20,20"]').press("Enter");
     await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20");
     await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
+    await page.evaluate(async () => {
+      const modulePath = "/src/game/farmer.ts";
+      const { Farmer } = await import(modulePath);
+      const original = Farmer.prototype.update;
+      const observed = window as unknown as { walkSamples: WalkSample[] };
+      observed.walkSamples = [];
+      Farmer.prototype.update = function (
+        this: import("../../src/game/farmer").Farmer,
+        ...args: Parameters<import("../../src/game/farmer").Farmer["update"]>
+      ) {
+        const walking = this["route"].length > 0;
+        const { x, y } = this.view;
+        original.apply(this, args);
+        if (walking && (this.view.x !== x || this.view.y !== y)) {
+          observed.walkSamples.push({
+            frame: Number(this["art"].frame.name),
+            flipX: this["art"].flipX,
+            dx: this.view.x - x,
+            dy: this.view.y - y,
+          });
+        }
+      };
+    });
     for (const [cell, facing] of [
       ["20,24", "front-right"],
       ["24,24", "front-left"],
@@ -31,6 +61,9 @@ for (const variant of ["male", "female"] as const) {
       ["20,20", "back-right"],
     ]) {
       await page.keyboard.press("Escape");
+      await page.evaluate(() => {
+        (window as unknown as { walkSamples: WalkSample[] }).walkSamples = [];
+      });
       await page.locator(`[data-cell="${cell}"]`).press("Enter");
       // Observe the transient pose atomically before arrival can replace it.
       await page.waitForFunction(
@@ -53,6 +86,19 @@ for (const variant of ["male", "female"] as const) {
       );
       await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
       await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
+      const samples = await page.evaluate(
+        () => (window as unknown as { walkSamples: WalkSample[] }).walkSamples,
+      );
+      const rear = facing.startsWith("back");
+      const left = facing.endsWith("left");
+      expect(
+        [...new Set(samples.map((sample) => sample.frame))].sort(),
+      ).toEqual(rear ? [4, 5, 6, 7] : [0, 1, 2, 3]);
+      for (const sample of samples) {
+        expect(sample.flipX).toBe(left);
+        expect(Math.sign(sample.dx)).toBe(left ? -1 : 1);
+        expect(Math.sign(sample.dy)).toBe(rear ? -1 : 1);
+      }
     }
   });
 }

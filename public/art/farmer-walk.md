@@ -16,32 +16,39 @@ The accepted front-strip prompt, followed by the targeted correction, was:
 
 > Preserve the character and four cells. Reduce the marching stride to a relaxed walking step. In pose 2, the far boot passes close to the supporting ankle rather than lifting to hip height. In pose 4, the far leg supports while the near boot passes forward. Preserve opposite contact legs in poses 1 and 3.
 
-The accepted rear-strip prompt and corrections were:
+## Rear walk geometry
 
-> Render the four-panel motion guide as the rear of the same farmer, with the original idle artwork supplying identity and style. Face upper right, showing the back of the hat, shirt and overalls. Preserve four distinct leg arrangements, compact proportions and equal scale. Arms counter-swing beside the torso. Transparent background, no labels, ground or shadows.
+The rear row uses one fixed upper-right heading. The head, shoulders, pelvis, knees, and both boot toes share that heading throughout the cycle. Both legs swing along parallel upper-right/lower-left paths, with opposite arm swings. The contact poses alternate which leg leads; the passing poses bring the feet together with a low bent knee. A trailing foot stays on its own path instead of kicking sideways toward the opposite screen corner.
 
-> Change only panel 3's lower body: the right boot trails at lower right with its sole visible; the left boot is farther away, showing its toe/side. Keep the legs separate. Preserve the other panels and the head, torso and arms.
+The built-in image tool used the original front artwork for identity and style, plus a four-pose skeletal guide for the rear walk. The generation brief was:
 
-> Change only panel 1's arms: the left arm swings forward around the body's side while the right arm swings back, visible outside the right hip. Preserve all leg poses and other panels.
+> Render the four skeletal poses as the same compact farmer, viewed from behind while moving upper-right. Preserve the straw hat, green shirt, denim overalls, chunky boots, and warm painted pixel style. Keep head, torso, hips, knees, and both toes facing upper-right in every pose. The legs alternate on parallel diagonal paths, and arms swing opposite their corresponding legs. Use low passing steps, a stable head and torso, equal scale, and transparent gutters. No labels, ground, or shadows.
 
-The female conversion prompt, applied separately to front and rear strips, was:
+The targeted third-pose correction was:
 
-> Preserve the four distinct poses, scale, layout and transparent background. Change only identity to the existing female farmer: the same young adult woman, face and eyes, brown braid, no facial hair, straw hat, green shirt, denim overalls and chunky boots. Match the original female idle and rear artwork. Do not change steps, arm placement or camera angle.
+> Move the near leg forward toward screen right, showing the boot's side and toe pointing upper-right. Move the far leg back toward screen left, partly behind the near leg. The near thigh overlaps in front of the far thigh. Swing the near arm back beside the hip and the far arm forward behind the torso. Preserve the head, torso, and the other poses. Both boots must retain the same upper-right heading.
 
-The final arm-continuity edit, applied to both variants and views, was:
+The female conversion preserved these poses and changed only identity to the existing female farmer, including her brown braid. Each rear strip uses a uniform scale and aligned hat silhouettes. Extraction keeps complete connected silhouettes even where a boot crosses a source-cell boundary. The original front rows are copied without resampling.
 
-> Preserve all character identity, body proportions, leg and boot poses, scale and layout. Change only arms in passing panels 2 and 4 to hang relaxed nearly vertically beside the hips, hands alongside upper thighs. These are neutral intermediate poses between opposite arm swings. Soften the front panel 3 forward swing so the hand stays near the hip rather than crossing the bib. Keep contact panels and all leg phases unchanged.
+## Four screen directions
 
-## Rear cycle alignment
+The renderer chooses the front or rear row from vertical screen movement and mirrors the entire sprite for leftward movement. It never flips body parts separately.
 
-The rear row was rebuilt with a four-pose motion guide so the feet stride along the same heading as the head, torso, and hips. The contact poses alternate the near and far leading leg, with a passing pose between them. Both boot toes follow the travel direction instead of spreading sideways. All front-row pixels were preserved.
+| Screen travel | Row | Whole-sprite horizontal mirror |
+| --- | --- | --- |
+| Down-right | Front, frames 0–3 | No |
+| Down-left | Front, frames 0–3 | Yes |
+| Up-right | Rear, frames 4–7 | No |
+| Up-left | Rear, frames 4–7 | Yes |
 
-The rear generation used the approved front artwork for identity and a separate skeletal guide for poses:
+The browser direction checks observe actual sprite frames, horizontal mirroring, and projected movement for both farmers. Every direction must visit all four poses. Visual review covers the complete cycle and its mirrored version because frame metadata alone cannot verify painted anatomy.
 
-> Render four distinct rear three-quarter walking poses. The near leg leads in frame 1, supports in frame 2, trails in frame 3, and passes in frame 4. The far leg does the opposite. Keep the head, shoulders, pelvis, knees, and toes facing the same rightward heading. Legs swing forward and backward along that heading, not sideways. Preserve the original stocky proportions, clothing, hat, and painted style. Four evenly spaced full bodies, consistent scale, transparent background.
+## Front arm occlusion
 
-A targeted follow-up corrected the fourth pose's leg overlap and softened the intermediate arm positions:
+In the third front-facing pose (frame 2), the far arm is hidden behind the torso. Its old protruding hand and upper sleeve read as an extra arm coming out of the farmer's back. A local cutout correction removes the entire exposed far arm, including its sleeve, for both farmers while preserving the foreground sleeve, arm, and hand. The female farmer's braid keeps its original contour. Every other frame, including the rear rows, retains its pixels from the direction-alignment revision.
 
-> In panel 4, the near leg swings forward across and in front of the far supporting leg, opposite panel 2. Preserve the other leg poses and heading. Use relaxed intermediate arm positions in panels 2 and 4.
+The built-in image tool received each existing third pose with this edit prompt:
 
-The female conversion preserved those four rear poses and changed only identity to the original female artwork, including her face and braid. Each complete source row was uniformly scaled and packed into the existing 128 × 192 cells with the existing foot anchor; no separately scaled body parts or rendering changes were introduced.
+> Remove the entire stray far arm, including the small green upper-arm and sleeve lump protruding to the left behind the large foreground sleeve. That arm is fully occluded behind the torso at this gait phase. Replace it with transparency so the back contour follows the torso without a second sleeve. Preserve the female farmer's braid. Preserve the foreground sleeve and arm, pose, head, clothing, legs, boots, character identity, and painted style. Do not add another hand.
+
+Only the corrected cutout around the stray arm is composited into the original frame. The mirrored front-left cycle uses the same corrected pose.
