@@ -598,6 +598,47 @@ export class FarmScene extends Phaser.Scene {
         })),
       );
   }
+  private placementImages = new Map<string, string>();
+  /** Export the same isolated artwork and world bounds used by the farm. */
+  placementArtwork(kind: keyof typeof buildings, cell: Cell) {
+    const lot = { ...cell, ...buildings[kind], kind };
+    let texture: string, frame: number | undefined;
+    let bounds: { x: number; y: number; width: number; height: number };
+    if (kind === "beehive") {
+      texture = woodenHiveTexture(this.season);
+      bounds = hiveBounds(projectCell(hiveAnchor(lot)));
+    } else if (isTree(kind)) {
+      texture = `tree-${kind}`;
+      frame =
+        (this.season === "winter" ? 2 : this.season === "fall" ? 1 : 0) * 3;
+      const source = this.textures.getFrame(texture, frame);
+      const point = projectCell(cell);
+      bounds = {
+        x: point.x - (source.cutWidth * 0.13) / 2,
+        y: point.y - source.cutHeight * 0.13,
+        width: source.cutWidth * 0.13,
+        height: source.cutHeight * 0.13,
+      };
+    } else {
+      const distinct = distinctStructures[kind];
+      const art = isAnimal(kind)
+        ? animalArtwork({ ...lot, kind })
+        : buildingArtwork(lot, distinct ?? lot.frame, distinct !== undefined);
+      texture = isAnimal(kind)
+        ? "animal-buildings"
+        : distinct !== undefined
+          ? "distinct-buildings"
+          : "farm-states";
+      frame = isAnimal(kind)
+        ? animalFrame(kind, this.season)
+        : (distinct ?? lot.frame);
+      bounds = { ...projectCell(art), width: art.size, height: art.height };
+    }
+    const key = `${texture}:${frame}`;
+    if (!this.placementImages.has(key))
+      this.placementImages.set(key, this.textures.getBase64(texture, frame));
+    return { ...bounds, src: this.placementImages.get(key)! };
+  }
   farmerPosition() {
     return this.farmer
       ? { x: this.farmer.view.x, y: this.farmer.view.y }

@@ -78,6 +78,7 @@ test("coop plans reserve land, complete next season, and keep collection state a
   await openCell(page, "14,19");
   await page.locator('[data-category="animals"]').click();
   await page.locator('[data-build="coop"]').click();
+  await page.locator('[data-cell="14,19"]').press("Enter");
   await expect(page.locator("#coin-count")).toHaveText("760");
   await expect(page.locator('[data-structure="2"]')).toHaveAttribute(
     "aria-label",
@@ -171,9 +172,16 @@ test("new farmhouses reserve a 5 by 4 lot through construction and reload", asyn
     "State applied and saved.",
   );
   await openCell(page, "14,14");
-  await expect(page.locator('[data-build="home"]')).toBeDisabled();
+  await expect(page.locator('[data-build="home"]')).toBeEnabled();
+  await page.locator('[data-build="home"]').click();
+  await expect(page.locator("#placement-preview")).toHaveAttribute(
+    "data-valid",
+    "false",
+  );
+  await page.keyboard.press("Escape");
   await openCell(page, "10,17");
   await page.locator('[data-build="home"]').click();
+  await page.locator('[data-cell="10,17"]').press("Enter");
   await expect(page.getByRole("button", { name: /^Farmhouse 1,/ })).toHaveCount(
     20,
   );

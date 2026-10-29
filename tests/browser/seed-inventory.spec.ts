@@ -125,7 +125,7 @@ test("inventory keeps regular and premium seed purchases separate across reload"
   expect(planted.plots[0].premium).toBe("good");
 });
 
-test("E and I toggle inventory while form inputs keep their keystrokes", async ({
+test("I toggles inventory while form inputs keep their keystrokes", async ({
   page,
 }) => {
   await page.goto("/?instance=validation-inventory-hotkeys");
@@ -133,9 +133,9 @@ test("E and I toggle inventory while form inputs keep their keystrokes", async (
     "Saved on this browser",
   );
   await expect(page.locator("#startup")).toBeHidden();
-  await page.keyboard.press("e");
+  await page.keyboard.press("i");
   await expect(page.locator("#service-title")).toHaveText("Inventory");
-  await page.keyboard.press("e");
+  await page.keyboard.press("i");
   await expect(page.locator("#service-panel")).toBeHidden();
   await page.keyboard.press("i");
   await expect(page.locator("#service-title")).toHaveText("Inventory");

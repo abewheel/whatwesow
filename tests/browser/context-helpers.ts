@@ -7,7 +7,10 @@ export async function closeActions(page: Page) {
 export async function openCell(page: Page, cell: string) {
   await expect(page.locator("main")).toHaveJSProperty("inert", false);
   await closeActions(page);
-  await page.locator(`[data-cell="${cell}"]`).press("Enter");
+  const target = page.locator(`[data-cell="${cell}"]`);
+  await target.press("Enter");
+  if ((await target.getAttribute("aria-label"))?.startsWith("Land "))
+    await page.keyboard.press("e");
   await expect(page.locator("#service-panel")).toBeVisible();
 }
 export async function buildAt(page: Page, kind: string, cell: string) {
@@ -21,6 +24,7 @@ export async function buildAt(page: Page, kind: string, cell: string) {
         : "farm";
   await page.locator(`[data-category="${category}"]`).click();
   await page.locator(`[data-build="${kind}"]`).click();
+  await page.locator(`[data-cell="${cell}"]`).press("Enter");
   await expect(page.locator("#farm-message")).toContainText(/started|planted/);
 }
 export async function loadPreset(page: Page, id: string) {

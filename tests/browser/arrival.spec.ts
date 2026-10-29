@@ -21,8 +21,10 @@ test("menus wait for arrival at their selected tile", async ({ page }) => {
   await page.locator('[data-cell="22,20"]').press("Enter");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
   await expect(page.locator("#service-panel")).toBeHidden();
-  await expect(page.locator("#service-panel")).toBeVisible();
   await expect(canvas).toHaveAttribute("data-farmer-cell", "22,20");
+  await expect(page.locator("#service-panel")).toBeHidden();
+  await page.keyboard.press("e");
+  await expect(page.locator("#service-panel")).toBeVisible();
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await expect(page.locator("#walk-here")).toHaveCount(0);
 });

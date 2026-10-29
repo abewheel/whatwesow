@@ -82,8 +82,12 @@ test("quotes repeated construction costs and disables blocked footprints and pol
   state.plotCells[0] = { row: 31, col: 31 };
   await setFarm(page, state);
   await openCell(page, "30,30");
-  await expect(page.locator('[data-build="barn"]')).toBeDisabled();
-  await expect(page.locator('[data-build="barn"] .plan-rule')).toHaveCount(0);
+  await expect(page.locator('[data-build="barn"]')).toBeEnabled();
+  await page.locator('[data-build="barn"]').click();
+  await expect(page.locator("#placement-preview")).toHaveAttribute(
+    "data-valid",
+    "false",
+  );
 });
 test("deletes a planted plot immediately without a refund", async ({
   page,

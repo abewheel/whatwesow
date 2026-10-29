@@ -14,17 +14,17 @@ export function mountInventoryControls(controls: InventoryControls): {
   const button = document.createElement("button");
   button.id = "open-inventory";
   button.type = "button";
-  button.setAttribute("aria-keyshortcuts", "E I");
+  button.setAttribute("aria-keyshortcuts", "I");
   button.innerHTML = `${icon("seeds")}<span class="sr-only">Inventory</span>`;
   document
     .querySelector(".corner-controls")!
-    .insertBefore(button, document.querySelector("#open-shop"));
+    .insertBefore(button, document.querySelector("#open-actions"));
 
   const render = () => {
     const open = controls.isOpen();
     button.setAttribute("aria-expanded", String(open));
     button.setAttribute("aria-label", `${open ? "Close" : "Open"} inventory`);
-    button.title = `Inventory (E / I) · ${controls.count()} seeds`;
+    button.title = `Inventory (I) · ${controls.count()} seeds`;
   };
   const toggle = () => {
     if (controls.isOpen()) controls.close();
@@ -40,7 +40,7 @@ export function mountInventoryControls(controls: InventoryControls): {
       event.ctrlKey ||
       event.metaKey ||
       event.shiftKey ||
-      !["e", "i"].includes(event.key.toLowerCase())
+      event.key.toLowerCase() !== "i"
     )
       return;
     const target = event.target;

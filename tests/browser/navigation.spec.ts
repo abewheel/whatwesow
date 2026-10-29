@@ -24,7 +24,7 @@ test("the HUD stays compact, inventory stays put, and the shop is visited", asyn
     timeout: 30000,
   });
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
-  await expect(page.locator("#service-panel")).toBeVisible();
+  await expect(page.locator("#service-panel")).toBeHidden();
   await page.locator("#open-inventory").click();
   await expect(canvas).toHaveAttribute("data-farmer-cell", "20,20");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");

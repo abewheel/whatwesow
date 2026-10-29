@@ -19,14 +19,14 @@ for (const viewport of [
         "#camera-controls > summary",
         "#open-menu",
         "#open-inventory",
-        "#open-shop",
+        "#open-actions",
       ].map((selector) => page.locator(selector).boundingBox()),
     );
     for (const selector of [
       "#camera-controls > summary",
       "#open-menu",
       "#open-inventory",
-      "#open-shop",
+      "#open-actions",
     ]) {
       const control = page.locator(selector);
       const box = (await control.boundingBox())!;
@@ -80,7 +80,7 @@ for (const viewport of [
     const before = await readFarm(page);
     await page.locator("#open-inventory").click();
     await expect(page.locator("#service-title")).toHaveText("Inventory");
-    await page.locator("#open-shop").click();
+    await page.locator("#open-seed-shop").click();
     await expect(page.locator("#seed-quantity")).toBeVisible();
     await page.locator('[data-buy-seed="turnip"]').click();
     await expect
@@ -97,7 +97,8 @@ test("landscape shop stays open when a keyboard reduces the viewport", async ({
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
   );
-  await page.locator("#open-shop").click();
+  await page.locator("#open-inventory").click();
+  await page.locator("#open-seed-shop").click();
   await page.locator("#seed-quantity").focus();
   await page.setViewportSize({ width: 667, height: 210 });
   await expect(page.locator("#service-panel")).toBeVisible();

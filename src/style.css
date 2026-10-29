@@ -2187,7 +2187,7 @@ button.crisis-card {
   }
 }
 
-/* Read left to right: View, Menu, Inventory, Shop. */
+/* Read left to right: View, Menu, Inventory, Actions. */
 .corner-controls {
   position: relative;
   display: grid;
@@ -2198,7 +2198,7 @@ button.crisis-card {
 }
 .corner-controls #open-menu,
 .corner-controls #open-inventory,
-.corner-controls #open-shop,
+.corner-controls #open-actions,
 .corner-controls #camera-controls > summary {
   width: 48px;
   height: 48px;
@@ -2331,7 +2331,7 @@ button.crisis-card {
 }
 .corner-controls #open-menu,
 .corner-controls #open-inventory,
-.corner-controls #open-shop,
+.corner-controls #open-actions,
 .corner-controls #camera-controls > summary {
   width: 56px;
   height: 56px;
@@ -2518,4 +2518,18 @@ button.crisis-card {
   .farm-overview .field-note {
     grid-column: 1 / -1;
   }
+}
+
+#placement-ghost {
+  position: absolute;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0.65;
+  image-rendering: pixelated;
+}
+#placement-ghost[data-valid="false"] {
+  filter: sepia(1) saturate(4) hue-rotate(310deg);
+}
+.plot-hit[data-selected] {
+  background: #ffedaf66;
 }

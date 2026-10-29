@@ -121,6 +121,7 @@ for (const size of [{ width: 1280, height: 800 }]) {
     await expect(plan).toHaveAttribute("aria-label", /120 coins/);
     await expect(plan).toContainText("15 coins");
     await plan.tap();
+    await page.locator('[data-cell="8,10"]').press("Enter");
     await expect(page.locator("#season")).toContainText("120 coins");
     await openCell(page, "8,10");
     await expect(page.locator("#tile-actions")).toContainText(
@@ -186,6 +187,8 @@ for (const viewport of [
       await expect(plan).toContainText("15 coins");
       await fits(page);
       await plan.tap();
+      await expect(page.locator("#placement-ghost")).toBeVisible();
+      await page.locator('[data-cell="16,18"]').tap();
       await expect(page.locator("#season")).toContainText("120 coins");
       await openCell(page, "16,18");
       await expect(page.locator("#tile-actions")).toContainText(

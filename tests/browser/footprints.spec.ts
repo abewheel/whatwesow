@@ -140,6 +140,8 @@ test("front neighbor tiles remain walkable while building artwork still opens it
     await page.locator(`[data-cell="${cell}"]`).click();
     await expect(canvas).toHaveAttribute("data-farmer-target", cell);
     await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
+    await expect(page.locator("#service-panel")).toBeHidden();
+    await page.keyboard.press("e");
     await expect(page.locator("#service-panel")).toBeVisible();
     await expect(page.locator("#service-title")).toHaveText("Open land");
     await page.locator("#close-service").click();

@@ -40,6 +40,7 @@ for (const [kind, category, title] of [
       );
     });
     await page.locator(`[data-build="${kind}"]`).click();
+    await page.locator('[data-cell="30,30"]').press("Enter");
     if (kind === "coop") {
       const bounds = (await page.locator("#farm").boundingBox())!;
       await page.mouse.move(bounds.x + 40, bounds.y + bounds.height * 0.7);
@@ -91,6 +92,7 @@ for (const redirect of [false, true])
     await openCell(page, "30,30");
     await page.locator('[data-category="animals"]').click();
     await page.locator('[data-build="dairy"]').click();
+    await page.locator('[data-cell="30,30"]').press("Enter");
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-motion",
       "walk",
@@ -98,6 +100,7 @@ for (const redirect of [false, true])
     await page.keyboard.press("Escape");
     if (redirect) {
       await page.locator('[data-cell="36,36"]').press("Enter");
+      await page.keyboard.press("e");
       await expect(page.locator("#service-title")).toHaveText("Open land");
     } else {
       await expect(page.locator("canvas")).toHaveAttribute(

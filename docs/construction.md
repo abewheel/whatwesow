@@ -2,7 +2,7 @@
 
 The estate is a 64 × 64 grid with 4,096 cells. Plots, buildings, and trees all occupy cells; multi-cell footprints cannot overlap or cross its edge. Every building type can be repeated, with no one-per-type caps of its own. Money, footprint space, authored unlocks, any macro policy, and the [council's rules](#council-rules-for-buildings) determine what the player can build.
 
-New farms start with a tent, no fields or buildings, and 240 coins. Tap open land for fields and house plans. Tap the tent for End turn. A house costs 120 coins and takes one season to complete. The tent stays until then, and End turn moves into the finished farmhouse. Other construction unlocks through farming.
+New farms start with a tent, no fields or buildings, and 240 coins. Select open land, then press E or the corner Actions button for fields and house plans. Tap the tent for End turn. A house costs 120 coins and takes one season to complete. The tent stays until then, and End turn moves into the finished farmhouse. Other construction unlocks through farming.
 
 If structures block a walking path, tap the blocking building or tree and choose the trashcan. Teardown needs no walking path and clears the footprint next season, without a refund.
 
@@ -96,7 +96,7 @@ Building sprites keep their native proportions and use larger physical lots. Old
 
 ## Tile actions
 
-Tap open land to prepare a crop plot or commission a structure at that tile. Plans show costs, footprints, benefits, and next-season completion; blocked footprints and unaffordable plans are disabled. Tap a plot for planting, harvesting, or deletion. Open Farm upgrades at the farmhouse or tent for soil improvements that apply to every plot. Tap buildings for upgrades and teardown, and trees for harvest and care. End turn and recovery work live on the farmhouse or tent. Inventory and its seed shop open from the top-right bag button.
+Select open land and press E or the corner Actions button to prepare a crop plot or choose a structure. Building plans enter placement mode: move the ghost over the grid, then click or tap a valid lot to lock it in. Construction artwork is used when available, otherwise the building artwork appears. Footprint tiles turn red on blocked land. Drag or pinch to adjust the view; Escape or Cancel placement cancels before the farmer arrives and pays. Plans show costs, benefits, and completion time; unaffordable plans are disabled. Tap a plot for planting, harvesting, or deletion. Open Farm upgrades at the farmhouse or tent for soil improvements that apply to every plot. Tap buildings for upgrades and teardown, and trees for harvest and care. End turn and recovery work live on the farmhouse or tent. Inventory and its seed shop open from the top-right bag button.
 
 ## Seed inventory
 

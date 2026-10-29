@@ -126,7 +126,7 @@ const councilWaiting = "The council is waiting for your answer.";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
 <div id="farm" tabindex="0" aria-label="Scrollable farm. Drag, use arrow keys, or scroll to explore."><div id="farm-world"><div id="farm-renderer"></div></div></div>
-<header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><div class="hud-right"><div class="farm-overview"><output id="season"></output><section id="farm-status" aria-label="Farm status"><span id="empty-plots" role="img"></span><span id="growing-plots" role="img"></span><span id="harvest-ready" role="img"></span></section><div class="field-note"><strong id="farm-message" role="status">Tap land to plant or build. Tap a building for its actions.</strong><span id="farm-summary" class="sr-only"></span></div></div><div class="corner-controls" role="group" aria-label="Farm controls"><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button><button id="open-shop" aria-label="Open seed shop">${icon("shop")}</button></div></div><button id="council-meeting" aria-haspopup="dialog" hidden>Council meeting</button></header>
+<header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><div class="hud-right"><div class="farm-overview"><output id="season"></output><section id="farm-status" aria-label="Farm status"><span id="empty-plots" role="img"></span><span id="growing-plots" role="img"></span><span id="harvest-ready" role="img"></span></section><div class="field-note"><strong id="farm-message" role="status">Select land, then Actions (E) to plant or build.</strong><span id="farm-summary" class="sr-only"></span></div></div><div class="corner-controls" role="group" aria-label="Farm controls"><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button><button id="open-actions" aria-label="Open action menu" aria-keyshortcuts="E" title="Actions (E)">${icon("build")}</button></div></div><button id="council-meeting" aria-haspopup="dialog" hidden>Council meeting</button></header>
 <div class="hud-bottom">
 <section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
 <div id="service-controls" hidden><button id="home-view">Center farm</button><span class="zoom-controls" role="group" aria-label="Farm zoom"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-reset" aria-label="Reset zoom to 100 percent">Reset</button></span></div>
@@ -173,7 +173,7 @@ cameraControls.querySelector("#close-camera")!.addEventListener("click", () => {
     .focus({ preventScroll: true });
 });
 document.querySelector(".corner-controls")!.prepend(cameraControls);
-document.querySelector("#open-shop")!.addEventListener("click", openSeedShop);
+document.querySelector("#open-actions")!.addEventListener("click", openActions);
 moveControls(".camera-panel", ["#home-view", ".zoom-controls"]);
 document.querySelector("#farm-mode")!.textContent = "Cancel placement";
 const tileActions = document.querySelector<HTMLElement>("#tile-actions")!;
@@ -184,6 +184,23 @@ type ContextTarget =
   | { type: "building"; id: number }
   | { type: "service"; id: ServiceId; cell: Cell };
 let contextTarget: ContextTarget | null = null;
+let selectedCell: Cell | null = null;
+let placingKind: BuildingKind | null = null;
+let placementLocked = false;
+function openActions() {
+  if (!startup.hidden || document.querySelector("dialog[open]")) return;
+  if (
+    !servicePanel.hidden &&
+    contextTarget &&
+    ["cell", "building", "service"].includes(contextTarget.type)
+  ) {
+    closeService();
+    return;
+  }
+  const cell = selectedCell ?? { row: 16, col: 16 };
+  openContext(tileContext(cell));
+}
+
 let shopQuantity = "1";
 let shopPremium = false;
 let planCategory = "farm";
@@ -438,8 +455,6 @@ function workPlot(cell: Cell, crop?: CropId, premiumSeed = false) {
     : "No walking path to this plot.";
 }
 function startConstruction(kind: BuildingKind, cell: Cell) {
-  const target = contextTarget;
-  if (!target) return;
   const request = ++navigationVersion;
   const item = buildings[kind];
   const reached = scene.travelTo(
@@ -449,15 +464,23 @@ function startConstruction(kind: BuildingKind, cell: Cell) {
     true,
     "rear",
     () => {
-      if (request !== navigationVersion || contextTarget !== target) return;
-      void act({ type: "build", kind, cell });
+      if (request !== navigationVersion) return;
+      clearBuild();
+      const committedNavigation = navigationVersion;
+      void act({ type: "build", kind, cell }).then(() => {
+        const built = state.structures.find(
+          (s) => s.kind === kind && cellKey(s) === cellKey(cell),
+        );
+        if (built && navigationVersion === committedNavigation)
+          openContext({ type: "building", id: built.id }, false);
+      });
     },
     true,
   );
   if (!reached) {
-    serviceFeedback.textContent = "No walking path to start this building.";
-    serviceFeedback.hidden = false;
-    positionContext();
+    placementLocked = false;
+    message.textContent =
+      "No walking path to start this building. Choose another lot.";
     return;
   }
   // Keep the chosen lot visible while the farmer steps out of its future
@@ -520,10 +543,26 @@ document
       button.disabled = false;
     }
   });
+/** Shared dispatch keeps explicit actions and direct entity visits consistent. */
+function tileContext(cell: Cell): ContextTarget {
+  const key = cellKey(cell);
+  const service = villageServices().find((s) =>
+    footprint(s, s.width, s.height).some((c) => cellKey(c) === key),
+  );
+  if (service) return { type: "service", id: service.id, cell: service };
+  const building = state.structures.find((s) =>
+    footprint(s, structureSize(s).width, structureSize(s).height).some(
+      (c) => cellKey(c) === key,
+    ),
+  );
+  return building
+    ? { type: "building", id: building.id }
+    : { type: "cell", cell };
+}
 function openTile(cell: Cell) {
   openContext({ type: "cell", cell });
 }
-function openContext(target: ContextTarget) {
+function openContext(target: ContextTarget, travel = true) {
   closeService();
   cameraControls.open = false;
   clearBuild();
@@ -531,7 +570,15 @@ function openContext(target: ContextTarget) {
   contextTarget = target;
   if (target.type === "cell") planCategory = "farm";
   const destination = contextCell();
-  if (destination) highlightContext(destination);
+  if (destination) {
+    if (
+      target.type === "cell" ||
+      target.type === "building" ||
+      target.type === "service"
+    )
+      selectedCell = destination;
+    highlightContext(destination);
+  }
   const show = () => {
     if (request !== navigationVersion || contextTarget !== target) return;
     serviceFeedback.hidden = true;
@@ -543,7 +590,7 @@ function openContext(target: ContextTarget) {
       .querySelector<HTMLButtonElement>("#close-service")!
       .focus({ preventScroll: true });
   };
-  if (destination && target.type !== "inventory") {
+  if (travel && destination && target.type !== "inventory") {
     const structure =
       target.type === "building"
         ? state.structures.find((s) => s.id === target.id)
@@ -1187,13 +1234,12 @@ function refreshContext() {
         if (category !== planCategory) continue;
         const button = tileButton(
           `${item.name} · ${cost} coins · ${item.benefit} · ${readyIn(delay)}${rule}`,
-          () => startConstruction(kind, cell),
+          () => beginPlacement(kind, cell),
           waiting ||
             final ||
             state.coins < cost ||
             policy.blockedBuildings?.includes(kind) === true ||
-            (limit !== undefined && count >= limit) ||
-            !canPlace(state, cell, item.width, item.height, policy),
+            (limit !== undefined && count >= limit),
           undefined,
           "build",
         );
@@ -1382,7 +1428,23 @@ document.querySelector("#close-service")!.addEventListener("click", () => {
   closeService();
 });
 document.addEventListener("keydown", (event) => {
-  // Escape closes the council meeting on its own; the farm behind it stays as it was.
+  if (
+    event.key.toLowerCase() === "e" &&
+    !event.repeat &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    !(
+      event.target instanceof Element &&
+      event.target.closest("input, textarea, select, [contenteditable]")
+    ) &&
+    !document.querySelector("dialog[open]")
+  ) {
+    event.preventDefault();
+    openActions();
+  }
+  // Escape closes the council meeting on its own.
   if (event.key === "Escape" && !document.querySelector("#crisis[open]")) {
     navigationVersion++;
     cameraControls.open = false;
@@ -1648,14 +1710,19 @@ const preview = document.createElement("div");
 preview.id = "placement-preview";
 preview.hidden = true;
 world.append(preview);
+const ghost = document.createElement("img");
+ghost.id = "placement-ghost";
+ghost.alt = "";
+ghost.hidden = true;
+world.append(ghost);
 const buildingTooltip = document.createElement("div");
 buildingTooltip.id = "building-tooltip";
 buildingTooltip.setAttribute("role", "tooltip");
 buildingTooltip.hidden = true;
 world.append(buildingTooltip);
 world.addEventListener("pointerleave", () => {
-  hoveredCell = null;
-  preview.hidden = true;
+  if (!placingKind) hoveredCell = null;
+  if (!placingKind) preview.hidden = true;
   buildingTooltip.hidden = true;
 });
 for (const [direction, left, top] of [
@@ -1757,6 +1824,19 @@ viewport.addEventListener("pointerdown", (e) => {
   };
 });
 viewport.addEventListener("pointermove", (e) => {
+  if (
+    placingKind &&
+    !placementLocked &&
+    !drag &&
+    e.pointerType === "mouse" &&
+    e.target instanceof Element
+  ) {
+    const tile = e.target.closest<HTMLElement>("[data-cell]");
+    if (tile) {
+      const [row, col] = tile.dataset.cell!.split(",").map(Number);
+      showPreview({ row, col });
+    }
+  }
   if (touches.has(e.pointerId)) {
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinch && touches.size >= 2) {
@@ -1803,7 +1883,7 @@ viewport.addEventListener(
       suppressClick = false;
       return;
     }
-    if (!e.detail || false) return;
+    if (!e.detail || placingKind) return;
     // Explicit crop, building, and service ground targets keep their own interactions under roof overhangs.
     if (
       e.target instanceof Element &&
@@ -1960,7 +2040,42 @@ function harvestSelectedTree(id: number) {
     return;
   }
 }
+function beginPlacement(kind: BuildingKind, cell: Cell) {
+  closeService();
+  navigationVersion++;
+  scene.stopFarmer();
+  placingKind = kind;
+  document.querySelector<HTMLElement>(".farm-tools")!.hidden = false;
+  document.querySelector<HTMLButtonElement>("#farm-mode")!.hidden = false;
+  document.querySelector<HTMLElement>("#placement-hint")!.hidden = false;
+  showPreview(cell);
+  // Fit the whole plan between the HUD and cancel control, even on short phones.
+  const art = scene.placementArtwork(kind, cell);
+  const view = viewport.getBoundingClientRect();
+  const top =
+    document.querySelector(".farm-overview")!.getBoundingClientRect().bottom -
+    view.top +
+    12;
+  const bottom =
+    document.querySelector(".hud-bottom")!.getBoundingClientRect().top -
+    view.top -
+    12;
+  setZoom(
+    Math.min(zoom, (bottom - top) / art.height, (view.width - 24) / art.width),
+  );
+  viewport.scrollLeft = (art.x + art.width / 2) * zoom - view.width / 2;
+  viewport.scrollTop = (art.y + art.height / 2) * zoom - (top + bottom) / 2;
+  viewport.focus({ preventScroll: true });
+}
 function clearBuild() {
+  if (placingKind) {
+    navigationVersion++;
+    scene.stopFarmer();
+  }
+  placementLocked = false;
+  placingKind = null;
+  ghost.hidden = true;
+  document.querySelector<HTMLElement>(".farm-tools")!.hidden = true;
   preview.hidden = true;
   buildingTooltip.hidden = true;
   document.querySelector("#placement-hint")!.textContent =
@@ -2130,34 +2245,48 @@ scene.onLayout = (targets) => {
       button.addEventListener("click", () => {
         cameraControls.open = false;
         const cell = { row: target.row, col: target.col };
-        const service = villageServices().find((s) =>
-          footprint(s, s.width, s.height).some((c) => cellKey(c) === key),
-        );
-        if (service) {
-          openContext({ type: "service", id: service.id, cell: service });
+        selectedCell = cell;
+        world
+          .querySelector("[data-selected]")
+          ?.removeAttribute("data-selected");
+        button!.setAttribute("data-selected", "true");
+        if (placingKind) {
+          if (placementLocked) return;
+          const kind = placingKind,
+            item = buildings[kind];
+          showPreview(cell);
+          if (!canPlace(state, cell, item.width, item.height, rules().policy))
+            return;
+          placementLocked = true;
+          startConstruction(kind, cell);
           return;
         }
-        const index = state.plotCells.findIndex((c) => cellKey(c) === key);
-        if (index >= 0) {
+        const context = tileContext(cell);
+        if (context.type !== "cell") {
+          openContext(context);
+          return;
+        }
+        if (state.plotCells.some((c) => cellKey(c) === key)) {
           openTile(cell);
           return;
         }
-        const building = state.structures.find((s) =>
-          footprint(s, structureSize(s).width, structureSize(s).height).some(
-            (c) => cellKey(c) === key,
-          ),
-        );
-        if (building) {
-          inspectBuilding(building.id);
+        if (debrisAt(state.debris, cell)) {
+          openTile(cell);
           return;
         }
-        openTile(cell);
+        closeService();
+        const request = ++navigationVersion;
+        scene.travelTo(cell, 1, 1, false, "front", () => {
+          if (request === navigationVersion)
+            message.textContent = "Actions (E) to plant or build here.";
+        });
       });
       button.addEventListener("pointerenter", (event) => {
-        if (event.pointerType === "mouse") showPreview(target);
+        if (event.pointerType === "mouse" && !placingKind) showPreview(target);
       });
       button.addEventListener("focus", () => {
-        if (button!.matches(":focus-visible")) showPreview(target);
+        if (!placementLocked && button!.matches(":focus-visible"))
+          showPreview(target);
       });
       Object.assign(button.style, {
         left: `${target.x * zoom}px`,
@@ -2219,7 +2348,7 @@ scene.onLayout = (targets) => {
 function showPreview(cell: Cell) {
   hoveredCell = cell;
   buildingTooltip.hidden = true;
-  const kind: BuildingKind | "plot" | null = null;
+  const kind = placingKind;
   const hovered = !kind
     ? state.structures.find((s) =>
         footprint(s, structureSize(s).width, structureSize(s).height).some(
@@ -2242,16 +2371,13 @@ function showPreview(cell: Cell) {
     buildingTooltip.hidden = true;
     return;
   }
-  const item =
-    kind === "plot"
-      ? { width: 1, height: 1 }
-      : kind
-        ? buildings[kind]
-        : hovered
-          ? { ...buildings[hovered.kind], ...structureSize(hovered) }
-          : debris
-            ? debrisTypes[debris.kind]
-            : service!;
+  const item = kind
+    ? buildings[kind]
+    : hovered
+      ? { ...buildings[hovered.kind], ...structureSize(hovered) }
+      : debris
+        ? debrisTypes[debris.kind]
+        : service!;
   const anchor = kind ? cell : (hovered ?? service ?? debris)!;
   preview.dataset.mode = kind ? "placement" : "hover";
   const layout = state;
@@ -2259,6 +2385,45 @@ function showPreview(cell: Cell) {
     pos = projectCell(anchor);
   preview.hidden = false;
   preview.dataset.valid = String(!kind || fits);
+  ghost.hidden = !kind;
+  if (kind) {
+    const art = scene.placementArtwork(kind, cell);
+    if (ghost.dataset.kind !== kind || ghost.dataset.season !== state.season) {
+      ghost.src = art.src;
+      ghost.dataset.kind = kind;
+      ghost.dataset.season = state.season;
+    }
+    Object.assign(ghost.style, {
+      left: `${art.x * zoom}px`,
+      top: `${art.y * zoom}px`,
+      width: `${art.width * zoom}px`,
+      height: `${art.height * zoom}px`,
+    });
+    ghost.dataset.valid = String(fits);
+    document.querySelector("#placement-hint")!.textContent =
+      `${buildings[kind].name} · ${fits ? "Click or tap to place" : "Needs open land"}`;
+  }
+  preview.replaceChildren();
+  if (kind) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", String((item.width + item.height) * 32 * zoom));
+    svg.setAttribute("height", String((item.width + item.height) * 16 * zoom));
+    for (const tile of footprint(cell, item.width, item.height)) {
+      const point = projectCell(tile),
+        x = (point.x - pos.x + item.height * 32) * zoom,
+        y = (point.y - pos.y + 16) * zoom;
+      const polygon = document.createElementNS(svg.namespaceURI, "polygon");
+      polygon.setAttribute(
+        "points",
+        `${x},${y - 16 * zoom} ${x + 32 * zoom},${y} ${x},${y + 16 * zoom} ${x - 32 * zoom},${y}`,
+      );
+      polygon.setAttribute("fill", "none");
+      polygon.setAttribute("stroke", "#fff4c9");
+      polygon.setAttribute("stroke-width", "1.5");
+      svg.append(polygon);
+    }
+    preview.append(svg);
+  }
   const total = item.width + item.height;
   if (!kind && (hovered || service || debris)) {
     buildingTooltip.textContent = hovered
@@ -2298,8 +2463,8 @@ function render() {
   scene.setState({ ...state, farmPolicy: rules().policy });
   councilMeeting.hidden = pendingCrisis(state) === undefined;
   crisisDialog.refresh();
-  const placing = false;
-  document.querySelector<HTMLElement>(".farm-tools")!.hidden = true;
+  const placing = placingKind !== null;
+  document.querySelector<HTMLElement>(".farm-tools")!.hidden = !placing;
   document.querySelector<HTMLButtonElement>("#farm-mode")!.hidden = !placing;
   document.querySelector<HTMLElement>("#placement-hint")!.hidden = !placing;
   const ready = state.plots.filter(
@@ -2343,6 +2508,8 @@ async function apply(
     state = valid;
     loadFailed = false;
     if (resetFarmer) {
+      clearBuild();
+      selectedCell = null;
       navigationVersion++;
       closeService();
       cameraControls.open = false;

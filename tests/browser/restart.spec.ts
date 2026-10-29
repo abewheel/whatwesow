@@ -26,7 +26,7 @@ test("restart requires confirmation and persists a fresh farm", async ({
   await expect(page.locator("[data-plot]")).toHaveCount(0);
 });
 
-test("land opens visual categories on arrival and field deletion gives no refund", async ({
+test("land actions open visual categories and field deletion gives no refund", async ({
   page,
 }) => {
   await page.goto("/?instance=validation-land-menu");
@@ -40,6 +40,7 @@ test("land opens visual categories on arrival and field deletion gives no refund
     "data-farmer-motion",
     "walk",
   );
+  await page.keyboard.press("e");
   await expect(page.locator("#service-panel")).toBeVisible();
   await expect(page.locator("#service-title")).toHaveText("Open land");
   await expect(page.locator("canvas")).toHaveAttribute(

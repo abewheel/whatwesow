@@ -37,6 +37,7 @@ for (const viewport of [{ width: 1280, height: 800 }]) {
     );
     await openCell(page, "12,18");
     await page.locator('[data-build="home"]').click();
+    await page.locator('[data-cell="12,18"]').press("Enter");
     await expect(page.locator("#service-title")).toHaveText("Farmhouse");
     await expect(page.locator("#next-season")).toBeDisabled();
     await endTurn(page);

@@ -33,8 +33,10 @@ test("uses the far corner of a 64-square farm with a viewport-sized canvas", asy
   await setCameraCell(page, "row", "63");
   await setCameraCell(page, "column", "63");
   await page.getByRole("button", { name: "Land 63,62", exact: true }).click();
+  await page.keyboard.press("e");
   await page.locator('[data-category="trees"]').click();
   await page.locator('[data-build="oak"]').click();
+  await page.locator('[data-cell="63,62"]').press("Enter");
   await expect(page.locator("#farm-message")).toContainText("Oak tree planted");
   await page.reload();
   await expect(page.locator('[data-cell="63,62"]')).toHaveAttribute(

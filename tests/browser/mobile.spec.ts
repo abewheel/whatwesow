@@ -62,11 +62,12 @@ for (const viewport of [
       const view = (await page
         .locator("#camera-controls > summary")
         .boundingBox())!;
-      const shop = (await page.locator("#open-shop").boundingBox())!;
+      const shop = (await page.locator("#open-actions").boundingBox())!;
       expect(shop.y + shop.height - view.y).toBeLessThan(120);
       await fits(page, ".field-note");
       await buySeeds(page, "turnip");
       await page.locator('[data-cell="16,16"]').tap();
+      await page.locator("#open-actions").tap();
       await page.locator("#expand").tap();
       await expect(page.locator("#improve")).toHaveCount(0);
       await fits(page, "#service-panel");
@@ -77,7 +78,9 @@ for (const viewport of [
         /growing/,
       );
       await page.locator('[data-cell="12,18"]').tap();
+      await page.locator("#open-actions").tap();
       await page.locator('[data-build="home"]').tap();
+      await page.locator('[data-cell="12,18"]').press("Enter");
       await expect(page.locator("#service-title")).toHaveText("Farmhouse");
       await expect(page.locator("#next-season")).toBeDisabled();
       await tent(page);
@@ -269,10 +272,15 @@ farmTest.describe("immediate touch selection", () => {
       await page.goto("/?instance=validation-immediate-selection");
       await expect(page.locator("main")).toHaveJSProperty("inert", false);
       const home = homesteadState().structures[0];
-      for (const { cell, cells } of [
-        { cell: { row: 20, col: 20 }, cells: ["20,20"] },
+      for (const { cell, cells, selector } of [
+        {
+          cell: { row: 20, col: 20 },
+          cells: ["20,20"],
+          selector: "[data-selected]",
+        },
         {
           cell: home,
+          selector: "[data-context]",
           cells: footprint(
             home,
             structureSize(home).width,
@@ -286,12 +294,12 @@ farmTest.describe("immediate touch selection", () => {
         await page.locator("#camera-controls summary").tap();
         // Observe synchronously after the application's click handlers. An eventual
         // locator assertion could pass after arrival and miss delayed feedback.
-        await page.evaluate(() => {
+        await page.evaluate((selector) => {
           document.addEventListener(
             "click",
             () => {
               const selected = [
-                ...document.querySelectorAll<HTMLElement>("[data-context]"),
+                ...document.querySelectorAll<HTMLElement>(selector),
               ];
               (window as Window & { selectionAtTap?: unknown }).selectionAtTap =
                 {
@@ -315,7 +323,7 @@ farmTest.describe("immediate touch selection", () => {
             },
             { once: true },
           );
-        });
+        }, selector);
         await page.locator(`[data-cell="${cellKey(cell)}"]`).tap();
         const atTap = await page.evaluate(
           () =>
