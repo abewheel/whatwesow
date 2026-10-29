@@ -191,6 +191,8 @@ dialog,
   image-rendering: pixelated;
 }
 .plot-hit {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   position: absolute;
   transform: translate(-50%, -50%);
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
@@ -202,6 +204,7 @@ dialog,
   background: transparent;
 }
 .plot-hit:active {
+  background: #f8df6b66;
   transform: translate(-50%, -50%);
 }
 .plot-hit:focus-visible {

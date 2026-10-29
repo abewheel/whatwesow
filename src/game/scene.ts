@@ -131,11 +131,21 @@ export class FarmScene extends Phaser.Scene {
   private season: MacroState["season"] = "spring";
   private policy: MacroState["farmPolicy"];
   private view = { x: 0, y: 0, width: 800, height: 600, zoom: 1 };
+  private drawnView?: typeof this.view;
   setViewport(x: number, y: number, width: number, height: number, zoom = 1) {
     this.view = { x, y, width, height, zoom };
     if (this.ground) {
-      this.cameras.main.setScroll(x, y);
-      this.draw(false);
+      this.cameras.main.setScroll(x, y).setZoom(zoom);
+      const cached = this.drawnView;
+      if (
+        !cached ||
+        cached.zoom !== zoom ||
+        x < cached.x ||
+        y < cached.y ||
+        x + width / zoom > cached.x + cached.width / zoom ||
+        y + height / zoom > cached.y + cached.height / zoom
+      )
+        this.draw(false);
     }
   }
   hitsBuilding(
@@ -706,20 +716,30 @@ export class FarmScene extends Phaser.Scene {
     }
   }
   private draw(publishLayout = true) {
+    // Keep a screen-space gutter so touch scrolling usually moves only the camera.
+    const padding = 256;
+    const view = {
+      ...this.view,
+      x: this.view.x - padding / this.view.zoom,
+      y: this.view.y - padding / this.view.zoom,
+      width: this.view.width + padding * 2,
+      height: this.view.height + padding * 2,
+    };
+    this.drawnView = view;
     const g = this.ground!,
       scenery = this.scenery!,
       p = palette[this.season];
     const visible = (x: number, y: number, padding = 200) =>
-      x >= this.view.x - padding &&
-      x <= this.view.x + this.view.width / this.view.zoom + padding &&
-      y >= this.view.y - padding &&
-      y <= this.view.y + this.view.height / this.view.zoom + padding;
+      x >= view.x - padding &&
+      x <= view.x + view.width / view.zoom + padding &&
+      y >= view.y - padding &&
+      y <= view.y + view.height / view.zoom + padding;
     this.cameras.main
       .setOrigin(0, 0)
       .setZoom(this.view.zoom)
       .setScroll(this.view.x, this.view.y);
     g.clear();
-    this.groundArt!.begin(this.season, this.view);
+    this.groundArt!.begin(this.season, view);
     if (this.farmer) scenery.remove(this.farmer.view);
     for (const tree of this.treeViews.values())
       if (!this.fadingViews.has(tree)) this.tweens.killTweensOf(tree);
@@ -741,7 +761,7 @@ export class FarmScene extends Phaser.Scene {
       scenery,
       this.season,
       projectCell,
-      this.view,
+      view,
       this.groundArt!,
     );
     drawDebris(

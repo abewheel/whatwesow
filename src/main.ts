@@ -531,6 +531,7 @@ function openContext(target: ContextTarget) {
   contextTarget = target;
   if (target.type === "cell") planCategory = "farm";
   const destination = contextCell();
+  if (destination) highlightContext(destination);
   const show = () => {
     if (request !== navigationVersion || contextTarget !== target) return;
     serviceFeedback.hidden = true;
@@ -586,6 +587,34 @@ function openContext(target: ContextTarget) {
   }
   show();
 }
+function highlightContext(cell: Cell) {
+  document
+    .querySelectorAll("[data-context]")
+    .forEach((el) => el.removeAttribute("data-context"));
+  const target = contextTarget;
+  const structure =
+    target?.type === "building"
+      ? state.structures.find((s) => s.id === target.id)
+      : undefined;
+  const service =
+    target?.type === "service"
+      ? villageServices().find((s) => s.id === target.id)
+      : undefined;
+  const debris = debrisAt(state.debris, cell);
+  const cells = structure
+    ? footprint(
+        structure,
+        structureSize(structure).width,
+        structureSize(structure).height,
+      )
+    : service
+      ? footprint(service, service.width, service.height)
+      : debris
+        ? debrisFootprint(debris)
+        : [cell];
+  for (const selected of cells)
+    cellButtons.get(cellKey(selected))?.setAttribute("data-context", "true");
+}
 function refreshContext() {
   const target = contextTarget,
     cell = contextCell();
@@ -600,13 +629,7 @@ function refreshContext() {
       ? document.activeElement.id
       : "";
   tileActions.replaceChildren();
-  document
-    .querySelectorAll("[data-context]")
-    .forEach((el) => el.removeAttribute("data-context"));
-  for (const selected of debrisAt(state.debris, cell)
-    ? debrisFootprint(debrisAt(state.debris, cell)!)
-    : [cell])
-    cellButtons.get(cellKey(selected))?.setAttribute("data-context", "true");
+  highlightContext(cell);
   const { turn, policy } = rules(),
     final = turn === 160,
     waiting = pendingCrisis(state) !== undefined;
@@ -1843,7 +1866,7 @@ function clearBuild() {
   buildingTooltip.hidden = true;
   document.querySelector("#placement-hint")!.textContent =
     "Choose open land as the destination. Escape or Cancel placement cancels.";
-  render();
+  // Cancelling placement changes controls, not the farm artwork.
 }
 document.querySelector("#farm-mode")!.addEventListener("click", clearBuild);
 const message = document.querySelector<HTMLElement>("#farm-message")!;

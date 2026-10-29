@@ -63,6 +63,15 @@ for (const viewport of [
       await fits(page, ".field-note");
       await buySeeds(page, "turnip");
       await page.locator('[data-cell="16,16"]').tap();
+      // Selection appears while the farmer is travelling, before its menu opens.
+      await expect(page.locator('[data-cell="16,16"]')).toHaveAttribute(
+        "data-context",
+        "true",
+      );
+      await expect(page.locator('[data-cell="16,16"]')).toHaveCSS(
+        "-webkit-tap-highlight-color",
+        "rgba(0, 0, 0, 0)",
+      );
       await page.locator("#expand").tap();
       await expect(page.locator("#improve")).toHaveCount(0);
       await fits(page, "#service-panel");
