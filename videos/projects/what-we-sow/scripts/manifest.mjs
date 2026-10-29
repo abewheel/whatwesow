@@ -38,7 +38,7 @@ for (const path of [...paths].sort()) {
             : path.includes("/v3/confiscation-")
               ? "Requested cinematic fixture rendered in What We Sow: 1600 uniform corn plots, 256-plot corner loss with updated seized-ground artwork; production rule unchanged"
               : path.endsWith(".mp4") || path.endsWith(".png")
-                ? "What We Sow gameplay at 655c1fe"
+                ? "What We Sow gameplay at 2fe1cbc"
                 : path.includes("/fonts/")
                   ? "Game typography; SIL Open Font License"
                   : "GSAP 3.15.0, original header retained",
@@ -48,11 +48,11 @@ await writeFile(
   `${root}/assets/manifest.json`,
   JSON.stringify(
     {
-      sourceCommit: "655c1fe",
+      sourceCommit: "2fe1cbc",
       renderer: "hyperframes@0.8.214",
       dimensions: [1920, 1080],
       fps: 30,
-      seconds: 60,
+      seconds: 55,
       assets,
     },
     null,

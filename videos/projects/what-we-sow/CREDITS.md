@@ -1,7 +1,7 @@
 # Sources and credits
 
 Gameplay, portraits, pixel artwork, and fonts: What We Sow, captured from this
-repository at `655c1fe`. The development saves stage supported game states;
+repository at `2fe1cbc`. The development saves stage supported game states;
 actions, choices, and outcomes are recorded from the real game.
 
 Music: **Quiet Village 1**, Holizna, from

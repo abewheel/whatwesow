@@ -1,7 +1,7 @@
 # Demo video
 
 This directory keeps video tools separate from the shipped game. The planned
-film is 60 seconds for the Principled Business Summit hackathon judges. The
+film is 55 seconds for the Principled Business Summit hackathon judges. The
 [production project](projects/what-we-sow/README.md) contains the complete
 visual-first cut, editable scenes, capture recipes, and review notes. Its
 [storyboard](STORYBOARD.md) applies the audience, thesis, goals, and approach
@@ -90,7 +90,7 @@ Use the draft storyboard to fill the capture map for each point:
 | Moral defense of capitalism | Eminent-domain council | Choose the land-rights argument | Policy and retained fields | Production edits.json, 25–43s |
 | Learn arguments through consequences | Matched council branches | Choose contrasting arguments | Actual land and compensation changes | Production edits.json, 43–55s |
 
-Treat the 60-second budget as a constraint when choosing the points. A conceptual
+Treat the one-minute maximum as a constraint when choosing the points. A conceptual
 claim needs an actual action and a readable result on screen. Long-term contrasts
 need labelled time jumps or matched starting saves with the differing decisions
 recorded. Do not imply a simulated lifetime is a continuous one-minute playthrough.

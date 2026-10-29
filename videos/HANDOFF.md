@@ -1,9 +1,9 @@
 # Demo film handoff
 
-The current film is `projects/what-we-sow/renders/what-we-sow.mp4`, 60 seconds at 1920 × 1080 / 30 fps. Its caption sidecar is `what-we-sow.srt`; editable source with all selected local media is `what-we-sow-source.zip` in the same folder. The high-quality render is `what-we-sow-master.mp4`.
+The current film is `projects/what-we-sow/renders/what-we-sow.mp4`, 55 seconds at 1920 × 1080 / 30 fps. Its caption sidecar is `what-we-sow.srt`; editable source with selected local media is `what-we-sow-source.zip` in that folder. The high-quality render is `what-we-sow-master.mp4`.
 
-The latest direction is reflected in STORYBOARD.md and SCRIPT.md: dirty land fades to 9, 27 and 96 fields, the male farmer works throughout the opening, no apple tree appears, the real rights argument accompanies a large staged soil/water consequence, and the start-menu sunset closes the film. Music and captions, no presenter or spoken voice.
+The film uses gameplay re-recorded at 2fe1cbc. Dirty land fades to 9, 27 and 96 fields with the male farmer working throughout. No apple tree appears. Uniform corn fills the screen before a 256-field corner is removed from a 1,600-field cinematic fixture. This staging does not change the live crisis rule.
 
-Read the project's README, SPEC, CREDITS and REVIEW before editing. Use capture-revision.mjs to refresh staged gameplay and build.mjs to generate the composition. The source archive contains the selected clips needed to render; raw recordings are local and excluded. Preserve the game's actual rules, sprite proportions and honest outcomes.
+The council begins “Now the county is in a drought.” The extra working-farmer close-up and county-fields caption are removed, as is “Paid for.” A large cursor presses Ada’s actual argument; the film cuts at the click to intact land, with no result-screen zoom. The dark start-menu sunset closes the film. Music and captions, no spoken voice or presenter.
 
-Current film: all gameplay refreshed at 655c1fe. The loss shot is uniform corn, tightly framed, with a 256-field square removed from a 1,600-field property's corner using the updated seized-ground art. The revised county/drought captions are applied. No alternate-choice beat. The Play link opens the game in a new tab. The published MP4 is compressed separately under public/media and must stay below 25 MiB.
+Read the project README, STORYBOARD, SCRIPT, SPEC, CREDITS and REVIEW. Run capture-revision.mjs, capture-estate.mjs and capture-confiscation.mjs before build.mjs to refresh the selected media. Keep capture provenance and clip durations accurate. The published copy under public/media must remain below 25 MiB. The /video Play link opens the game in a new tab.

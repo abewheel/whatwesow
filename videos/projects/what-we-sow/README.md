@@ -1,9 +1,9 @@
 # What We Sow: Build the case
 
-A 60-second, 1920 × 1080 film at 30 fps for the Principled Business Summit.
+A 55-second, 1920 × 1080 film at 30 fps for the Principled Business Summit.
 The user requested a visual-first film with very few words. The talk track is captioned; there is no PiP
 or spoken narration. Real gameplay, readable council arguments, and a direct
-soil-to-water comparison carry the story.
+corn-to-seized-ground comparison carry the story.
 
 Start with [STORYBOARD.md](STORYBOARD.md), [SPEC.md](SPEC.md), and the final
 [REVIEW.md](REVIEW.md). [CREDITS.md](CREDITS.md) records outside media and
@@ -34,7 +34,7 @@ No remote media or font fetch is required by the composition.
 
 To recapture, run the game's documented named dev instance, then run
 `FILM_URL='<printed URL>' node scripts/capture-revision.mjs` from this directory.
-It captures the four male-farmer stages and both council choices without an apple tree. Browser errors fail the run. `CAPTURE_FROM=branches` refreshes only the council takes. Stop the dev instance afterward.
+It captures the three opening stages and the rights selection without an apple tree. Browser errors fail the run. `CAPTURE_FROM=branches` refreshes only the council takes. Stop the dev instance afterward.
 
 `node scripts/build.mjs` cuts the raw takes and writes the six editable HTML
 scenes. `edits.json` records source timecodes and constant retiming. A build
@@ -43,7 +43,7 @@ Recapture before rebuilding on a different game commit, and recalibrate raw
 recording timestamps against actual frames. Do not treat video recorder
 wall-clock marks as frame-exact timestamps.
 
-The current film refreshes all gameplay at 655c1fe. `node scripts/capture-confiscation.mjs` records a uniform-corn fixture with a 256-field square removed from its northeast corner. This stages scale without changing production rules. The tracked seed is fixtures/confiscation-seed.json.
+The current 55-second film uses gameplay re-recorded at 2fe1cbc, including the latest walking art, HUD and explicit tile actions. SCRIPT.md contains its exact captions. `node scripts/capture-confiscation.mjs` records a uniform-corn fixture with a 256-field square removed from its northeast corner. This stages scale without changing production rules. The tracked seed is fixtures/confiscation-seed.json.
 
 `node scripts/capture-estate.mjs` refreshes the year-nine estate and actual male-farmer harvests. Its valid save is fixtures/estate.json. Tree nameplates are now absent in the game itself; no source interception is used.
 

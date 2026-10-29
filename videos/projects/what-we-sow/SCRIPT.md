@@ -18,28 +18,26 @@ Music only, no spoken voice. Each caption is burned into the film and supplied a
 
 20.2–24s: Every harvest gives you more to protect.
 
-24–28s: Then the county wants your fields.
+24–27.5s: Now the county is in a drought.
 
-28–31.5s: The county is in a drought.
+27.5–30.4s: They want your land to help.
 
-31.5–34.4s: They want your land to help.
+30.4–32.5s: But does a good cause
 
-34.4–36.5s: But does a good cause
+32.5–35s: erase your right to your land?
 
-36.5–39s: erase your right to your land?
+35–38s: Your work. Your land.
 
-39–42s: Your work. Your land.
+38–40s: Until the county takes it.
 
-42–44s: Until the county takes it.
+40–43s: Years of work. Gone.
 
-44–47s: Years of work. Gone.
+43–45s: No right to refuse.
 
-47–49s: Paid for. No right to refuse.
+45–47s: Defend your rights.
 
-49–52s: Defend your rights.
+47–49s: Keep what you built.
 
-52–54s: Keep what you built.
+49.2–52s: Make the moral case for capitalism.
 
-54.2–57s: Make the moral case for capitalism.
-
-57–59.9s: Learn to make that case yourself.
+52–54.9s: Learn to make that case yourself.
