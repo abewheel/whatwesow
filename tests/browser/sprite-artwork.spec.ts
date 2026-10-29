@@ -1,3 +1,4 @@
+import { openCanvasHarness } from "./canvas-harness";
 import { test, expect } from "./fixtures";
 import { visitBuilding } from "./helpers";
 import { homesteadState } from "../../src/game/state";
@@ -87,7 +88,7 @@ for (const viewport of [
 test("crossing silhouettes stay whole and cannot leak into the next frame", async ({
   page,
 }) => {
-  await page.goto("/");
+  await openCanvasHarness(page);
   const samples = await page.evaluate(async () => {
     const modulePath = "/src/game/atlas-isolation.ts";
     const { isolateAtlas, gridFrames } = await import(

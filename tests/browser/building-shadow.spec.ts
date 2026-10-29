@@ -1,9 +1,10 @@
+import { openCanvasHarness } from "./canvas-harness";
 import { test, expect } from "./fixtures";
 
 test("ground shadows preserve each sprite silhouette and keep transparent gaps", async ({
   page,
 }) => {
-  await page.goto("/?instance=validation-shadow-mask");
+  await openCanvasHarness(page);
   const result = await page.evaluate(async () => {
     const path = "/src/game/building-shadow.ts";
     const { createBuildingShadow } = await import(/* @vite-ignore */ path);

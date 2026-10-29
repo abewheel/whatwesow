@@ -1,3 +1,4 @@
+import { openCanvasHarness } from "./canvas-harness";
 import { test, expect } from "./fixtures";
 import {
   buildingArtwork,
@@ -15,7 +16,7 @@ import {
 test("seasonal, construction and distinct sprite bases stay inside occupied tiles", async ({
   page,
 }) => {
-  await page.goto("/?instance=validation-artwork-bounds");
+  await openCanvasHarness(page);
   const measured = await page.evaluate(async (distinctRects) => {
     const modulePath = "/src/game/atlas-isolation.ts";
     const { isolateAtlas, gridFrames } = await import(

@@ -1,9 +1,10 @@
 import { test as base, expect } from "@playwright/test";
-import { homesteadState } from "../../src/game/state";
+import { homesteadState, type GameState } from "../../src/game/state";
 
 // Most regression paths exercise an established farm. Startup has its own suite.
-export const test = base.extend({
-  page: async ({ page }, use) => {
+export const test = base.extend<{ farmState: GameState }>({
+  farmState: [homesteadState(), { option: true }],
+  page: async ({ page, farmState }, use) => {
     await page.route(
       (url) => url.pathname === "/src/main.ts",
       async (route) => {
@@ -30,7 +31,7 @@ export const test = base.extend({
               transaction.onerror = () => reject(transaction.error);
             };
           });
-        }, homesteadState());
+        }, farmState);
         await route.continue();
       },
     );

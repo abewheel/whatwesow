@@ -1,12 +1,9 @@
 import { buySeeds } from "./helpers";
 import { test, expect } from "@playwright/test";
+import { test as farmTest } from "./fixtures";
 import { endTurn, visitBuilding } from "./helpers";
 import { closeActions, fits, openCell } from "./context-helpers";
-for (const viewport of [
-  { width: 1280, height: 800 },
-  { width: 320, height: 568 },
-  { width: 667, height: 375 },
-]) {
+for (const viewport of [{ width: 1280, height: 800 }]) {
   test(`anchored actions cover a first season at ${viewport.width}px`, async ({
     browser,
   }) => {
@@ -85,3 +82,42 @@ test("popup follows its tile and flips away from viewport edges", async ({
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
 });
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 667, height: 375 },
+]) {
+  farmTest.describe(`seeded anchored actions at ${viewport.width}px`, () => {
+    farmTest.use({ viewport, hasTouch: true });
+    farmTest(
+      "plot and home actions fit and remain reachable",
+      async ({ page }) => {
+        const errors: string[] = [];
+        page.on("pageerror", (error) => errors.push(error.message));
+        page.on("requestfailed", (request) => errors.push(request.url()));
+        await page.goto(
+          `/?instance=validation-context-layout-${viewport.width}`,
+        );
+        await openCell(page, "16,16");
+        await fits(page);
+        await fits(page, "#close-service");
+        await expect(page.locator("#service-title")).toHaveText(
+          "Plant this plot",
+        );
+        await expect(page.locator('[data-crop="turnip"]')).toBeVisible();
+        await visitBuilding(page, "home");
+        await fits(page);
+        await expect(page.locator("#teardown-building")).toBeVisible();
+        await expect(page.locator("#next-season")).toBeVisible();
+        await expect(
+          page.locator(
+            "#move-building,#seed-selection,#end-turn,#build-shop,#structure-target,#crop-options,#home-actions",
+          ),
+        ).toHaveCount(0);
+        await page.locator("#close-service").tap();
+        await expect(page.locator("#service-panel")).toBeHidden();
+        expect(errors).toEqual([]);
+      },
+    );
+  });
+}

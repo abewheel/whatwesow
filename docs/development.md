@@ -38,6 +38,14 @@ pnpm validate
 
 Validation runs formatting, lint, types, unit/integration tests, a production build, development browser tests, and production browser tests. Browser tests launch their own server on port 5181 and refuse to reuse an existing one. If another builder is testing there, use `PLAYWRIGHT_PORT=5193 pnpm validate` for an isolated development browser-test port. Production tests separately require port 5182, configured in `playwright.production.config.ts`; `PLAYWRIGHT_PORT` does not change that port. For application changes, also launch a named local instance, exercise the changed behavior, inspect browser errors and network failures, capture and inspect Playwright screenshots, and stop the instance afterward.
 
+## Keep browser checks focused
+
+During iteration, run the specs that exercise the changed path, then run `pnpm validate` once on the settled candidate. Reuse that passing result while the candidate stays unchanged. The complete validation gate still includes every browser test and production checks.
+
+Keep complete player journeys for startup, farming, construction and persistence. Other checks should start at the state they need: `tests/browser/fixtures.ts` accepts a `farmState` option and seeds it through the real save boundary before startup. This avoids replaying seasons just to inspect a menu. Keep responsive checks at portrait and landscape sizes, but separate their layout and touch assertions from the complete lifecycle. Pixel-processing checks use `openCanvasHarness` so they retain real browser canvas APIs without starting the farm renderer.
+
+Observe action completion before reading state. For feedback that must appear immediately, inspect it synchronously in the input event after the application handlers; a retrying assertion can otherwise pass after the delay it is meant to catch. Do not add retries or remove coverage to make a run faster.
+
 ## Mobile checks
 
 On short landscape screens at least 600px wide, crop counts sit beside the calendar so the farm keeps more room. Inventory, saves, and view controls retain their touch target sizes.

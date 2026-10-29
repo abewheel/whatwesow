@@ -18,6 +18,98 @@ for (const viewport of [
         "Saved on this browser",
       );
       const initial = await readFarm(page);
+      await openCell(page, "16,16");
+      await fits(page);
+      await expect(page.locator("#improve")).toHaveCount(0);
+      await expect(page.locator("#tile-actions")).not.toContainText("Free");
+      await expect(page.locator(".plot-footer > button")).toHaveCount(2);
+      await expect(
+        page.locator(".plot-footer > button").first(),
+      ).toHaveAttribute("id", "plot-shop");
+      // The zero-stock spring menu reproduces the cramped production layout.
+      // Check the card rows and footer even when the body needs scrolling.
+      const errors = await page.locator("#tile-actions").evaluate((actions) => {
+        const failures: string[] = [];
+        const overlap = (a: DOMRect, b: DOMRect) =>
+          Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+          Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+        const separate = (elements: Element[], label: string) => {
+          for (let i = 0; i < elements.length; i++)
+            for (let j = i + 1; j < elements.length; j++)
+              if (
+                overlap(
+                  elements[i].getBoundingClientRect(),
+                  elements[j].getBoundingClientRect(),
+                )
+              )
+                failures.push(`${label}: ${i} overlaps ${j}`);
+        };
+        const buttons = Array.from(actions.querySelectorAll("button"));
+        separate(buttons, "buttons");
+        for (const card of actions.querySelectorAll("[data-crop]")) {
+          const bounds = card.getBoundingClientRect();
+          const parts = Array.from(card.children).filter(
+            (part) => getComputedStyle(part).display !== "none",
+          );
+          separate(parts, card.getAttribute("data-crop")!);
+          for (const part of [
+            ...parts,
+            ...card.querySelectorAll(".resource"),
+          ]) {
+            const rect = part.getBoundingClientRect();
+            if (
+              rect.left < bounds.left - 1 ||
+              rect.top < bounds.top - 1 ||
+              rect.right > bounds.right + 1 ||
+              rect.bottom > bounds.bottom + 1
+            )
+              failures.push(
+                `${card.getAttribute("data-crop")}: content escapes card`,
+              );
+          }
+          separate(Array.from(card.querySelectorAll(".resource")), "resources");
+        }
+        return failures;
+      });
+      expect(errors).toEqual([]);
+      for (const card of await page.locator(".plant-card").all()) {
+        await expect(
+          card.locator("[data-metric] > span:nth-child(2)"),
+        ).toHaveText(["Seeds", "Seasons", "Harvest"]);
+        const rows = await card.locator("[data-metric]").evaluateAll((rows) =>
+          rows.map((row) =>
+            Array.from(row.children).map((part) => {
+              const { x, width } = part.getBoundingClientRect();
+              return { x, width };
+            }),
+          ),
+        );
+        for (const row of rows.slice(1)) {
+          for (let column = 1; column < 3; column++) {
+            expect(Math.abs(row[column].x - rows[0][column].x)).toBeLessThan(1);
+            expect(
+              Math.abs(row[column].width - rows[0][column].width),
+            ).toBeLessThan(1);
+          }
+        }
+      }
+      if (process.env.PLOT_SCREENSHOTS_DIR) {
+        await page.screenshot({
+          path: `${process.env.PLOT_SCREENSHOTS_DIR}/plant-grid-${viewport.width}.png`,
+        });
+      }
+      const tools = await page
+        .locator(".plot-footer > button")
+        .evaluateAll((buttons) =>
+          buttons.map((button) => ({
+            height: button.getBoundingClientRect().height,
+            border: getComputedStyle(button).borderTopWidth,
+          })),
+        );
+      expect(tools[0]).toEqual(tools[1]);
+      // Crop-grid geometry is independent of the home upgrade state. Check it
+      // once above, then exercise every upgrade status without walking back
+      // through the plot menu between states.
       for (const patch of [
         {},
         { harvests: { ...initial.harvests, turnip: 3 } },
@@ -26,115 +118,7 @@ for (const viewport of [
         { soilLevel: 3 },
         { year: 40, season: "winter" },
       ]) {
-        await setFarm(page, {
-          ...initial,
-          seeds: Object.fromEntries(
-            Object.keys(initial.seeds).map((id) => [id, 0]),
-          ),
-          premiumSeeds: Object.fromEntries(
-            Object.keys(initial.premiumSeeds).map((id) => [id, 0]),
-          ),
-          ...patch,
-        });
-        await openCell(page, "16,16");
-        await fits(page);
-        await expect(page.locator("#improve")).toHaveCount(0);
-        await expect(page.locator("#tile-actions")).not.toContainText("Free");
-        await expect(page.locator(".plot-footer > button")).toHaveCount(2);
-        await expect(
-          page.locator(".plot-footer > button").first(),
-        ).toHaveAttribute("id", "plot-shop");
-        // The zero-stock spring menu reproduces the cramped production layout.
-        // Check the card rows and footer even when the body needs scrolling.
-        const errors = await page
-          .locator("#tile-actions")
-          .evaluate((actions) => {
-            const failures: string[] = [];
-            const overlap = (a: DOMRect, b: DOMRect) =>
-              Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
-              Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
-            const separate = (elements: Element[], label: string) => {
-              for (let i = 0; i < elements.length; i++)
-                for (let j = i + 1; j < elements.length; j++)
-                  if (
-                    overlap(
-                      elements[i].getBoundingClientRect(),
-                      elements[j].getBoundingClientRect(),
-                    )
-                  )
-                    failures.push(`${label}: ${i} overlaps ${j}`);
-            };
-            const buttons = Array.from(actions.querySelectorAll("button"));
-            separate(buttons, "buttons");
-            for (const card of actions.querySelectorAll("[data-crop]")) {
-              const bounds = card.getBoundingClientRect();
-              const parts = Array.from(card.children).filter(
-                (part) => getComputedStyle(part).display !== "none",
-              );
-              separate(parts, card.getAttribute("data-crop")!);
-              for (const part of [
-                ...parts,
-                ...card.querySelectorAll(".resource"),
-              ]) {
-                const rect = part.getBoundingClientRect();
-                if (
-                  rect.left < bounds.left - 1 ||
-                  rect.top < bounds.top - 1 ||
-                  rect.right > bounds.right + 1 ||
-                  rect.bottom > bounds.bottom + 1
-                )
-                  failures.push(
-                    `${card.getAttribute("data-crop")}: content escapes card`,
-                  );
-              }
-              separate(
-                Array.from(card.querySelectorAll(".resource")),
-                "resources",
-              );
-            }
-            return failures;
-          });
-        expect(errors).toEqual([]);
-        for (const card of await page.locator(".plant-card").all()) {
-          await expect(
-            card.locator("[data-metric] > span:nth-child(2)"),
-          ).toHaveText(["Seeds", "Seasons", "Harvest"]);
-          const rows = await card.locator("[data-metric]").evaluateAll((rows) =>
-            rows.map((row) =>
-              Array.from(row.children).map((part) => {
-                const { x, width } = part.getBoundingClientRect();
-                return { x, width };
-              }),
-            ),
-          );
-          for (const row of rows.slice(1)) {
-            for (let column = 1; column < 3; column++) {
-              expect(Math.abs(row[column].x - rows[0][column].x)).toBeLessThan(
-                1,
-              );
-              expect(
-                Math.abs(row[column].width - rows[0][column].width),
-              ).toBeLessThan(1);
-            }
-          }
-        }
-        if (
-          process.env.PLOT_SCREENSHOTS_DIR &&
-          Object.keys(patch).length === 0
-        ) {
-          await page.screenshot({
-            path: `${process.env.PLOT_SCREENSHOTS_DIR}/plant-grid-${viewport.width}.png`,
-          });
-        }
-        const tools = await page
-          .locator(".plot-footer > button")
-          .evaluateAll((buttons) =>
-            buttons.map((button) => ({
-              height: button.getBoundingClientRect().height,
-              border: getComputedStyle(button).borderTopWidth,
-            })),
-          );
-        expect(tools[0]).toEqual(tools[1]);
+        await setFarm(page, { ...initial, ...patch });
         await openFarmUpgrades(page);
         await expect(page.locator("#soil-level")).toContainText(
           `Soil level ${"soilLevel" in patch ? patch.soilLevel : initial.soilLevel}/3`,

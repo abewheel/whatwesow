@@ -1,3 +1,4 @@
+import { openCanvasHarness } from "./canvas-harness";
 import { test, expect } from "./fixtures";
 
 for (const variant of ["male", "female"] as const) {
@@ -48,13 +49,7 @@ for (const variant of ["male", "female"] as const) {
 test("painted walking sheets keep every pose inside its frame", async ({
   page,
 }) => {
-  await page.route("**/gait-inspection", (route) =>
-    route.fulfill({
-      contentType: "text/html",
-      body: "<!doctype html><body></body>",
-    }),
-  );
-  await page.goto("/gait-inspection");
+  await openCanvasHarness(page);
   const variants = await page.evaluate(async () => {
     return Promise.all(
       ["farmer", "farmer-female"].map(async (key) => {

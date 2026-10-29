@@ -1,3 +1,5 @@
+import { initialState, type GameState } from "../../src/game/state";
+import { openCell, readFarm, setFarm, fits } from "./context-helpers";
 import { test, expect } from "./fixtures";
 import { endTurn } from "./helpers";
 
@@ -96,11 +98,7 @@ test("honey rescues an empty farm and can only be collected once until next seas
   await expect(page.locator("#season")).toContainText("24 coins");
 });
 
-for (const size of [
-  { width: 1280, height: 800 },
-  { width: 320, height: 568 },
-  { width: 667, height: 375 },
-]) {
+for (const size of [{ width: 1280, height: 800 }]) {
   test(`wooden hives can be built, collected, saved and torn down at ${size.width}px`, async ({
     browser,
   }) => {
@@ -158,5 +156,61 @@ for (const size of [
     expect((await readFarm(page)).structures).toHaveLength(0);
     expect(errors).toEqual([]);
     await context.close();
+  });
+}
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 667, height: 375 },
+]) {
+  const farm: GameState = {
+    ...initialState(),
+    debris: [],
+    plots: [null],
+    plotCells: [{ row: 16, col: 16 }],
+    plotIds: [1],
+    nextPlotId: 2,
+  };
+  test.describe(`seeded hive controls at ${viewport.width}px`, () => {
+    test.use({ viewport, hasTouch: true, isMobile: true, farmState: farm });
+    test("touch plans, construction, collection and teardown fit", async ({
+      page,
+    }) => {
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      page.on("requestfailed", (request) => errors.push(request.url()));
+      await page.goto(`/?instance=validation-hive-controls-${viewport.width}`);
+      await openCell(page, "16,18");
+      const plan = page.locator('[data-build="beehive"]');
+      await expect(plan).toHaveAttribute("aria-label", /120 coins/);
+      await expect(plan).toContainText("15 coins");
+      await fits(page);
+      await plan.tap();
+      await expect(page.locator("#season")).toContainText("120 coins");
+      await openCell(page, "16,18");
+      await expect(page.locator("#tile-actions")).toContainText(
+        "Under construction",
+      );
+      await fits(page);
+      const ready = await readFarm(page);
+      ready.structures[0].pendingConstruction = undefined;
+      ready.structures[0].product = true;
+      await setFarm(page, ready);
+      await openCell(page, "16,18");
+      await fits(page);
+      const before = ready.coins;
+      await page.locator("#collect-hive").tap();
+      await expect(page.locator("#season")).toContainText(
+        `${before + 15} coins`,
+      );
+      const collected = await readFarm(page);
+      expect(collected.coins).toBe(before + 15);
+      expect(collected.structures[0].product).toBe(false);
+      await openCell(page, "16,18");
+      await expect(page.locator("#tile-actions")).toContainText("Collected");
+      await page.locator("#teardown-building").tap();
+      expect((await readFarm(page)).structures[0].pendingDemolition).toBe(true);
+      expect(errors).toEqual([]);
+    });
   });
 }

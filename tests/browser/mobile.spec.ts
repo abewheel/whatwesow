@@ -1,3 +1,7 @@
+import { test as farmTest } from "./fixtures";
+import { homesteadState } from "../../src/game/state";
+import { footprint, cellKey, structureSize } from "../../src/micro/world";
+import { setCameraCell } from "./helpers";
 import { buySeeds } from "./helpers";
 import { choosePlotWork } from "./helpers";
 import { test, expect, type Page } from "@playwright/test";
@@ -63,15 +67,6 @@ for (const viewport of [
       await fits(page, ".field-note");
       await buySeeds(page, "turnip");
       await page.locator('[data-cell="16,16"]').tap();
-      // Selection appears while the farmer is travelling, before its menu opens.
-      await expect(page.locator('[data-cell="16,16"]')).toHaveAttribute(
-        "data-context",
-        "true",
-      );
-      await expect(page.locator('[data-cell="16,16"]')).toHaveCSS(
-        "-webkit-tap-highlight-color",
-        "rgba(0, 0, 0, 0)",
-      );
       await page.locator("#expand").tap();
       await expect(page.locator("#improve")).toHaveCount(0);
       await fits(page, "#service-panel");
@@ -260,4 +255,79 @@ test.describe("phone forms and gestures", () => {
     await page.reload();
     await expect(page.locator("#season")).toContainText("777 coins");
   });
+});
+
+farmTest.describe("immediate touch selection", () => {
+  farmTest.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  farmTest(
+    "highlights a tile and the complete building lot in the tap event before arrival",
+    async ({ page }) => {
+      await page.goto("/?instance=validation-immediate-selection");
+      await expect(page.locator("main")).toHaveJSProperty("inert", false);
+      const home = homesteadState().structures[0];
+      for (const { cell, cells } of [
+        { cell: { row: 20, col: 20 }, cells: ["20,20"] },
+        {
+          cell: home,
+          cells: footprint(
+            home,
+            structureSize(home).width,
+            structureSize(home).height,
+          ).map(cellKey),
+        },
+      ]) {
+        await page.keyboard.press("Escape");
+        await setCameraCell(page, "row", String(cell.row));
+        await setCameraCell(page, "column", String(cell.col));
+        await page.locator("#camera-controls summary").tap();
+        // Observe synchronously after the application's click handlers. An eventual
+        // locator assertion could pass after arrival and miss delayed feedback.
+        await page.evaluate(() => {
+          document.addEventListener(
+            "click",
+            () => {
+              const selected = [
+                ...document.querySelectorAll<HTMLElement>("[data-context]"),
+              ];
+              (window as Window & { selectionAtTap?: unknown }).selectionAtTap =
+                {
+                  cells: selected.map((el) => el.dataset.cell).sort(),
+                  menuHidden:
+                    document.querySelector<HTMLElement>("#service-panel")!
+                      .hidden,
+                  visibleHighlight:
+                    selected.length > 0 &&
+                    selected.every(
+                      (el) =>
+                        getComputedStyle(el).backgroundColor !==
+                        "rgba(0, 0, 0, 0)",
+                    ),
+                  nativeHighlight: selected.length
+                    ? getComputedStyle(selected[0]).getPropertyValue(
+                        "-webkit-tap-highlight-color",
+                      )
+                    : null,
+                };
+            },
+            { once: true },
+          );
+        });
+        await page.locator(`[data-cell="${cellKey(cell)}"]`).tap();
+        const atTap = await page.evaluate(
+          () =>
+            (window as Window & { selectionAtTap?: unknown }).selectionAtTap,
+        );
+        expect(atTap).toEqual({
+          cells: [...cells].sort(),
+          menuHidden: true,
+          visibleHighlight: true,
+          nativeHighlight: "rgba(0, 0, 0, 0)",
+        });
+      }
+    },
+  );
 });
