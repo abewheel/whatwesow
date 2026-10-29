@@ -35,30 +35,6 @@ async function open(
       });
     });
   const page = await context.newPage();
-  // Filming presentation only: suppress constant tree nameplates, retain real art and actions.
-  await page.route("**/src/game/scene.ts*", async (route) => {
-    const response = await route.fetch();
-    let body = await response.text();
-    const anchor = body.indexOf("this.treeViews.set(s.id, tree)");
-    const treeAdd = body.indexOf("scenery.add(tree)", anchor);
-    const begin = body.indexOf(
-      "scenery.add(",
-      treeAdd + "scenery.add(tree)".length,
-    );
-    const end = body.indexOf("continue;", begin);
-    if (
-      anchor < 0 ||
-      treeAdd < 0 ||
-      begin < 0 ||
-      end < 0 ||
-      end - begin > 1500 ||
-      !body.slice(begin, end).includes("item.name")
-    )
-      throw Error("Tree nameplate capture patch no longer matches");
-    body = body.slice(0, begin) + body.slice(end);
-    await route.fulfill({ response, body });
-  });
-
   const epoch = Date.now();
   const events = [];
   const mark = (name) => events.push({ name, t: (Date.now() - epoch) / 1000 });
@@ -141,6 +117,7 @@ async function camera(page, zoom = "200%") {
   );
 }
 async function click(page, locator) {
+  await locator.waitFor({ state: "visible", timeout: 60000 });
   const r = await locator.boundingBox();
   if (!r) throw Error("Missing target");
   await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2, { steps: 18 });
@@ -187,7 +164,7 @@ try {
     const { parseState } = await import("/src/game/state.ts");
     const { crops } = await import("/src/micro/state.ts");
     const s = globalThis.structuredClone(seed);
-    s.year = 24;
+    s.year = 9;
     s.season = "summer";
     s.crises = [];
     s.farmerVariant = "male";

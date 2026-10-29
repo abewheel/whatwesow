@@ -20,9 +20,9 @@ Music only, no spoken voice. Each caption is burned into the film and supplied a
 
 24–28s: Then the county wants your fields.
 
-28–31.5s: Thousands need water.
+28–31.5s: The county is in a drought.
 
-31.5–34.4s: A reservoir would help.
+31.5–34.4s: They want your land to help.
 
 34.4–36.5s: But does a good cause
 

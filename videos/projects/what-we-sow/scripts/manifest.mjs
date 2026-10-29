@@ -34,11 +34,11 @@ for (const path of [...paths].sort()) {
         : path.endsWith("start-background.jpg")
           ? "What We Sow public/art/starter-landscape.jpg, actual start-menu background"
           : path.includes("estate")
-            ? "What We Sow estate capture: 96 plots, 13 buildings, 11 oaks; filming-only tree nameplates suppressed"
+            ? "What We Sow estate capture: 96 plots, 13 buildings, 11 oaks; native game presentation, no tree-label patch"
             : path.includes("/v3/confiscation-")
-              ? "Requested cinematic fixture rendered in What We Sow: 2560 plots, 400-plot square loss at the property boundary; production rule unchanged"
+              ? "Requested cinematic fixture rendered in What We Sow: 1600 uniform corn plots, 256-plot corner loss with updated seized-ground artwork; production rule unchanged"
               : path.endsWith(".mp4") || path.endsWith(".png")
-                ? "What We Sow gameplay at b716c41"
+                ? "What We Sow gameplay at 655c1fe"
                 : path.includes("/fonts/")
                   ? "Game typography; SIL Open Font License"
                   : "GSAP 3.15.0, original header retained",
@@ -48,7 +48,7 @@ await writeFile(
   `${root}/assets/manifest.json`,
   JSON.stringify(
     {
-      sourceCommit: "b716c41",
+      sourceCommit: "655c1fe",
       renderer: "hyperframes@0.8.214",
       dimensions: [1920, 1080],
       fps: 30,

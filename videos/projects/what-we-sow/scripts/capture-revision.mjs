@@ -117,6 +117,7 @@ async function camera(page, zoom = "200%") {
   );
 }
 async function click(page, locator) {
+  await locator.waitFor({ state: "visible", timeout: 60000 });
   const r = await locator.boundingBox();
   if (!r) throw Error("Missing target");
   await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2, { steps: 18 });
@@ -266,7 +267,6 @@ try {
     ["dirty", "200%"],
     ["small", "200%"],
     ["medium", "150%"],
-    ["big", "100%"],
   ]) {
     if (process.env.CAPTURE_FROM === "branches") continue;
     if (
@@ -287,19 +287,21 @@ try {
         p,
         p.getByRole("button", { name: "Clear · Free", exact: true }),
       );
-      await p.keyboard.press("Escape");
       await expect(p.locator("#farm-message")).toContainText("cleared", {
         timeout: 60000,
       });
+      await p.keyboard.press("Escape");
       await click(p, p.locator('[data-cell="17,17"]'));
       await click(
         p,
         p.getByRole("button", { name: "Clear · 4 coins", exact: true }),
       );
+      await expect(p.locator('[data-cell="17,17"]')).not.toHaveAttribute(
+        "aria-label",
+        /Loose stones/,
+        { timeout: 60000 },
+      );
       await p.keyboard.press("Escape");
-      await expect(p.locator("#farm-message")).toContainText("cleared", {
-        timeout: 60000,
-      });
     } else if (id === "small") {
       for (const i of [0, 8]) {
         await click(p, p.locator(`[data-plot="${i}"]`));
@@ -321,10 +323,7 @@ try {
     t.mark("end");
     await t.finish();
   }
-  for (const [id, pick, count] of [
-    ["rights", "E-OBJ", 81],
-    ["taking", "E-PRO-M", 77],
-  ]) {
+  for (const [id, pick, count] of [["rights", "E-OBJ", 81]]) {
     const t = await open(id);
     const p = t.page;
     await apply(p, states.start);
@@ -340,6 +339,10 @@ try {
     t.mark("choice-start");
     await click(p, p.locator(`#crisis [data-pick="${pick}"]`));
     t.mark("choice-done");
+    await expect(
+      p.getByRole("button", { name: "Back to the farm", exact: true }),
+    ).toBeVisible();
+    t.mark("result");
     await p.waitForTimeout(1800);
     await p.screenshot({ path: `${out}/${id}-policy.png` });
     t.mark("policy");

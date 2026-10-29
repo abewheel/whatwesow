@@ -76,7 +76,7 @@ for (const [name, id, d] of [["right-choice", "rights", 3]])
     name,
     id,
     events[id]["choice-start"] - 0.2,
-    events[id]["choice-done"] + 2.4,
+    events[id].result + 1.8,
     d,
   );
 const estateEvents = Object.fromEntries(
@@ -102,7 +102,7 @@ await writeFile(
   `${root}/edits.json`,
   JSON.stringify(
     {
-      sourceCommit: "b716c41",
+      sourceCommit: "655c1fe",
       offsetNote:
         "-0.45s recorder alignment; all actions captured in real browser",
       edits,
@@ -151,14 +151,14 @@ body += video("grow-work", "estate-work", 24, 4);
 code += `tl.fromTo('#grow-work-camera',${JSON.stringify(pose(1.55, 1010, 570))},{...${JSON.stringify(pose(1.55, 1010, 570))},duration:4},24);`;
 await scene("grow", 28, body, code);
 const wide = pose(1),
-  nora = pose(2.65, 960, 606),
-  ada = pose(2.65, 1417, 606);
+  nora = pose(2.65, 960, 650),
+  ada = pose(2.65, 1417, 650);
 body = plate("council-plate", "rights-council", 0, 11).replace(
   "alt=",
   "data-hold alt=",
 );
 body +=
-  '<div class="camera" data-layout-allow-overflow id="council-focus"><div id="council-outline" style="position:absolute;left:1319px;top:613px;width:197px;height:100px;border:3px solid #c18c35;background:rgba(255,220,100,.09);opacity:0" data-layout-allow-overlap></div></div>';
+  '<div class="camera" data-layout-allow-overflow id="council-focus"><div id="council-outline" style="position:absolute;left:1321px;top:669px;width:190px;height:104px;border:3px solid #c18c35;background:rgba(255,220,100,.09);opacity:0" data-layout-allow-overlap></div></div>';
 code = `tl.fromTo('#council-plate-camera',${JSON.stringify(wide)},{...${JSON.stringify(nora)},duration:.8,ease:'power2.inOut'},.5);tl.to('#council-plate-camera',{...${JSON.stringify(ada)},duration:.8,ease:'power2.inOut'},3.5);tl.fromTo('#council-focus',${JSON.stringify(ada)},{...${JSON.stringify(ada)},duration:6.7},4.3);tl.to('#council-outline',{opacity:1,duration:.3},4.8);`;
 await scene("council", 11, body, code);
 const densePlate = (id, file, start, duration) =>
@@ -168,7 +168,7 @@ const densePlate = (id, file, start, duration) =>
 body =
   densePlate("confiscation-before", "confiscation-before", 0, 10) +
   densePlate("confiscation-after", "confiscation-after", 4, 6);
-const dense = pose(1.35, 1100, 700);
+const dense = pose(2.666667, 760, 617.5);
 code = `tl.fromTo('#confiscation-before-camera',${JSON.stringify(dense)},{...${JSON.stringify(dense)},duration:10},0);tl.fromTo('#confiscation-after-camera',${JSON.stringify({ ...dense, opacity: 0 })},{...${JSON.stringify({ ...dense, opacity: 1 })},duration:.45,ease:'power2.inOut'},4);`;
 await scene("consequence", 10, body, code);
 body =
@@ -190,8 +190,8 @@ const captions = [
   [16.4, 20.2, "A living becomes a lifetime’s work."],
   [20.2, 24, "Every harvest gives you more to protect."],
   [24, 28, "Then the county wants your fields."],
-  [28, 31.5, "Thousands need water."],
-  [31.5, 34.4, "A reservoir would help."],
+  [28, 31.5, "The county is in a drought."],
+  [31.5, 34.4, "They want your land to help."],
   [34.4, 36.5, "But does a good cause"],
   [36.5, 39, "erase your right to your land?"],
   [39, 42, "Your work. Your land."],
@@ -224,7 +224,7 @@ const hosts = [
       `<div id="${id}" class="clip" data-composition-id="${id}" data-composition-src="compositions/${id}.html" data-start="${start}" data-duration="${d}" data-track-index="${id === "captions" ? 5 : 1}" data-track-kind="${id === "captions" ? "captions" : "graphics"}" data-width="1920" data-height="1080" style="z-index:${id === "captions" ? 10 : 1}"></div>`,
   )
   .join("\n");
-const sounds = [49.9]
+const sounds = [50.60]
   .map(
     (t, i) =>
       `<audio id="click-${i}" class="clip" src="assets/local/click.mp3" data-start="${t}" data-duration=".4" data-volume=".35" data-track-index="11"></audio>`,

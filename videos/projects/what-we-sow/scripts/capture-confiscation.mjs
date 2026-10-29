@@ -117,6 +117,7 @@ async function camera(page, zoom = "200%") {
   );
 }
 async function click(page, locator) {
+  await locator.waitFor({ state: "visible", timeout: 60000 });
   const r = await locator.boundingBox();
   if (!r) throw Error("Missing target");
   await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2, { steps: 18 });
@@ -169,20 +170,20 @@ try {
     s.structures = [{ id: 1, kind: "home", row: 7, col: 8, level: 1 }];
     s.nextStructureId = 2;
     const cells = [];
-    for (let row = 0; row < 64; row++)
+    for (let row = 12; row < 52; row++)
       for (let col = 24; col < 64; col++) cells.push({ row, col });
     s.plotCells = cells;
     s.plotIds = cells.map((_, i) => i + 1);
-    s.nextPlotId = 2561;
-    s.plots = cells.map((_, i) => {
-      const crop = ["turnip", "carrot", "corn", "tomato", "pumpkin"][i % 5];
+    s.nextPlotId = 1601;
+    s.plots = cells.map(() => {
+      const crop = "corn";
       return { crop, growth: crops[crop].steps };
     });
     const pending = endTurn(parseState(s)).state;
     const before = answerCrisis(pending, "E-OBJ").state;
     // Explicit cinematic fixture requested for the film. No production rule changes.
     const after = globalThis.structuredClone(before);
-    const taken = cells.filter((c) => c.row >= 12 && c.row < 32 && c.col >= 44);
+    const taken = cells.filter((c) => c.row < 28 && c.col >= 48);
     const key = (c) => `${c.row},${c.col}`,
       set = new Set(taken.map(key));
     const keep = before.plotCells
@@ -198,7 +199,7 @@ try {
       after: parseState(after),
       taken,
       fixture:
-        "Cinematic scale demonstration: 2560 fields, 400-field square at the property boundary removed; live crisis still takes four.",
+        "Cinematic scale demonstration: 1600 uniform corn fields, 256-field square at the northeast field corner removed; live crisis still takes four.",
     };
   }, saves);
   await writeFile(
@@ -207,17 +208,17 @@ try {
   );
   for (const id of ["before", "after"]) {
     await apply(p, states[id]);
-    await frame(p, "100%", 30, 47);
+    await frame(p, "100%", 24, 52);
     await p.mouse.move(5, 1050);
     await p.waitForTimeout(700);
     await expect(p.locator("[data-plot]")).toHaveCount(
-      id === "before" ? 2560 : 2160,
+      id === "before" ? 1600 : 1344,
     );
     await p.screenshot({ path: `${out}/confiscation-${id}.png` });
   }
   // Keep the farmer's working animation available for the next footage capture.
   await apply(p, states.before);
-  await frame(p, "100%", 30, 47);
+  await frame(p, "100%", 24, 52);
   await harvest(p, 300);
   await click(p, home(p));
   await t.context.close();

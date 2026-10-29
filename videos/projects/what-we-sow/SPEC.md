@@ -1,13 +1,15 @@
-# Revised visual specification
+# Final-cut visual specification
 
-1920 × 1080, 30 fps, 60 seconds. Actual gameplay at b716c41. Four valid farm stages: debris/tent, 9, 27 and 96 fields. Male farmer. No apple tree. Clear building gaps and separated fields. Only real mouse interaction and farmer animation.
+1920 × 1080, 30 fps, exactly 60 seconds. Gameplay recaptured at 655c1fe. Male farmer throughout. No apple tree or invented UI. Source states are staged valid saves, not one uninterrupted playthrough.
 
-Growth changes at 5, 10 and 15 seconds with 0.6-second crossfades, preserving active footage on both sides. Full-estate camera eases from 1.2 to 1.05 scale while work continues. Council reframes take 0.8 seconds; Ada's argument gets a six-second read. Consequence cuts preserve the same view of the eastern field patch. An action close-up from 24–28 seconds keeps the farmer working. Start-menu landscape fills the final six seconds with a 1.035-to-1 camera move.
+Growth changes at 5, 10 and 15 seconds with 0.6-second crossfades and real work on both sides. Farming clips retain their full intended durations; the cutter verifies each encoded duration within one frame. The estate has eight matching 3 × 4 crop beds, thirteen varied buildings with paired greenhouses and hives, a grouped livestock area and eleven oaks. No served-module or label-removal patch remains.
 
-Captions use the game's bundled Farm font at 54 px, cream on an 88% forest-green scrim sized to text, bottom 115 px, minimum side margin 192 px. Fade 0.12 seconds; hard clip end. One group at a time. No voice or presenter. CC0 village music and two quiet choice clicks.
+The council uses the updated, shorter game text. Nora and Ada are framed at 2.65× around y=650. Ada's actual rights excerpt gets a measured outline at source (1321,669), 190 × 104 px. It remains clear of captions. The selected argument and result are real captured interaction, with a quiet click at 50.60 seconds.
 
-Banned: fake UI, apple labels, unrelated stock farming, fabricated consequences, title cards replacing gameplay, bouncing text, word-by-word karaoke, particle overlays, full-width subtitle bars, changing individual sprite proportions, long idle farm holds.
+The loss shot is uniform corn, 1,600 fields before and 1,344 after. The 256-field square touches two outer edges of the planted rectangle and the actual eastern property boundary. Matching 2.666667× crops centered on (760,617.5) keep only corn and the new seized-ground artwork on screen. The after-state fades in over 0.45 seconds at film time 43. The corner's visual scale is deliberately staged; production economics stay unchanged.
 
-Current revision: no alternative-choice beat. At 39–49 seconds, use actual game-rendered cinematic fixtures with 2,560 ripe fields, then a 20 × 20 square at the eastern edge replaced by water. Match both frames exactly at 1.35 scale. Fade only the changed state over 0.45 seconds. This scale is staged for the video; live confiscation remains four plots. At 49–54 seconds, the real rights selection precedes the intact dense farm. The outro overlays the start menu’s exact radial gradient (#162b20a6 center, #162b2033 at 55%, transparent at 85%) behind its text.
+Captions use the bundled Farm font at 54 px, cream on a compact forest-green scrim, bottom 115 px, side margin 192 px. One group at a time. Updated copy at 28–31.5: “The county is in a drought.” At 31.5–34.4: “They want your land to help.”
 
-The seized square occupies rows 12–31 and columns 44–63, meeting the actual eastern property boundary at column 63. The field extends beyond the view; framing keeps the boundary fence in the lower right. The mature estate has eight 3 × 4 monocrop beds, paired greenhouses, two hives, a market, mill, well, storehouse, barn and three livestock buildings, with eleven oaks lining the sides. Harvesting remains real. Constant tree nameplates are suppressed only by the capture script’s served-module presentation patch, not by changing game source.
+The six-second outro uses the actual start-menu image, its original radial gradient and a 40% dark wash across the entire frame. Title 112 px, URL 42 px; both remain readable at phone width. Music is the existing licensed village bed, no voiceover.
+
+Banned: mixed crops in the loss shot, village/HUD clutter there, a mid-edge notch, the alternative-choice beat, permanent tree labels, frozen farming tails, fabricated interface text, bouncy typography, particle overlays and distorted sprite proportions.

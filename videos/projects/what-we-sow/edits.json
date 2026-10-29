@@ -1,54 +1,47 @@
 {
-  "sourceCommit": "b716c41",
+  "sourceCommit": "655c1fe",
   "offsetNote": "-0.45s recorder alignment; all actions captured in real browser",
   "edits": [
     {
       "name": "dirty",
       "take": "dirty",
-      "in": 11.66,
-      "out": 16.761,
+      "in": 12.957,
+      "out": 19.808,
       "duration": 5.6
     },
     {
       "name": "small",
       "take": "small",
-      "in": 12.152000000000001,
-      "out": 18.32,
+      "in": 12.558,
+      "out": 20.877,
       "duration": 5.6
     },
     {
       "name": "medium",
       "take": "medium",
-      "in": 13.331000000000001,
-      "out": 21.230999999999998,
+      "in": 15.265,
+      "out": 26.047,
       "duration": 5.6
-    },
-    {
-      "name": "big",
-      "take": "big",
-      "in": 12.498000000000001,
-      "out": 23.682,
-      "duration": 9
     },
     {
       "name": "right-choice",
       "take": "rights",
-      "in": 17.302000000000003,
-      "out": 20.864,
+      "in": 18.273,
+      "out": 21.389000000000003,
       "duration": 3
     },
     {
       "name": "estate",
       "take": "../v4/estate",
-      "in": 11.792000000000002,
-      "out": 19.041,
+      "in": 16.159000000000002,
+      "out": 31.822,
       "duration": 9
     },
     {
       "name": "estate-work",
       "take": "../v4/estate",
-      "in": 14.792000000000002,
-      "out": 19.041,
+      "in": 19.159000000000002,
+      "out": 31.822,
       "duration": 4
     }
   ]
