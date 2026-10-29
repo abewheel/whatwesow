@@ -23,7 +23,8 @@ test("honey rescues an empty farm and can only be collected once until next seas
       plotIds: [1],
       nextPlotId: 2,
       structures: [{ id: 1, kind: "home", row: 1, col: 1, level: 1 }],
-      debris: [],
+      // Occupying the default start selects the valid spawn beside this plot.
+      debris: [{ kind: "rockpile", row: 14, col: 14 }],
     }),
   );
   await page.getByRole("button", { name: "Apply state" }).click();
