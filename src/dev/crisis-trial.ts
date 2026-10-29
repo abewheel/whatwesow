@@ -94,7 +94,7 @@ export function mountCrisisTrial() {
   open.id = "crisis-test";
   open.setAttribute("aria-haspopup", "dialog");
   open.textContent = "Crisis test";
-  document.querySelector("#open-menu")!.before(open);
+  document.querySelector(".corner-controls")!.append(open);
   const dialog = document.createElement("dialog");
   dialog.id = "crisis-trial";
   dialog.setAttribute("aria-labelledby", "crisis-title");

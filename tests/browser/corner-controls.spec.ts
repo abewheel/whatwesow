@@ -39,6 +39,20 @@ for (const viewport of [
     expect(view.x).toBe(inventory.x);
     expect(menu.x).toBe(shop.x);
     expect(inventory.y).toBeGreaterThan(view.y);
+    const trial = await page.locator("#crisis-test").boundingBox();
+    expect(trial!.y).toBeGreaterThanOrEqual(shop.y + shop.height + 7);
+    const overview = await page
+      .locator(".farm-overview")
+      .evaluate((element) => {
+        const boxes = ["#season", "#farm-status", ".field-note"].map(
+          (selector) =>
+            element.querySelector(selector)!.getBoundingClientRect(),
+        );
+        return boxes.slice(1).map((box, i) => box.top - boxes[i].bottom);
+      });
+    // Landscape places the calendar and crop counts side by side.
+    for (const gap of viewport.height < 500 ? overview.slice(1) : overview)
+      expect(gap).toBeCloseTo(viewport.height < 500 ? 6 : 8, 0);
     await page.locator("#camera-controls > summary").click();
     await expect(page.locator("#zoom-in")).toBeInViewport();
     await page.locator("#close-camera").click();

@@ -2488,3 +2488,21 @@ button.crisis-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Keep feedback in the overview stack with the same gap as the other boxes. */
+.farm-overview #farm-status,
+.hud-right .farm-overview .field-note {
+  position: static;
+  width: auto;
+}
+.corner-controls #crisis-test {
+  position: static;
+  grid-column: 1 / -1;
+  grid-row: 3;
+  order: 0;
+}
+@media (min-width: 600px) and (max-height: 500px) {
+  .farm-overview .field-note {
+    grid-column: 1 / -1;
+  }
+}

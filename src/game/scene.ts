@@ -1142,6 +1142,31 @@ export class FarmScene extends Phaser.Scene {
           .filter((object) => object.name.startsWith("shadow:"))
           .map((object) => object.name.slice(7)),
       );
+      data.sceneDebris = JSON.stringify(
+        scenery.list
+          .filter(
+            (object) =>
+              object.name.startsWith("debris:") &&
+              !this.fadingViews.has(object),
+          )
+          .map((object) => {
+            const image = object as Phaser.GameObjects.Image;
+            return {
+              id: image.name.slice(7),
+              x: image.x,
+              y: image.y,
+              scale: image.scaleX,
+              flip: image.flipX,
+              atlas: image.texture.key,
+              rect: [
+                image.frame.cutX,
+                image.frame.cutY,
+                image.frame.cutWidth,
+                image.frame.cutHeight,
+              ],
+            };
+          }),
+      );
       data.sceneDry = String(marks.dry);
       data.sceneWithered = String(marks.withered);
       data.sceneTaken = String(marks.taken);

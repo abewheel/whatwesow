@@ -55,9 +55,12 @@ for (const viewport of [
       const menu = (await page.locator("#open-menu").boundingBox())!;
       expect(balance.x + balance.width).toBeLessThanOrEqual(menu.x);
 
-      expect(
-        (await page.locator(".hud-top").boundingBox())!.height,
-      ).toBeLessThan(120);
+      const view = (await page
+        .locator("#camera-controls > summary")
+        .boundingBox())!;
+      const shop = (await page.locator("#open-shop").boundingBox())!;
+      expect(shop.y + shop.height - view.y).toBeLessThan(120);
+      await fits(page, ".field-note");
       await buySeeds(page, "turnip");
       await page.locator('[data-cell="16,16"]').tap();
       await page.locator("#expand").tap();

@@ -2,7 +2,7 @@
 
 Generated with the built-in image tool, using `public/art/border-details-seasons.png` as the style reference. The shipped source is `public/art/debris-seasons.png`, a transparent 1086 × 1448 atlas. Rows are spring, summer, fall, and winter. The first column contains fallen logs and the second rocky outcrops. The third column is unused. Measured source rectangles live in `src/game/debris-artwork.ts`.
 
-The renderer uses the same seasonal border artwork as the surrounding woodland for berry bushes, weeds, and loose stones. Logs and outcrops use the new atlas. A fallen tree joins two log sprites along the two grid axes; its five occupied tiles form an L, leaving the inner four tiles usable. This uses the same `debrisFootprint` contract as placement, clearing, save validation, and selection highlights. Existing debris kinds retain their footprints when saves load.
+The renderer uses the same seasonal border artwork as the surrounding woodland for berry bushes, weeds, and loose stones. Logs and outcrops use the new atlas. A fallen tree joins two log sprites along the two grid axes; its five occupied tiles form an L, leaving the inner four tiles usable. Each seasonal frame measures its opaque front edges once, then aligns them just inside the reserved tiles, accounting for transparent gutters and flipped arms. Sprite depth follows the front of each arm or lot. This uses the same `debrisFootprint` contract as placement, clearing, save validation, and selection highlights. Existing debris kinds retain their footprints when saves load.
 
 Generation prompt:
 
