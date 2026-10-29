@@ -28,10 +28,21 @@ test("honey rescues an empty farm and can only be collected once until next seas
   );
   await page.getByRole("button", { name: "Apply state" }).click();
   await expect(page.locator("#dev-status")).toContainText("applied");
-  // Reload the isolated fixture so the farmer starts beside its one empty
-  // plot. Honey recovery does not need repeated walks across a large estate.
-  await page.reload();
-  await expect(page.locator("main")).toHaveJSProperty("inert", false);
+  // Applying state resets the farmer against the scene's current layout.
+  // Read the loaded fixture again so both the first visit and the reload check
+  // start beside its plot, rather than at the default new-scene position.
+  const stageFarmer = async () => {
+    await page.getByRole("button", { name: "Read current state" }).click();
+    await page.getByRole("button", { name: "Apply state" }).click();
+    await expect(page.locator("#dev-status")).toHaveText(
+      "State applied and saved.",
+    );
+    await expect(page.locator("#farm canvas")).toHaveAttribute(
+      "data-farmer-cell",
+      "6,1",
+    );
+  };
+  await stageFarmer();
   const hive = page.locator('[data-service="hive"]');
   // Center the ground target below the fixed HUD, then let Playwright check
   // that the pointer can actually reach it instead of forcing an obscured hit.
@@ -62,6 +73,7 @@ test("honey rescues an empty farm and can only be collected once until next seas
     "Saved on this browser",
   );
   await expect(page.locator("main")).toHaveJSProperty("inert", false);
+  await stageFarmer();
   await hive.evaluate((target) =>
     target.scrollIntoView({ block: "center", inline: "center" }),
   );
