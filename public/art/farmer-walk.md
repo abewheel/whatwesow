@@ -31,3 +31,17 @@ The female conversion prompt, applied separately to front and rear strips, was:
 The final arm-continuity edit, applied to both variants and views, was:
 
 > Preserve all character identity, body proportions, leg and boot poses, scale and layout. Change only arms in passing panels 2 and 4 to hang relaxed nearly vertically beside the hips, hands alongside upper thighs. These are neutral intermediate poses between opposite arm swings. Soften the front panel 3 forward swing so the hand stays near the hip rather than crossing the bib. Keep contact panels and all leg phases unchanged.
+
+## Rear cycle alignment
+
+The rear row was rebuilt with a four-pose motion guide so the feet stride along the same heading as the head, torso, and hips. The contact poses alternate the near and far leading leg, with a passing pose between them. Both boot toes follow the travel direction instead of spreading sideways. All front-row pixels were preserved.
+
+The rear generation used the approved front artwork for identity and a separate skeletal guide for poses:
+
+> Render four distinct rear three-quarter walking poses. The near leg leads in frame 1, supports in frame 2, trails in frame 3, and passes in frame 4. The far leg does the opposite. Keep the head, shoulders, pelvis, knees, and toes facing the same rightward heading. Legs swing forward and backward along that heading, not sideways. Preserve the original stocky proportions, clothing, hat, and painted style. Four evenly spaced full bodies, consistent scale, transparent background.
+
+A targeted follow-up corrected the fourth pose's leg overlap and softened the intermediate arm positions:
+
+> In panel 4, the near leg swings forward across and in front of the far supporting leg, opposite panel 2. Preserve the other leg poses and heading. Use relaxed intermediate arm positions in panels 2 and 4.
+
+The female conversion preserved those four rear poses and changed only identity to the original female artwork, including her face and braid. Each complete source row was uniformly scaled and packed into the existing 128 × 192 cells with the existing foot anchor; no separately scaled body parts or rendering changes were introduced.

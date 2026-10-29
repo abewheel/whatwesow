@@ -32,13 +32,24 @@ for (const variant of ["male", "female"] as const) {
     ]) {
       await page.keyboard.press("Escape");
       await page.locator(`[data-cell="${cell}"]`).press("Enter");
-      await expect(canvas).toHaveAttribute("data-farmer-motion", "walk");
-      await expect(canvas).toHaveAttribute("data-farmer-facing", facing);
-      await expect(canvas).toHaveAttribute(
-        "data-farmer-frame",
-        new RegExp(
-          `^farmer${variant === "female" ? "-female" : ""}-walk:${facing.startsWith("back") ? "[4-7]" : "[0-3]"}$`,
-        ),
+      // Observe the transient pose atomically before arrival can replace it.
+      await page.waitForFunction(
+        ({ facing, prefix }) => {
+          const data = document.querySelector("canvas")!.dataset;
+          const frame = Number(data.farmerFrame?.split(":")[1]);
+          return (
+            data.farmerMotion === "walk" &&
+            data.farmerFacing === facing &&
+            data.farmerFrame?.startsWith(prefix) &&
+            (facing.startsWith("back")
+              ? frame >= 4 && frame <= 7
+              : frame >= 0 && frame <= 3)
+          );
+        },
+        {
+          facing,
+          prefix: `farmer${variant === "female" ? "-female" : ""}-walk:`,
+        },
       );
       await expect(canvas).toHaveAttribute("data-farmer-cell", cell);
       await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
