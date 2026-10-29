@@ -123,7 +123,7 @@ test("locked building plans show milestones, benefits and current farming progre
   const coop = page.locator('[data-build="coop"]');
   await expect(coop).toBeDisabled();
   await expect(coop).toContainText("Harvest 3 crops");
-  await expect(coop).toContainText("30 coins");
+  await expect(coop.locator(".harvest-price")).toHaveText("30");
   await expect(page.locator("#progression-counts")).toContainText(
     "0 crops harvested",
   );

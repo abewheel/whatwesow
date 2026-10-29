@@ -115,7 +115,7 @@ for (const size of [{ width: 1280, height: 800 }]) {
     await fits(page);
     const plan = page.locator('[data-build="beehive"]');
     await expect(plan).toHaveAttribute("aria-label", /120 coins/);
-    await expect(plan).toContainText("15 coins");
+    await expect(plan.locator(".harvest-price")).toHaveText("15");
     await plan.tap();
     await page.locator('[data-cell="8,10"]').press("Enter");
     await expect(page.locator("#season")).toContainText("120 coins");
@@ -179,7 +179,7 @@ for (const viewport of [
       await openCell(page, "16,18");
       const plan = page.locator('[data-build="beehive"]');
       await expect(plan).toHaveAttribute("aria-label", /120 coins/);
-      await expect(plan).toContainText("15 coins");
+      await expect(plan.locator(".harvest-price")).toHaveText("15");
       await fits(page);
       await plan.tap();
       await expect(page.locator("#placement-ghost")).toBeVisible();

@@ -2700,3 +2700,61 @@ button.crisis-card {
     height: 18px;
   }
 }
+
+/* Feedback wraps within the calendar rail instead of sizing the whole HUD. */
+.hud-right .farm-overview {
+  width: 300px;
+  min-width: 0;
+  flex: 0 1 300px;
+}
+.hud-right .farm-overview .field-note {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (max-width: 700px), (max-height: 500px) {
+  .hud-right .farm-overview {
+    width: 0;
+    flex: 1 1 0;
+  }
+}
+@media (min-width: 600px) and (max-height: 500px) {
+  .hud-right .farm-overview {
+    width: auto;
+  }
+}
+
+/* A failed purchase requirement stays legible even on a disabled plan. */
+#tile-actions .action-blocker,
+#tile-actions button:disabled .action-blocker {
+  color: #a1372c;
+  opacity: 1;
+}
+.action-blocker > .pixel-icon {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+}
+.plan-requirement,
+.plan-rule,
+.soil-status.action-blocker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.harvest-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+#tile-actions button:disabled:has(.action-blocker) {
+  filter: none;
+}
+#tile-actions .plan-grid .plan-requirement,
+#tile-actions .plan-grid .harvest-price {
+  grid-column: 1 / -1;
+}
+#tile-actions .plan-grid .plan-requirement {
+  justify-self: stretch;
+  text-align: left;
+}

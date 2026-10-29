@@ -18,7 +18,7 @@ for (const variant of ["male", "female"] as const) {
     const texture = variant === "male" ? "farmer" : "farmer-female";
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-frame",
-      `${texture}:42`,
+      new RegExp(`^${texture}-walk:[15]$`),
     );
     let releaseArtwork!: () => void;
     const artworkGate = new Promise<void>((resolve) => {
@@ -36,7 +36,7 @@ for (const variant of ["male", "female"] as const) {
     await expect(page.locator("#startup")).toBeHidden();
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-farmer-frame",
-      `${texture}:42`,
+      new RegExp(`^${texture}-walk:[15]$`),
     );
     const state = JSON.parse(
       await page.getByLabel("Game state JSON").inputValue(),
@@ -75,11 +75,14 @@ test("female farmer plants and harvests with the selected artwork", async ({
   await expect(canvas).toHaveAttribute("data-farmer-motion", "plant");
   await expect(canvas).toHaveAttribute(
     "data-farmer-frame",
-    /farmer-female:1[2-7]/,
+    /^farmer-female(?::1[2-7]|-rear-work:[0-5])$/,
   );
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   await endTurn(page);
-  await expect(canvas).toHaveAttribute("data-farmer-frame", /farmer-female:/);
+  await expect(canvas).toHaveAttribute(
+    "data-farmer-frame",
+    /^farmer-female-walk:[15]$/,
+  );
   // End turn leaves the home menu open over the farm.
   await page.keyboard.press("Escape");
   await expect(page.locator("#service-panel")).toBeHidden();
@@ -87,7 +90,7 @@ test("female farmer plants and harvests with the selected artwork", async ({
   await expect(canvas).toHaveAttribute("data-farmer-motion", "harvest");
   await expect(canvas).toHaveAttribute(
     "data-farmer-frame",
-    /farmer-female:2[4-9]/,
+    /^farmer-female(?::2[4-9]|-rear-work:1[2-7])$/,
   );
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
 });
@@ -119,5 +122,8 @@ test("female farmer keeps her appearance in the alternating walking gait", async
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle", {
     timeout: 30000,
   });
-  await expect(canvas).toHaveAttribute("data-farmer-frame", "farmer-female:42");
+  await expect(canvas).toHaveAttribute(
+    "data-farmer-frame",
+    /^farmer-female-walk:[15]$/,
+  );
 });

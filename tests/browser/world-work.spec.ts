@@ -124,6 +124,17 @@ test("cleared obstacles fade once while their tiles become available immediately
     structures: [],
     debris: [{ kind: "fallenTree", row: 16, col: 16 }],
   });
+  // Replacing the homestead also fades its former plots and buildings. Finish
+  // that fixture transition before measuring this obstacle's own removal.
+  await expect
+    .poll(async () =>
+      page
+        .locator("canvas")
+        .evaluate(
+          (canvas) => JSON.parse(canvas.dataset.sceneRemoving ?? "[]").length,
+        ),
+    )
+    .toBe(0);
   await closeActions(page);
   await page.locator('[data-cell="16,16"]').press("Enter");
   await expect(page.locator("#service-panel")).toBeVisible();

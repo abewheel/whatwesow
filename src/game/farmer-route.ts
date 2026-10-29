@@ -112,14 +112,14 @@ export function farmerWalkRoute(
     blocked,
   );
 }
-/** Work stays beside crops. Visits prefer the front perimeter of a building. */
+/** Work uses the nearest reachable side, keeping an already adjacent stance. */
 export function farmerWorkRoute(
   start: Cell,
   target: Cell,
   world: FarmerWorld,
   width = 1,
   height = 1,
-  preference: "rear" | "front" = "rear",
+  preference: "rear" | "front" | "nearest" = "nearest",
   openFootprint = false,
 ): Route | undefined {
   const work = footprint(target, width, height),
@@ -133,7 +133,8 @@ export function farmerWorkRoute(
       candidates.set(cellKey(stance), {
         stance,
         target: tile,
-        preferred: preference === "rear" ? rear : !rear,
+        preferred:
+          preference === "nearest" || (preference === "rear" ? rear : !rear),
       });
     }
   // Authored scenery can sit just beyond the estate corner. Its nearest

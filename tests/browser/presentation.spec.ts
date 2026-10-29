@@ -69,7 +69,10 @@ test("walking uses changing gait frames in both directions and returns to idle",
       .toBeGreaterThanOrEqual(4);
     await expectAdjacentToCell(page, cell);
     await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
-    await expect(canvas).toHaveAttribute("data-farmer-frame", /^farmer:/);
+    await expect(canvas).toHaveAttribute(
+      "data-farmer-frame",
+      /^farmer-walk:[15]$/,
+    );
   }
 });
 
@@ -81,7 +84,10 @@ test("idle breathing keeps a stable pose and respects reduced motion", async ({
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
   const scales: number[] = [];
   for (let i = 0; i < 12; i++) {
-    await expect(canvas).toHaveAttribute("data-farmer-frame", "farmer:42");
+    await expect(canvas).toHaveAttribute(
+      "data-farmer-frame",
+      /^farmer-walk:[15]$/,
+    );
     scales.push(Number(await canvas.getAttribute("data-farmer-scale-y")));
     await page.waitForTimeout(100);
   }

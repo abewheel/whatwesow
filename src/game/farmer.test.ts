@@ -255,3 +255,16 @@ it("crosses a future vacant building lot to stage construction when its rear edg
   const work = farmerWorkRoute({ row: 15, col: 12 }, target, occupied, 4, 4)!;
   expect(work.route.every((cell) => !farmerBlocked(cell, occupied))).toBe(true);
 });
+
+for (const stance of [
+  { row: 15, col: 16 },
+  { row: 17, col: 16 },
+  { row: 16, col: 15 },
+  { row: 16, col: 17 },
+]) {
+  it(`keeps an adjacent work stance at ${stance.row},${stance.col}`, () => {
+    const plan = farmerWorkRoute(stance, { row: 16, col: 16 }, world)!;
+    expect(plan.stance).toEqual(stance);
+    expect(plan.route).toEqual([]);
+  });
+}

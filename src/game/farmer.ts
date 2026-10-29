@@ -276,7 +276,7 @@ export class Farmer {
   private stride = 0;
   private facing = 1;
   private direction: Cell = { row: 0, col: 1 };
-  private stepping = false;
+  private heldDirection?: Cell;
   variant: "male" | "female" = "male";
   private back = false;
   constructor(scene: Phaser.Scene) {
@@ -318,11 +318,11 @@ export class Farmer {
     width = 1,
     height = 1,
     adjacent = false,
-    preference: "rear" | "front" = "front",
+    preference: "rear" | "front" | "nearest" = "nearest",
     onArrival?: () => void,
     openFootprint = false,
   ): boolean {
-    this.stepping = false;
+    this.heldDirection = undefined;
     this.arrival = undefined;
     const plan = adjacent
       ? farmerWorkRoute(
@@ -362,15 +362,45 @@ export class Farmer {
     };
   }
   step(direction: Cell): boolean {
-    if (this.stepping && this.route.length) return false;
+    this.stop();
+    this.face(direction);
+    return this.travel(this.frontCell());
+  }
+  holdDirection(direction?: Cell) {
+    if (direction && !this.heldDirection) {
+      this.stop();
+      // Complete the current edge before changing direction.
+      if (
+        Math.hypot(
+          this.position.col - this.cell.col,
+          this.position.row - this.cell.row,
+        ) > 0.001
+      )
+        this.route = [{ ...this.cell }];
+      this.face(direction);
+      if (!this.route.length) this.advanceHeld(direction);
+    }
+    this.heldDirection = direction;
+  }
+  private face(direction: Cell) {
+    if (!direction.col && !direction.row) return;
     this.direction = direction;
     this.facing = direction.col - direction.row >= 0 ? 1 : -1;
     this.back = direction.col + direction.row < 0;
-    this.stop();
-    this.stepping = this.travel(this.frontCell());
-    return this.stepping;
+  }
+  private advanceHeld(direction: Cell): boolean {
+    const next = {
+      row: this.cell.row + direction.row,
+      col: this.cell.col + direction.col,
+    };
+    this.face(direction);
+    if (farmerBlocked(next, this.world)) return false;
+    this.route.push(next);
+    this.active = { target: next, action: "walk" };
+    return true;
   }
   stop() {
+    this.heldDirection = undefined;
     this.tasks = [];
     this.route = [];
     this.active = undefined;
@@ -378,6 +408,7 @@ export class Farmer {
     this.arrival = undefined;
   }
   reset() {
+    this.heldDirection = undefined;
     this.tasks = [];
     this.route = [];
     this.active = undefined;
@@ -408,6 +439,8 @@ export class Farmer {
         this.elapsed = 0;
       }
     }
+    if (this.heldDirection && !this.route.length)
+      this.advanceHeld(this.heldDirection);
     const walking = this.route.length > 0;
     let remaining = 5 * dt;
     while (this.route.length && remaining > 0) {
@@ -430,6 +463,8 @@ export class Farmer {
         this.position = { ...next };
         this.cell = next;
         this.route.shift();
+        if (!this.route.length && this.heldDirection)
+          this.advanceHeld(this.heldDirection);
       } else {
         this.position.col += (dc / distance) * speed;
         this.position.row += (dr / distance) * speed;
@@ -455,9 +490,10 @@ export class Farmer {
       this.arrival = undefined;
     } else if (!walking && this.active) {
       const target = this.active.target;
-      const point = project(target),
-        feet = project(this.cell);
-      this.facing = point.x >= feet.x ? 1 : -1;
+      this.face({
+        col: target.col - this.cell.col,
+        row: target.row - this.cell.row,
+      });
       this.elapsed += dt;
       if (this.elapsed >= 1.15) this.active = undefined;
     }
@@ -512,7 +548,10 @@ export class Farmer {
       ? Math.min(5, Math.floor((this.elapsed / 1.15) * 6))
       : 0;
     // Four painted contact/passing poses per view, driven by distance.
-    const walkFrame = (this.back ? 4 : 0) + (Math.floor(this.stride / 2) % 4);
+    const walkFrame =
+      (this.back ? 4 : 0) + (walking ? Math.floor(this.stride / 2) % 4 : 1);
+    const directionalIdle = !walking && !action;
+    const rearWork = Boolean(action && this.back);
     const pose = frame;
     const [cx, originalCy] = contacts[row][pose];
     const frames =
@@ -534,14 +573,22 @@ export class Farmer {
         : originalCy + row * 181 - top;
     this.art
       .setTexture(
-        walking
+        walking || directionalIdle
           ? this.variant === "female"
             ? "farmer-female-walk"
             : "farmer-walk"
-          : this.variant === "female"
-            ? "farmer-female"
-            : "farmer",
-        walking ? walkFrame : row * 6 + pose,
+          : rearWork
+            ? this.variant === "female"
+              ? "farmer-female-rear-work"
+              : "farmer-rear-work"
+            : this.variant === "female"
+              ? "farmer-female"
+              : "farmer",
+        walking || directionalIdle
+          ? walkFrame
+          : rearWork
+            ? (row - 2) * 6 + pose
+            : row * 6 + pose,
       )
       // One stable idle drawing breathes continuously, with its boots fixed at the origin.
       .setScale(
@@ -554,12 +601,20 @@ export class Farmer {
             : 1),
       )
       .setOrigin(
-        walking
+        walking || directionalIdle
           ? 0.5
-          : this.facing < 0
-            ? 1 - (contactX - left) / width
-            : (contactX - left) / width,
-        walking ? 186 / 192 : cy / height,
+          : rearWork
+            ? this.facing < 0
+              ? 1 - 100 / 240
+              : 100 / 240
+            : this.facing < 0
+              ? 1 - (contactX - left) / width
+              : (contactX - left) / width,
+        walking || directionalIdle
+          ? 186 / 192
+          : rearWork
+            ? 198 / 210
+            : cy / height,
       )
       .setFlipX(this.facing < 0);
     this.effect.clear();

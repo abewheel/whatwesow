@@ -425,6 +425,11 @@ export class FarmScene extends Phaser.Scene {
         frameWidth: 128,
         frameHeight: 192,
       });
+    for (const key of ["farmer", "farmer-female"])
+      this.load.spritesheet(`${key}-rear-work`, `/art/${key}-rear-work.png`, {
+        frameWidth: 240,
+        frameHeight: 210,
+      });
     this.load.image("farmer-female", "/art/farmer-female-sprites.png");
     this.load.image("distinct-buildings", "/art/distinct-buildings.png");
     this.load.image("farm-states", "/art/farm-states.png");
@@ -648,6 +653,9 @@ export class FarmScene extends Phaser.Scene {
   farmerFrontCell() {
     return this.farmer?.frontCell();
   }
+  holdFarmerDirection(direction?: Cell) {
+    this.farmer?.holdDirection(direction);
+  }
   stepFarmer(direction: Cell) {
     return this.farmer?.step(direction) ?? false;
   }
@@ -661,7 +669,7 @@ export class FarmScene extends Phaser.Scene {
     width = 1,
     height = 1,
     adjacent = false,
-    preference: "rear" | "front" = "front",
+    preference: "rear" | "front" | "nearest" = "nearest",
     onArrival?: () => void,
     openFootprint = false,
   ) {
