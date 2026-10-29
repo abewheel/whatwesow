@@ -38,7 +38,7 @@ test("animals require a visit, persist collection, and produce again next season
     [4, 325],
   ]) {
     await page.locator(`[data-structure="${id}"]`).click();
-    await page.locator("#collect-animal").click();
+
     await expect(page.locator("#coin-count")).toHaveText(String(coins), {
       timeout: 30000,
     });
@@ -91,7 +91,7 @@ test("coop plans reserve land, complete next season, and keep collection state a
   );
   await closeActions(page);
   await page.locator('[data-structure="2"]').click();
-  await page.locator("#collect-animal").click();
+
   await expect(page.locator("#coin-count")).toHaveText("790");
   await page.locator('[data-structure="2"]').click();
   await expect(page.locator("#service-panel")).toBeVisible();
@@ -136,7 +136,7 @@ test("seasonal pens leave adjacent crops and buildings clickable", async ({
       "14,17",
     );
     await page.locator('[data-structure="2"]').click();
-    await page.locator("#collect-animal").click();
+
     await expect(page.locator('[data-structure="2"]')).toHaveAttribute(
       "aria-label",
       /collected/,
@@ -210,6 +210,7 @@ test("a productive coop can collect eggs while its upgrade is underway", async (
     col: 19,
     level: 1,
     product: true,
+    pendingUpgrade: true,
   });
   state.nextStructureId = 3;
   await page.getByLabel("Work on").selectOption("micro");
@@ -220,14 +221,11 @@ test("a productive coop can collect eggs while its upgrade is underway", async (
   );
   await page.getByText("Playtest tools", { exact: true }).click();
   await page.locator('[data-structure="2"]').press("Enter");
-  await page.locator("#upgrade-building").click();
-  await expect(page.locator("#upgrade-building")).toHaveAccessibleName(
-    /underway/,
+  const paidCoins = state.coins;
+
+  await expect(page.locator("#coin-count")).toHaveText(
+    (paidCoins + 30).toLocaleString(),
   );
-  const paidCoins = Number(await page.locator("#coin-count").textContent());
-  await expect(page.locator("#collect-animal")).toBeEnabled();
-  await page.locator("#collect-animal").click();
-  await expect(page.locator("#coin-count")).toHaveText(String(paidCoins + 30));
   await expect(page.locator('[data-structure="2"]')).toHaveAttribute(
     "aria-label",
     /collected/,

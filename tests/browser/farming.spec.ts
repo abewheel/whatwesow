@@ -8,7 +8,7 @@ import {
   loadPreset,
   fits,
 } from "./context-helpers";
-import { endTurn, visitBuilding, choosePlotWork } from "./helpers";
+import { endTurn, visitBuilding } from "./helpers";
 test("plants seasonal crops, harvests, reinvests in soil and preserves purchases", async ({
   page,
 }) => {
@@ -24,8 +24,8 @@ test("plants seasonal crops, harvests, reinvests in soil and preserves purchases
   await endTurn(page);
   await endTurn(page);
   await closeActions(page);
-  await openCell(page, "16,16");
-  await choosePlotWork(page);
+  await closeActions(page);
+  await page.locator('[data-cell="16,16"]').press("Enter");
   await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
     "aria-label",
     /empty/,

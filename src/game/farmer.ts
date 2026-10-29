@@ -275,6 +275,8 @@ export class Farmer {
   private clock = 0;
   private stride = 0;
   private facing = 1;
+  private direction: Cell = { row: 0, col: 1 };
+  private stepping = false;
   variant: "male" | "female" = "male";
   private back = false;
   constructor(scene: Phaser.Scene) {
@@ -320,6 +322,7 @@ export class Farmer {
     onArrival?: () => void,
     openFootprint = false,
   ): boolean {
+    this.stepping = false;
     this.arrival = undefined;
     const plan = adjacent
       ? farmerWorkRoute(
@@ -351,6 +354,21 @@ export class Farmer {
         : plan.route;
     this.elapsed = 0;
     return true;
+  }
+  frontCell(): Cell {
+    return {
+      row: this.cell.row + this.direction.row,
+      col: this.cell.col + this.direction.col,
+    };
+  }
+  step(direction: Cell): boolean {
+    if (this.stepping && this.route.length) return false;
+    this.direction = direction;
+    this.facing = direction.col - direction.row >= 0 ? 1 : -1;
+    this.back = direction.col + direction.row < 0;
+    this.stop();
+    this.stepping = this.travel(this.frontCell());
+    return this.stepping;
   }
   stop() {
     this.tasks = [];
@@ -401,6 +419,10 @@ export class Farmer {
       remaining -= speed;
       this.stride += speed * 5;
       if (distance > 0) {
+        this.direction =
+          Math.abs(dc) > Math.abs(dr)
+            ? { row: 0, col: Math.sign(dc) }
+            : { row: Math.sign(dr), col: 0 };
         this.facing = dc - dr >= 0 ? 1 : -1;
         this.back = dc + dr < 0;
       }
@@ -418,6 +440,16 @@ export class Farmer {
       this.active &&
       (this.active.action === "walk" || this.active.action === "visit")
     ) {
+      if (this.active.action === "visit") {
+        const dc = this.active.target.col - this.cell.col;
+        const dr = this.active.target.row - this.cell.row;
+        this.direction =
+          Math.abs(dc) > Math.abs(dr)
+            ? { row: 0, col: Math.sign(dc) }
+            : { row: Math.sign(dr), col: 0 };
+        this.facing = dc - dr >= 0 ? 1 : -1;
+        this.back = dc + dr < 0;
+      }
       this.active = undefined;
       arrived = this.arrival;
       this.arrival = undefined;

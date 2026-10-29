@@ -6,7 +6,7 @@ import {
   setFarm,
   closeActions,
 } from "./context-helpers";
-import { endTurn, choosePlotWork, visitBuilding } from "./helpers";
+import { endTurn, visitBuilding } from "./helpers";
 test("harvest milestones expose new plans on open land", async ({ page }) => {
   await page.goto("/?instance=validation-context-unlocks");
   await expect(page.locator("#save-status")).toHaveText(
@@ -17,9 +17,9 @@ test("harvest milestones expose new plans on open land", async ({ page }) => {
   state.harvests.turnip = 2;
   await setFarm(page, state);
   await openCell(page, "20,20");
-  await expect(page.locator('[data-build="shed"]')).toHaveCount(0);
-  await openCell(page, "16,16");
-  await choosePlotWork(page);
+  await expect(page.locator('[data-build="shed"]')).toBeDisabled();
+  await closeActions(page);
+  await page.locator('[data-cell="16,16"]').press("Enter");
   await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
     "aria-label",
     /empty/,

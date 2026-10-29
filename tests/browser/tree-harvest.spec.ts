@@ -38,7 +38,7 @@ test("harvest rewards animate from the tile, count up, and stay correct across r
   page.on("requestfailed", (r) => errors.push(r.url()));
   await orchard(page);
   await page.locator('[data-structure="2"]').click();
-  await page.locator("#harvest-tree").click();
+
   await expect(page.locator(".harvest-reward")).toContainText("+24");
   expect(Number(await page.locator("#coin-count").textContent())).toBeLessThan(
     124,
@@ -59,13 +59,12 @@ test("harvest rewards animate from the tile, count up, and stay correct across r
   // Harvest clears the menu while adjacent produce remains clickable.
   await expect(page.locator("#service-panel")).toBeHidden();
   await page.locator('[data-structure="3"]').click();
-  await page.locator("#harvest-tree").click();
+
   await expect(page.locator('[data-structure="3"]')).not.toHaveAttribute(
     "aria-label",
     /ready to harvest/,
   );
   await page.locator('[data-plot="0"]').click();
-  await choosePlotWork(page);
   await expect(page.locator("#season .sr-only")).toContainText("141 coins");
   await buySeeds(page, "turnip");
   await page.locator('[data-plot="0"]').click();
@@ -95,7 +94,7 @@ test("failed harvest saves create no reward, and reduced motion settles the coun
     };
   });
   await page.locator('[data-structure="2"]').click();
-  await page.locator("#harvest-tree").click();
+
   await expect(page.locator("#farm-message")).toContainText(
     /abort|save|transaction/i,
   );
@@ -106,7 +105,7 @@ test("failed harvest saves create no reward, and reduced motion settles the coun
     /ready to harvest/,
   );
   await page.locator('[data-structure="2"]').click();
-  await page.locator("#harvest-tree").click();
+
   await expect(page.locator("#farm-message")).toContainText("Apples harvested");
   await expect(page.locator("#coin-count")).toHaveText("124");
   await expect(page.locator(".harvest-coin")).toHaveCount(0);

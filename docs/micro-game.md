@@ -1,6 +1,6 @@
 # Farming loop
 
-Tap an empty plot, then choose a seasonal crop in its popup to plant. Buy seeds in the shop first; planting uses one seed from inventory. **End turn** advances one season and moves every growing crop forward, including crops planted in earlier seasons. Tap a ripe crop and choose Harvest to collect and sell it on arrival, then plant again when the season allows it. Plot buttons also support Tab and Enter.
+Tap an empty plot, then choose a seasonal crop in its popup to plant. Buy seeds in the shop first; planting uses one seed from inventory. **End turn** advances one season and moves every growing crop forward, including crops planted in earlier seasons. Tap a ripe crop to collect and sell it on arrival without opening a menu, then plant again when the season allows it. Plot buttons also support Tab and Enter.
 
 | Crop    | Seeds    | Plant in       | Seasons to grow | Base harvest | Thirsty |
 | ------- | -------- | -------------- | --------------- | ------------ | ------- |
@@ -33,6 +33,8 @@ Council crises add rules to the loop; [crises](crises.md) lists each one. Withou
 - **Sales.** Prices can change by crop or be fixed, a relief fund tax can take a share, sales of an oversized crop can be held until the next season, and a limit on sales each season can take sales over it for nothing. Fruit, eggs, milk and wool sell through the same prices, tax and limit, and pay what is owed first.
 
 An empty plot's popup shows the rules before you plant. Each crop button gives the seed price with any multiplier and planting fee, and the sale value after the relief fund's share. It says when the sale money would wait a season, when the sale would be over this season's limit and taken for nothing, and when the crop is thirsty. It names any rule planting on that plot breaks, rotation included, with the fine, or the reason it is refused, with the button disabled. While premium seed is on offer, a **Premium seed** toggle above the crops shows its terms. A ripe crop's popup says what it sells for, and an animal building's what its produce sells for. These forecasts call the same `plantQuote` and `saleQuote` helpers as the rules, with the merged policy from `farmContext`.
+
+Shop sale values describe healthy crops at current prices, including soil, buildings, council prices and taxes. A planting card includes the current drought: without water, tomatoes show a 10-coin dry harvest instead of the healthy 21 coins. Bought water only protects the plot IDs it reached. Premium previews retain the owned batch’s yield. Later council changes or new improvements can change the eventual price, and sales repay owed coins before increasing the balance. Dry harvest feedback explains the half-yield loss.
 
 ## Rules and saves
 

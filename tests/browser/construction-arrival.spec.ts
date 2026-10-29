@@ -99,8 +99,7 @@ for (const redirect of [false, true])
     );
     await page.keyboard.press("Escape");
     if (redirect) {
-      await page.locator('[data-cell="36,36"]').press("Enter");
-      await page.keyboard.press("e");
+      await openCell(page, "36,36");
       await expect(page.locator("#service-title")).toHaveText("Open land");
     } else {
       await expect(page.locator("canvas")).toHaveAttribute(

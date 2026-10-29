@@ -645,6 +645,12 @@ export class FarmScene extends Phaser.Scene {
       this.placementImages.set(key, this.textures.getBase64(texture, frame));
     return { ...bounds, src: this.placementImages.get(key)! };
   }
+  farmerFrontCell() {
+    return this.farmer?.frontCell();
+  }
+  stepFarmer(direction: Cell) {
+    return this.farmer?.step(direction) ?? false;
+  }
   farmerPosition() {
     return this.farmer
       ? { x: this.farmer.view.x, y: this.farmer.view.y }

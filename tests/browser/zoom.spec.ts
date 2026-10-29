@@ -80,7 +80,6 @@ test("context menus stay attached and usable at both zoom extremes", async ({
   for (let i = 0; i < 3; i++) await clickCamera(page, "#zoom-in");
   await page.locator("#close-camera").click();
   await page.locator('[data-plot="0"]').press("Enter");
-  await choosePlotWork(page);
   await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
     "aria-label",
     /empty/,

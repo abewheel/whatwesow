@@ -1,9 +1,9 @@
+import { openCell } from "./context-helpers";
 import { test as farmTest } from "./fixtures";
 import { homesteadState } from "../../src/game/state";
 import { footprint, cellKey, structureSize } from "../../src/micro/world";
 import { setCameraCell } from "./helpers";
 import { buySeeds } from "./helpers";
-import { choosePlotWork } from "./helpers";
 import { test, expect, type Page } from "@playwright/test";
 
 async function begin(page: Page, instance: string) {
@@ -66,8 +66,7 @@ for (const viewport of [
       expect(shop.y + shop.height - view.y).toBeLessThan(120);
       await fits(page, ".field-note");
       await buySeeds(page, "turnip");
-      await page.locator('[data-cell="16,16"]').tap();
-      await page.locator("#open-actions").tap();
+      await openCell(page, "16,16");
       await page.locator("#expand").tap();
       await expect(page.locator("#improve")).toHaveCount(0);
       await fits(page, "#service-panel");
@@ -77,8 +76,7 @@ for (const viewport of [
         "aria-label",
         /growing/,
       );
-      await page.locator('[data-cell="12,18"]').tap();
-      await page.locator("#open-actions").tap();
+      await openCell(page, "12,18");
       await page.locator('[data-build="home"]').tap();
       await page.locator('[data-cell="12,18"]').press("Enter");
       await expect(page.locator("#service-title")).toHaveText("Farmhouse");
@@ -95,12 +93,12 @@ for (const viewport of [
       await expect(page.locator("#season")).toContainText("summer");
       await page.locator("#close-service").tap();
       await page.locator('[data-plot="0"]').tap();
-      await choosePlotWork(page);
       await expect(page.locator("#season")).toContainText("95 coins");
       await page.locator('[data-structure="1"]').press("Enter");
       await fits(page, "#service-panel");
       await expect(page.locator("#move-building")).toHaveCount(0);
       await page.locator("#teardown-building").tap();
+      await page.locator("#confirm-delete").click();
       await expect(
         page.locator('[data-structure="1"]').first(),
       ).toHaveAttribute("aria-label", /tear.?down|demoli|remov/i);

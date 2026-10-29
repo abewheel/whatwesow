@@ -24,7 +24,8 @@ export function mountInventoryControls(controls: InventoryControls): {
     const open = controls.isOpen();
     button.setAttribute("aria-expanded", String(open));
     button.setAttribute("aria-label", `${open ? "Close" : "Open"} inventory`);
-    button.title = `Inventory (I) · ${controls.count()} seeds`;
+    const count = controls.count();
+    button.title = `Inventory (I) · ${count ? `${count} items` : "Empty"}`;
   };
   const toggle = () => {
     if (controls.isOpen()) controls.close();

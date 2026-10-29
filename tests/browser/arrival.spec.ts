@@ -29,7 +29,7 @@ test("menus wait for arrival at their selected tile", async ({ page }) => {
   await expect(page.locator("#walk-here")).toHaveCount(0);
 });
 for (const ripe of [false, true])
-  test(`${ripe ? "harvest" : "plant"} waits for the menu visit and commits once chosen`, async ({
+  test(`${ripe ? "harvest commits on arrival" : "plant waits for arrival and seed choice"}`, async ({
     page,
   }) => {
     await farPlot(page, ripe);
@@ -46,8 +46,10 @@ for (const ripe of [false, true])
     await expect(page.locator("#season")).toContainText(
       ripe ? "100 coins" : "96 coins",
     );
-    await expect(page.locator("#service-panel")).toBeVisible();
-    await choosePlotWork(page);
+    if (!ripe) {
+      await expect(page.locator("#service-panel")).toBeVisible();
+      await choosePlotWork(page);
+    }
     await expect(page.locator('[data-plot="8"]')).toHaveAttribute(
       "aria-label",
       ripe ? /empty/ : /growing/,
@@ -71,10 +73,7 @@ test("opening another target cancels the unfinished menu visit without planting"
   );
   await expect(page.locator("#service-panel")).toBeHidden();
   await openCell(page, "17,18");
-  await expect(page.locator("canvas")).toHaveAttribute(
-    "data-farmer-cell",
-    "17,18",
-  );
+
   await expect(page.locator("#service-title")).toHaveText("Open land");
   await expect(page.locator('[data-plot="8"]')).toHaveAttribute(
     "aria-label",

@@ -58,8 +58,7 @@ test("honey rescues an empty farm and can only be collected once until next seas
     "walk",
   );
   await expect(page.locator("#service-panel")).toBeHidden();
-  await expect(page.locator("#service-panel")).toBeVisible();
-  await expect(page.locator("#service-title")).toHaveText("Wild beehive");
+
   await expect(page.locator("#farm canvas")).toHaveAttribute(
     "data-farmer-cell",
     "0,0",
@@ -68,9 +67,8 @@ test("honey rescues an empty farm and can only be collected once until next seas
     "data-farmer-motion",
     "idle",
   );
-  await page.getByRole("button", { name: "Collect honey · +12 coins" }).click();
   await expect(page.locator("#season")).toContainText("12 coins");
-  await expect(page.locator("#collect-honey")).toBeDisabled();
+  await expect(page.locator("#collect-honey")).toHaveCount(0);
   await page.reload();
   await expect(page.locator("#save-status")).toHaveText(
     "Saved on this browser",
@@ -82,7 +80,7 @@ test("honey rescues an empty farm and can only be collected once until next seas
   );
   await hive.click();
   await expect(page.locator("#service-panel")).toBeVisible();
-  await expect(page.locator("#collect-honey")).toBeDisabled();
+  await expect(page.locator("#collect-honey")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Close actions", exact: true })
     .click();
@@ -92,9 +90,7 @@ test("honey rescues an empty farm and can only be collected once until next seas
     target.scrollIntoView({ block: "center", inline: "center" }),
   );
   await hive.click();
-  await expect(page.locator("#service-panel")).toBeVisible();
-  await expect(page.locator("#collect-honey")).toBeEnabled();
-  await page.locator("#collect-honey").click();
+  await expect(page.locator("#service-panel")).toBeHidden();
   await expect(page.locator("#season")).toContainText("24 coins");
 });
 
@@ -130,10 +126,8 @@ for (const size of [{ width: 1280, height: 800 }]) {
     await closeActions(page);
     await endTurn(page);
     await expect(page.locator("#season")).toContainText("summer");
-    await openCell(page, "8,10");
-    await expect(page.locator("#collect-hive")).toBeVisible();
-    await fits(page);
-    await page.locator("#collect-hive").tap();
+    await page.keyboard.press("Escape");
+    await page.locator('[data-cell="8,10"]').tap();
     await expect(page.locator("#season")).toContainText("135 coins");
     let farm = await readFarm(page);
     expect(farm.structures[0]).toMatchObject({
@@ -150,6 +144,7 @@ for (const size of [{ width: 1280, height: 800 }]) {
     await openCell(page, "8,10");
     await fits(page);
     await page.locator("#teardown-building").tap();
+    await page.locator("#confirm-delete").click();
     farm = await readFarm(page);
     expect(farm.structures[0].pendingDemolition).toBe(true);
     expect(farm.structures[0].product).toBe(false);
@@ -199,10 +194,9 @@ for (const viewport of [
       ready.structures[0].pendingConstruction = undefined;
       ready.structures[0].product = true;
       await setFarm(page, ready);
-      await openCell(page, "16,18");
-      await fits(page);
+      await page.keyboard.press("Escape");
       const before = ready.coins;
-      await page.locator("#collect-hive").tap();
+      await page.locator('[data-cell="16,18"]').tap();
       await expect(page.locator("#season")).toContainText(
         `${before + 15} coins`,
       );
@@ -212,6 +206,7 @@ for (const viewport of [
       await openCell(page, "16,18");
       await expect(page.locator("#tile-actions")).toContainText("Collected");
       await page.locator("#teardown-building").tap();
+      await page.locator("#confirm-delete").click();
       expect((await readFarm(page)).structures[0].pendingDemolition).toBe(true);
       expect(errors).toEqual([]);
     });

@@ -213,7 +213,7 @@ test("while the council waits, farm actions wait and every popup leads back to i
     name: "Harvest crop",
     exact: true,
   });
-  await expect(harvest).toBeDisabled();
+  await expect(harvest).toHaveCount(0);
   await expect(page.locator('[data-plot="8"]')).toHaveAttribute(
     "aria-label",
     "Plot 9: Turnip, ready to harvest",
@@ -232,7 +232,12 @@ test("while the council waits, farm actions wait and every popup leads back to i
   await expect(dialog).toBeHidden();
   // Answered: the turnip can be harvested, and the empty plot planted and moved.
   await expect(notice).toBeHidden();
-  await expect(harvest).toBeEnabled();
+  await closeActions(page);
+  await page.locator('[data-plot="8"]').press("Enter");
+  await expect(page.locator('[data-plot="8"]')).toHaveAttribute(
+    "aria-label",
+    /empty/,
+  );
   await openPlot(page, 7);
   await expect(tomato).toBeEnabled();
   await expect(deletePlot).toBeEnabled();

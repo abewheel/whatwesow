@@ -161,8 +161,7 @@ test("an upgrading coop keeps its collectible readiness cue", async ({
     '["coop"]',
   );
   await page.locator('[data-structure="1"]').press("Enter");
-  await expect(page.locator("#collect-animal")).toBeEnabled();
-  await page.locator("#collect-animal").click();
+
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-scene-harvest-cues",
     "[]",

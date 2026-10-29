@@ -191,11 +191,9 @@ test("planting limits bring a steady sales allowance and prices that stay put", 
     await expect(page.locator("#farm-message")).toContainText(" coins");
   }
   await expect(page.locator("#farm-message")).not.toContainText("sales limit");
-  // The sixth crop's popup quotes the limit before it is harvested.
-  await openPlot(page, 5);
-  await expect(
-    page.locator("#tile-actions p").filter({ hasText: /^Sells for / }),
-  ).toHaveText("Sells for 0 coins over this season's sales limit.");
+  // Direct harvesting has no popup. The council rules show the exhausted allowance.
+  await visitBuilding(page, "home");
+  await expect(facts).toContainText("Sales allowed: 5 of 5 this season.");
   const coins = await purse(page);
   await work(page, 5, "harvest", /: empty$/);
   await expect(page.locator("#farm-message")).toHaveText(

@@ -2533,3 +2533,63 @@ button.crisis-card {
 .plot-hit[data-selected] {
   background: #ffedaf66;
 }
+
+/* Removal always occupies the same square beside the close control. */
+.service-heading h2 {
+  flex: 1;
+}
+#destructive-slot {
+  display: flex;
+  flex-shrink: 0;
+}
+.service-heading .delete-control {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#delete-confirm {
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
+#delete-confirm .confirm-actions {
+  flex-wrap: wrap;
+}
+#inventory-empty {
+  text-align: center;
+  padding: 20px 8px;
+}
+.plan-requirement {
+  color: #65421c;
+  font-size: 12px;
+}
+#tile-actions .plan-grid button[data-locked="true"] {
+  opacity: 1;
+  background: #e4d9bc;
+  color: #615441;
+}
+.upcoming-unlocks {
+  display: grid;
+  gap: 8px;
+}
+.upcoming-unlocks h3 {
+  margin: 8px 0 0;
+}
+.upcoming-unlocks p {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  background: #f0e4c9;
+  border-radius: 6px;
+}
+.upcoming-unlocks small {
+  color: #5d6541;
+}
+#progression-counts {
+  font-size: 12px;
+}

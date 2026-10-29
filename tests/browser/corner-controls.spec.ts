@@ -104,7 +104,12 @@ test("landscape shop stays open when a keyboard reduces the viewport", async ({
   await expect(page.locator("#service-panel")).toBeVisible();
   await page.locator("#seed-quantity").fill("2");
   await expect(page.locator("#seed-quantity")).toHaveValue("2");
+  // Reproduce the browser's focus scroll while the keyboard shrinks the farm.
+  await page.evaluate(() => window.scrollTo(0, 97));
   await expect(page.locator("#close-service")).toBeInViewport();
+  await expect(page.locator("#seed-quantity")).toBeInViewport();
+  if (process.env.KEYBOARD_SCREENSHOT)
+    await page.screenshot({ path: process.env.KEYBOARD_SCREENSHOT });
   await page.setViewportSize({ width: 667, height: 375 });
   await page.locator('[data-buy-seed="turnip"]').click();
   await expect.poll(async () => (await readFarm(page)).seeds.turnip).toBe(2);

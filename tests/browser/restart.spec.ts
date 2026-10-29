@@ -56,6 +56,7 @@ test("land actions open visual categories and field deletion gives no refund", a
   await page.locator('[data-plot="0"]').click();
   await expect(page.locator("#service-title")).toHaveText("Plant this plot");
   await page.locator("#delete-plot").click();
+  await page.locator("#confirm-delete").click();
   await expect(page.locator("[data-plot]")).toHaveCount(8);
   await expect(page.locator("#season")).toContainText("100 coins");
   await page.reload();

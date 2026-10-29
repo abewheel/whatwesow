@@ -9,8 +9,51 @@ export async function openCell(page: Page, cell: string) {
   await closeActions(page);
   const target = page.locator(`[data-cell="${cell}"]`);
   await target.press("Enter");
-  if ((await target.getAttribute("aria-label"))?.startsWith("Land "))
-    await page.keyboard.press("e");
+  if ((await target.getAttribute("aria-label"))?.startsWith("Land ")) {
+    await expect(page.locator("canvas")).toHaveAttribute(
+      "data-farmer-cell",
+      cell,
+      { timeout: 30000 },
+    );
+    await expect(page.locator("canvas")).toHaveAttribute(
+      "data-farmer-motion",
+      "idle",
+    );
+    const [row, col] = cell.split(",").map(Number);
+    const neighbors = [
+      { cell: `${row},${col - 1}`, key: "d" },
+      { cell: `${row - 1},${col}`, key: "s" },
+      { cell: `${row},${col + 1}`, key: "a" },
+      { cell: `${row + 1},${col}`, key: "w" },
+    ];
+    for (const neighbor of neighbors) {
+      const stance = page.locator(`[data-cell="${neighbor.cell}"]`);
+      if (
+        !(await stance.count()) ||
+        !(await stance.getAttribute("aria-label"))?.startsWith("Land ")
+      )
+        continue;
+      await stance.press("Enter");
+      await expect(page.locator("canvas")).toHaveAttribute(
+        "data-farmer-cell",
+        neighbor.cell,
+      );
+      await expect(page.locator("canvas")).toHaveAttribute(
+        "data-farmer-motion",
+        "idle",
+      );
+      // Face and interact in the same input tick, before the next walking frame.
+      await page.locator("#farm").evaluate((element, key) => {
+        element.dispatchEvent(
+          new KeyboardEvent("keydown", { key, bubbles: true }),
+        );
+        element.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "e", bubbles: true }),
+        );
+      }, neighbor.key);
+      break;
+    }
+  }
   await expect(page.locator("#service-panel")).toBeVisible();
 }
 export async function buildAt(page: Page, kind: string, cell: string) {

@@ -176,16 +176,22 @@ export async function work(
   action: CropId | "harvest",
   after: RegExp,
 ) {
-  if (action !== "harvest") await buySeeds(page, action);
-  await openPlot(page, plot);
-  const actions = page.locator("#tile-actions");
-  await (
-    action === "harvest"
-      ? actions.getByRole("button", {
-          name: /^(Harvest crop|Clear withered crop)$/,
-        })
-      : actions.locator(`[data-crop="${action}"]`)
-  ).click();
+  if (action === "harvest") {
+    await closeActions(page);
+    const target = page.locator(`[data-plot="${plot}"]`);
+    const withered = (await target.getAttribute("aria-label"))?.includes(
+      "withered",
+    );
+    await target.press("Enter");
+    if (withered)
+      await page
+        .getByRole("button", { name: "Clear withered crop", exact: true })
+        .click();
+  } else {
+    await buySeeds(page, action);
+    await openPlot(page, plot);
+    await page.locator(`#tile-actions [data-crop="${action}"]`).click();
+  }
   await expect(page.locator(`[data-plot="${plot}"]`)).toHaveAttribute(
     "aria-label",
     after,

@@ -58,8 +58,15 @@ for (const viewport of [
         }
         if (viewport.width < 1000) await tree.tap();
         else await tree.click();
+        await expect(tree).not.toHaveAttribute(
+          "aria-label",
+          /ready to harvest/,
+        );
+        await expect(page.locator("#service-panel")).toBeHidden();
+        if (viewport.width < 1000) await tree.tap();
+        else await tree.click();
         await expect(page.locator("#service-panel")).toBeVisible();
-        await expect(page.locator("#harvest-tree")).toBeVisible();
+        await expect(page.locator("#teardown-building")).toBeVisible();
         await page.keyboard.press("Escape");
         await page.getByText("Playtest tools", { exact: true }).click();
       }

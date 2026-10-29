@@ -1,3 +1,4 @@
+import { openCell } from "./context-helpers";
 import { setCameraCell } from "./helpers";
 import { test, expect } from "./fixtures";
 test("uses the far corner of a 64-square farm with a viewport-sized canvas", async ({
@@ -20,7 +21,6 @@ test("uses the far corner of a 64-square farm with a viewport-sized canvas", asy
   await setCameraCell(page, "row", "63");
   await setCameraCell(page, "column", "63");
   await page.locator('[data-cell="63,63"]').click();
-  await page.getByRole("button", { name: "Harvest crop", exact: true }).click();
   await expect(page.locator("#season")).toContainText("100,036 coins", {
     timeout: 60000,
   });
@@ -32,8 +32,7 @@ test("uses the far corner of a 64-square farm with a viewport-sized canvas", asy
   expect(dimensions.height).toBeLessThanOrEqual(720);
   await setCameraCell(page, "row", "63");
   await setCameraCell(page, "column", "63");
-  await page.getByRole("button", { name: "Land 63,62", exact: true }).click();
-  await page.keyboard.press("e");
+  await openCell(page, "63,62");
   await page.locator('[data-category="trees"]').click();
   await page.locator('[data-build="oak"]').click();
   await page.locator('[data-cell="63,62"]').press("Enter");

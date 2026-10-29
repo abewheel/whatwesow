@@ -85,18 +85,10 @@ export async function answerCouncil(page: Page) {
   await expect(dialog).toBeHidden();
 }
 
-// Choose the work explicitly now that tapping a plot opens its actions.
+// Plant owned seeds after the empty plot's menu opens. Ripe plots harvest on click.
 export async function choosePlotWork(page: Page, crop = "turnip") {
   const actions = page.locator("#tile-actions");
   await expect(actions).toBeVisible();
-  const harvest = actions.getByRole("button", {
-    name: "Harvest crop",
-    exact: true,
-  });
-  if (await harvest.isVisible()) {
-    await harvest.click();
-    return;
-  }
   const plant = actions.locator(`[data-crop="${crop.toLowerCase()}"]`);
   if (await plant.isVisible()) await plant.click();
 }

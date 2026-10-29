@@ -34,7 +34,6 @@ test("farmer stands adjacent to actual plots, follows relocated plots, and keeps
   await page.keyboard.press("Escape");
   await expect(page.locator("#service-panel")).toBeHidden();
   await page.getByRole("button", { name: /Plot 1: Turnip, ready/ }).click();
-  await choosePlotWork(page);
   await expect(canvas).toHaveAttribute("data-farmer-motion", "harvest");
   await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
 

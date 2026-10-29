@@ -174,7 +174,7 @@ for (const planted of [false, true])
       plotIds: [1],
       nextPlotId: 2,
       plotCells: [{ row: 16, col: 16 }],
-      plots: [planted ? { crop: "turnip", growth: 1 } : null],
+      plots: [planted ? { crop: "turnip", growth: 0 } : null],
       debris: [],
       structures: [],
     });
@@ -183,6 +183,7 @@ for (const planted of [false, true])
     await expect(page.locator("#service-panel")).toBeVisible();
     await observeRemoval(page, "soil:16,16");
     await page.locator("#delete-plot").click();
+    await page.locator("#confirm-delete").click();
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-test-observed-removal",
       "soil:16,16",

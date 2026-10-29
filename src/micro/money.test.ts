@@ -6,11 +6,12 @@ import {
   credit,
   fruitQuote,
   plantQuote,
+  previewSaleQuote,
   saleQuote,
   salesThisTurn,
   workThreshold,
 } from "./money";
-import { actOnFarm as farmAction } from "./rules";
+import { actOnFarm as farmAction, growCrops, waterCrops } from "./rules";
 import {
   canPlant,
   crops,
@@ -92,6 +93,89 @@ describe("owed coins", () => {
   });
 });
 describe("council quotes", () => {
+  it("pays every advertised healthy seed value after buying, planting and growing", () => {
+    const policies: FarmPolicy[] = [
+      {},
+      { cropPrices: { tomato: 0.6 }, harvestTax: 0.1, yieldMultiplier: 0.9 },
+    ];
+    for (const crop of Object.keys(crops) as CropId[])
+      for (const policy of policies) {
+        const turn = crops[crop].plantingSeasons[0] === "summer" ? 2 : 1;
+        const start = { ...establishedFarm(), soilLevel: 2 };
+        const advertised = previewSaleQuote(start, crop, policy, turn).value;
+        let planted = actOnFarm(
+          start,
+          { type: "plant", crop, plot: 0 },
+          { turn, policy },
+        ).state;
+        while (planted.plots[0]!.growth < crops[crop].steps)
+          planted = growCrops(planted, policy);
+        const harvested = farmAction(
+          planted,
+          { type: "harvest", plot: 0 },
+          { turn: turn + 1, policy },
+        );
+        expect(harvested.state.coins - planted.coins).toBe(advertised);
+      }
+  });
+  it("explains tomato drought losses and forecasts the actual dry payout", () => {
+    const start = establishedFarm();
+    expect(previewSaleQuote(start, "tomato", {}, 2).value).toBe(21);
+    const bought = farmAction(
+      start,
+      { type: "buySeeds", crop: "tomato", quantity: 1 },
+      2,
+    ).state;
+    const planted = farmAction(
+      bought,
+      { type: "plant", crop: "tomato", plot: 0 },
+      2,
+    ).state;
+    const dried = waterCrops(planted, {
+      drought: true,
+      protectedFromDrought: false,
+    }).state;
+    const ripe = growCrops(dried);
+    const harvested = farmAction(ripe, { type: "harvest", plot: 0 }, 3);
+    const forecast = previewSaleQuote(
+      start,
+      "tomato",
+      {},
+      2,
+      false,
+      true,
+      true,
+    );
+    expect(forecast.value).toBe(10);
+    expect(harvested.state.coins - ripe.coins).toBe(forecast.value);
+    expect(harvested.message).toContain(
+      "Drought reduced this crop to half yield.",
+    );
+    const owing = farmAction(
+      { ...ripe, owed: 6 },
+      { type: "harvest", plot: 0 },
+      3,
+    );
+    expect(owing.state.coins - ripe.coins).toBe(4);
+    expect(owing.message).toContain("6 paid toward what you owe");
+  });
+  it("combines projected drought with the owned premium batch and policy rounding", () => {
+    const farm = establishedFarm();
+    farm.premiumSeedBatches = {
+      tomato: [{ quantity: 1, yield: 1.3, failOneIn: 8 }],
+    };
+    const policy = { harvestTax: 0.1, cropPrices: { tomato: 0.8 } };
+    const quote = previewSaleQuote(farm, "tomato", policy, 2, true, true, true);
+    farm.plots[0] = {
+      crop: "tomato",
+      growth: 1,
+      dry: true,
+      premium: "good",
+      premiumYield: 1.3,
+    };
+    expect(quote).toEqual(saleQuote(farm, "tomato", policy, 2, 0));
+    expect(quote.value).toBe(9);
+  });
   it("prices seed with multipliers, premium, fees and fines", () => {
     const farm = establishedFarm();
     expect(plantQuote(farm, "corn")).toEqual({

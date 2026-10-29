@@ -104,7 +104,7 @@ test("inventory keeps regular and premium seed purchases separate across reload"
   expect(persisted.premiumSeeds.turnip).toBe(3);
   await expect(page.locator("#open-inventory")).toHaveAttribute(
     "title",
-    /5 seeds/,
+    /5 items/,
   );
   await closeActions(page);
   await page.locator("#open-inventory").click();

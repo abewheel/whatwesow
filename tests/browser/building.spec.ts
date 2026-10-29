@@ -97,6 +97,7 @@ test("deletes a planted plot immediately without a refund", async ({
   const before = await readFarm(page);
   await openCell(page, "16,16");
   await page.locator("#delete-plot").click();
+  await page.locator("#confirm-delete").click();
   const after = await readFarm(page);
   expect(after.coins).toBe(before.coins);
   expect(after.plots).toHaveLength(before.plots.length - 1);
@@ -114,6 +115,7 @@ test("tears down a building next season without a refund", async ({ page }) => {
   await closeActions(page);
   await page.locator(`[data-structure="${shed.id}"]`).first().press("Enter");
   await page.locator("#teardown-building").click();
+  await page.locator("#confirm-delete").click();
   expect((await readFarm(page)).coins).toBe(before.coins);
   await expect(
     page.locator(`[data-structure="${shed.id}"]`).first(),

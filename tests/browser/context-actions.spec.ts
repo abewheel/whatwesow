@@ -26,11 +26,7 @@ for (const viewport of [{ width: 1280, height: 800 }]) {
     );
     await endTurn(page);
     await closeActions(page);
-    await openCell(page, "16,16");
-    await fits(page);
-    await page
-      .getByRole("button", { name: "Harvest crop", exact: true })
-      .click();
+    await page.locator('[data-cell="16,16"]').press("Enter");
     await expect(page.locator('[data-plot="0"]')).toHaveAttribute(
       "aria-label",
       /empty/,

@@ -22,7 +22,7 @@ for (const viewport of [
       await fits(page);
       await expect(page.locator("#improve")).toHaveCount(0);
       await expect(page.locator("#tile-actions")).not.toContainText("Free");
-      await expect(page.locator(".plot-footer > button")).toHaveCount(2);
+      await expect(page.locator(".plot-footer > button")).toHaveCount(1);
       await expect(
         page.locator(".plot-footer > button").first(),
       ).toHaveAttribute("id", "plot-shop");
@@ -98,15 +98,9 @@ for (const viewport of [
           path: `${process.env.PLOT_SCREENSHOTS_DIR}/plant-grid-${viewport.width}.png`,
         });
       }
-      const tools = await page
-        .locator(".plot-footer > button")
-        .evaluateAll((buttons) =>
-          buttons.map((button) => ({
-            height: button.getBoundingClientRect().height,
-            border: getComputedStyle(button).borderTopWidth,
-          })),
-        );
-      expect(tools[0]).toEqual(tools[1]);
+      const shopSize = await page.locator("#plot-shop").boundingBox();
+      expect(shopSize!.height).toBeGreaterThanOrEqual(44);
+      await expect(page.locator(".service-heading #delete-plot")).toBeVisible();
       // Crop-grid geometry is independent of the home upgrade state. Check it
       // once above, then exercise every upgrade status without walking back
       // through the plot menu between states.

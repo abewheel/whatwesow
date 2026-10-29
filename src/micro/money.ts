@@ -261,7 +261,7 @@ export function saleQuote(
       plantedPlots(state, crop) > above,
   };
 }
-/** Harvest preview for a shop offer or an owned seed, using the same sale chain as harvest. */
+/** Harvest preview at today's prices. Integration can forecast drought for a planting. */
 export function previewSaleQuote(
   state: MicroState,
   crop: CropId,
@@ -269,16 +269,16 @@ export function previewSaleQuote(
   turn = 1,
   premium = false,
   owned = false,
+  dry = false,
 ): SaleQuote {
-  if (!premium) return saleQuote(state, crop, policy, turn);
   const terms = owned
     ? state.premiumSeedBatches?.[crop]?.[0]
     : policy.premiumSeed;
   return saleQuote(state, crop, policy, turn, undefined, {
     crop,
     growth: 0,
-    premium: "good",
-    premiumYield: terms?.yield ?? 1,
+    ...(dry ? { dry: true } : {}),
+    ...(premium ? { premium: "good", premiumYield: terms?.yield ?? 1 } : {}),
   });
 }
 

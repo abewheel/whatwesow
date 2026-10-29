@@ -1,5 +1,4 @@
 import { test, expect } from "./fixtures";
-import { openCell } from "./context-helpers";
 import { visitBuilding } from "./helpers";
 import { homesteadState } from "../../src/game/state";
 
@@ -58,7 +57,8 @@ test("End Turn visits a compact retained farmhouse using its actual lot", async 
   await expect(page.getByRole("button", { name: /^Farmhouse 1,/ })).toHaveCount(
     6,
   );
-  await openCell(page, "13,15");
+  await expect(page.locator("#import")).toHaveValue("");
+  await page.locator('[data-cell="13,15"]').press("Enter");
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-farmer-cell",
     "13,15",
