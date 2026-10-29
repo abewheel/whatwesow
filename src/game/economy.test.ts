@@ -116,6 +116,11 @@ it("earns the complete farming progression within a lifetime from the bare start
         )
           act({ type: "upgrade", id: b.id });
     }
+    // Plan the same plot-by-plot choices, then buy each crop in one shop action.
+    // This policy-free lifetime has fixed seed prices and no planting fees.
+    let seedBudget = state.coins;
+    const planting: { plot: number; crop: CropId }[] = [];
+    const seedOrder = new Map<CropId, number>();
     for (let plot = 0; plot < state.plots.length; plot++) {
       if (state.plots[plot]) continue;
       const crop: CropId | undefined = (
@@ -126,13 +131,17 @@ it("earns the complete farming progression within a lifetime from the bare start
           (c !== "corn" || state.opportunities.includes("corn")) &&
           // Establish both early crop types before specializing.
           !(c === "carrot" && state.harvests.turnip === 0 && turn === 1) &&
-          state.coins >= seedCost(state, c),
+          seedBudget >= seedCost(state, c),
       );
       if (crop) {
-        act({ type: "buySeeds", crop, quantity: 1 });
-        act({ type: "plant", plot, crop });
+        seedBudget -= seedCost(state, crop);
+        planting.push({ plot, crop });
+        seedOrder.set(crop, (seedOrder.get(crop) ?? 0) + 1);
       }
     }
+    for (const [crop, quantity] of seedOrder)
+      act({ type: "buySeeds", crop, quantity });
+    for (const { plot, crop } of planting) act({ type: "plant", plot, crop });
     expect(state.coins).toBeGreaterThanOrEqual(0);
     if (turn < 160) state = advanceSeason(state).state;
   }
