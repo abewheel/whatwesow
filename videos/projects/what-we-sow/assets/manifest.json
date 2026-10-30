@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "2fe1cbc",
+  "sourceCommit": "68f3809",
   "renderer": "hyperframes@0.8.214",
   "dimensions": [
     1920,
@@ -46,33 +46,33 @@
     },
     {
       "path": "assets/local/v2/dirty.mp4",
-      "bytes": 5549401,
-      "sha256": "426d60e9b9e6b1ea44a771b456abc4e36df0ac79e952176e546dbaac3898baba",
-      "source": "What We Sow gameplay at 2fe1cbc"
+      "bytes": 4309135,
+      "sha256": "f74999695558b4bb437cc9d99dce0a3a657d46069ab40b2a9d30fbb26c0087d3",
+      "source": "What We Sow gameplay at 68f3809"
     },
     {
       "path": "assets/local/v2/estate.mp4",
-      "bytes": 4416361,
-      "sha256": "553b0b7d4e26985fd4ce8b9da1c1ff07d92569687ac43db61072bde67fae7487",
+      "bytes": 4234259,
+      "sha256": "aefa2ee9b4f619fb10147ff09b8c5e7e395ad2ef28cbb5a1b15b3742d2f36428",
       "source": "What We Sow estate capture: 96 plots, 13 buildings, 11 oaks; native game presentation, no tree-label patch"
     },
     {
       "path": "assets/local/v2/medium.mp4",
-      "bytes": 4852795,
-      "sha256": "782ed44ee890442b53ce2ac05d3b919b1268c9d7678775d02b397c31d89d7328",
-      "source": "What We Sow gameplay at 2fe1cbc"
+      "bytes": 3415962,
+      "sha256": "2f622670ec5fae07f64557959db653504df99f6eca0812ec04d51b4f2c410654",
+      "source": "What We Sow gameplay at 68f3809"
     },
     {
       "path": "assets/local/v2/rights-council.png",
-      "bytes": 2866663,
-      "sha256": "90984fe9c60b282eabbe691df8134ff02ab4b7264ffdf8dbb7d2929c4c03bb30",
-      "source": "What We Sow gameplay at 2fe1cbc"
+      "bytes": 2904962,
+      "sha256": "dfaf1555c01d04debfb48ec713e56fe4d5a616c6b3e78fc45a4d5adf9fbe5f04",
+      "source": "What We Sow gameplay at 68f3809"
     },
     {
       "path": "assets/local/v2/small.mp4",
-      "bytes": 3885062,
-      "sha256": "002df6251e093da030f0c3a69c977d1e2d7a3d8e06048ce441899446f7ebf7f0",
-      "source": "What We Sow gameplay at 2fe1cbc"
+      "bytes": 5651620,
+      "sha256": "134ec5ab206675e7a6736c52d04420fb97751c85159aebb1796418855df5d081",
+      "source": "What We Sow gameplay at 68f3809"
     },
     {
       "path": "assets/local/v2/start-background.jpg",
@@ -82,14 +82,14 @@
     },
     {
       "path": "assets/local/v3/confiscation-after.png",
-      "bytes": 3108244,
-      "sha256": "bcd3d420f2d61c6034812ca015bb01dc52ae79350b304cdc3bc4b19d64b0a240",
+      "bytes": 3110556,
+      "sha256": "2f75b9146b1d4bae3c01bb98b84e29214550d0bd765d6945a42b0a7976411d97",
       "source": "Requested cinematic fixture rendered in What We Sow: 1600 uniform corn plots, 256-plot corner loss with updated seized-ground artwork; production rule unchanged"
     },
     {
       "path": "assets/local/v3/confiscation-before.png",
-      "bytes": 2620985,
-      "sha256": "e1aca5c4f4b169723f62eaa7b2e92f53951a38876c37d25a2ff49efd54025ed1",
+      "bytes": 2623577,
+      "sha256": "0a077e16da61d6e1cd14e359fb2282df1ae624e1f090efe417402d7318e0cb52",
       "source": "Requested cinematic fixture rendered in What We Sow: 1600 uniform corn plots, 256-plot corner loss with updated seized-ground artwork; production rule unchanged"
     }
   ]

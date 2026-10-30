@@ -1,6 +1,6 @@
 # What We Sow, revised screenplay
 
-55 seconds, 1920 × 1080, 30 fps. Captions and music, no spoken voice or presenter. All selected gameplay was re-recorded at 2fe1cbc.
+55 seconds, 1920 × 1080, 30 fps. Captions and music, no spoken voice or presenter. All selected gameplay was re-recorded at 68f3809.
 
 | Time | Picture and action | Purpose |
 | --- | --- | --- |

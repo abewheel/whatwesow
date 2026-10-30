@@ -1,33 +1,33 @@
 {
-  "sourceCommit": "2fe1cbc",
+  "sourceCommit": "68f3809",
   "offsetNote": "-0.45s recorder alignment; all actions captured in real browser",
   "edits": [
     {
       "name": "dirty",
       "take": "dirty",
-      "in": 12.397,
-      "out": 19.948,
+      "in": 17.508,
+      "out": 24.773,
       "duration": 5.6
     },
     {
       "name": "small",
       "take": "small",
-      "in": 14.458,
-      "out": 23.881,
+      "in": 11.882000000000001,
+      "out": 17.495,
       "duration": 5.6
     },
     {
       "name": "medium",
       "take": "medium",
-      "in": 13.260000000000002,
-      "out": 23.113,
+      "in": 12.5,
+      "out": 18.223,
       "duration": 5.6
     },
     {
       "name": "estate",
       "take": "../v4/estate",
-      "in": 14.935,
-      "out": 33.16,
+      "in": 16.12,
+      "out": 25.863,
       "duration": 9
     }
   ]

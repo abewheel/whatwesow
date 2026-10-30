@@ -13,6 +13,10 @@ for (const viewport of [
       await expect(page.locator("#save-status")).toHaveText(
         "Saved on this browser",
       );
+      // DOM-driven scrolling can bypass the startup cover. Wait until its final
+      // font, scene and layout work has completed before measuring redraws.
+      await expect(page.locator("#startup")).toBeHidden();
+      await expect(page.locator("main")).toHaveJSProperty("inert", false);
       const canvas = page.locator("#farm canvas");
       await expect(canvas).toHaveAttribute("data-farmer-motion", "idle");
       const draws = async () =>

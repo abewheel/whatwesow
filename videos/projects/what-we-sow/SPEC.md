@@ -1,6 +1,6 @@
 # Delivery specification
 
-1920 × 1080, 30 fps, 55 seconds. All selected gameplay was re-recorded at 2fe1cbc. Male farmer throughout. No apple tree or invented UI. Source states are staged valid saves, not one uninterrupted playthrough.
+1920 × 1080, 30 fps, 55 seconds. All selected gameplay was re-recorded at 68f3809. Male farmer throughout. No apple tree or invented UI. Source states are staged valid saves, not one uninterrupted playthrough.
 
 Growth changes at 5, 10 and 15 seconds with 0.6-second crossfades and real work on both sides. Farming clips retain their full intended durations; the cutter verifies each encoded duration within one frame. The estate has eight matching 3 × 4 crop beds, thirteen varied buildings with paired greenhouses and hives, a grouped livestock area and eleven oaks. No served-module or label-removal patch remains.
 

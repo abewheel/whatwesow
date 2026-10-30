@@ -143,10 +143,7 @@ async function frame(page, zoom, row = 16, col = 16) {
 async function harvest(page, index) {
   await page.keyboard.press("Escape");
   await click(page, page.locator(`[data-plot="${index}"]`));
-  await click(
-    page,
-    page.getByRole("button", { name: "Harvest crop", exact: true }),
-  );
+  // Ripe crops now harvest directly after the farmer arrives.
   await expect(page.locator(`[data-plot="${index}"]`)).toHaveAttribute(
     "aria-label",
     /empty/,

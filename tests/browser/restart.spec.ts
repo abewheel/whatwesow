@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { expectAdjacentToCell } from "./context-helpers";
 
 test("restart requires confirmation and persists a fresh farm", async ({
   page,
@@ -35,11 +36,9 @@ test("land actions open visual categories and field deletion gives no refund", a
   );
   // Nearby open land exercises arrival without a cross-farm timing dependency.
   await page.locator('[data-cell="14,12"]').click();
-  await expect(page.locator("#service-panel")).toBeHidden();
-  await expect(page.locator("canvas")).toHaveAttribute(
-    "data-farmer-motion",
-    "walk",
-  );
+  // This short walk can finish before the driver polls. Assert its completed
+  // position and facing rather than requiring a transient animation frame.
+  await expectAdjacentToCell(page, "14,12");
   await expect(page.locator("#service-panel")).toBeVisible();
   await expect(page.locator("#service-title")).toHaveText("Open land");
   await expect(page.locator("canvas")).toHaveAttribute(

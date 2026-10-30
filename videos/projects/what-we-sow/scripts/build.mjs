@@ -87,7 +87,7 @@ await writeFile(
   `${root}/edits.json`,
   JSON.stringify(
     {
-      sourceCommit: "2fe1cbc",
+      sourceCommit: "68f3809",
       offsetNote:
         "-0.45s recorder alignment; all actions captured in real browser",
       edits,

@@ -43,7 +43,7 @@ Recapture before rebuilding on a different game commit, and recalibrate raw
 recording timestamps against actual frames. Do not treat video recorder
 wall-clock marks as frame-exact timestamps.
 
-The current 55-second film uses gameplay re-recorded at 2fe1cbc, including the latest walking art, HUD and explicit tile actions. SCRIPT.md contains its exact captions. `node scripts/capture-confiscation.mjs` records a uniform-corn fixture with a 256-field square removed from its northeast corner. This stages scale without changing production rules. The tracked seed is fixtures/confiscation-seed.json.
+The current 55-second film uses gameplay re-recorded at 68f3809, including the latest walking and rear-work art, HUD, crop menus and direct harvesting. SCRIPT.md contains its exact captions. `node scripts/capture-confiscation.mjs` records a uniform-corn fixture with a 256-field square removed from its northeast corner. This stages scale without changing production rules. The tracked seed is fixtures/confiscation-seed.json.
 
 `node scripts/capture-estate.mjs` refreshes the year-nine estate and actual male-farmer harvests. Its valid save is fixtures/estate.json. Tree nameplates are now absent in the game itself; no source interception is used.
 
