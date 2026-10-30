@@ -28,6 +28,7 @@ import { serviceMenus, isTree, type ServiceId } from "./game/services";
 import { WORLD_CELLS } from "./contracts/world";
 import {
   buildings,
+  treeMaturity,
   structureSize,
   constructionCost,
   isAnimal,
@@ -758,7 +759,15 @@ function refreshContext() {
   const blockedMetric = (blocked: boolean) =>
     blocked ? " action-blocker" : "";
   const buildingBenefit = (kind: BuildingKind) =>
+    isProducer(kind)
+      ? ""
+      : isTree(kind)
+        ? "Harvest each fall"
+        : buildings[kind].benefit;
+  const accessibleBenefit = (kind: BuildingKind) =>
     buildings[kind].benefit.replace(/: \d+ coins(?: per level)?/, "");
+  const benefitMarkup = (kind: BuildingKind) =>
+    `${isTree(kind) ? `<span class="tree-maturity resource" aria-label="First harvest after ${treeMaturity(kind) / 4} years">${icon("sprout")}${treeMaturity(kind) / 4}y</span>` : ""}${buildingBenefit(kind) ? `<small class="plan-benefit">${buildingBenefit(kind)}</small>` : ""}`;
   const harvestPrice = (kind: BuildingKind, level = 1) => {
     if (!isTree(kind) && !isProducer(kind)) return "";
     const structure = { kind, level, id: 0, row: 0, col: 0 };
@@ -846,8 +855,8 @@ function refreshContext() {
         ? "+3 coins per harvest on every plot"
         : id === "corn"
           ? "Grow corn in spring and summer"
-          : buildings[id as BuildingKind].benefit;
-      entry.innerHTML = `<strong>${name}</strong><span class="action-blocker">${icon("locked")}${opportunities[id].need}</span><small>${benefit}</small>`;
+          : benefitMarkup(id as BuildingKind);
+      entry.innerHTML = `<strong>${name}</strong><span class="action-blocker">${icon("locked")}<span>${opportunities[id].need}</span></span><small>${benefit}</small>`;
       upcoming.append(entry);
     }
     if (upcoming.children.length === 1)
@@ -1038,10 +1047,10 @@ function refreshContext() {
       note("Sealed by the council: no benefits.");
     const stats = document.createElement("div");
     stats.className = "building-stats";
-    stats.innerHTML = `${icon("improve")}${building.level}/${item.levels} ${pending ? icon("duration") + "1" : ""}<small>${buildingBenefit(building.kind)}</small>${harvestPrice(building.kind, building.level)}`;
+    stats.innerHTML = `${icon("improve")}${building.level}/${item.levels} ${pending ? icon("duration") + "1" : ""}${benefitMarkup(building.kind)}${harvestPrice(building.kind, building.level)}`;
     stats.setAttribute(
       "aria-label",
-      `${buildingBenefit(building.kind)} · Level ${building.level}/${item.levels}${building.pendingDemolition ? " · Teardown underway, clears next season" : building.pendingConstruction ? " · Under construction, ready next season" : building.pendingUpgrade ? " · Upgrade underway, ready next season" : ""}`,
+      `${accessibleBenefit(building.kind)} · Level ${building.level}/${item.levels}${building.pendingDemolition ? " · Teardown underway, clears next season" : building.pendingConstruction ? " · Under construction, ready next season" : building.pendingUpgrade ? " · Upgrade underway, ready next season" : ""}`,
     );
     tileActions.append(stats);
     if (
@@ -1407,7 +1416,7 @@ function refreshContext() {
               : "farm";
         if (category !== planCategory) continue;
         const button = tileButton(
-          `${item.name} · ${cost} coins · ${buildingBenefit(kind)} · ${readyIn(delay)}${!available ? ` · Locked: ${requirement}` : ""}${rule}`,
+          `${item.name} · ${cost} coins · ${accessibleBenefit(kind)} · ${readyIn(delay)}${!available ? ` · Locked: ${requirement}` : ""}${rule}`,
           () => beginPlacement(kind, cell),
           !available ||
             waiting ||
@@ -1420,7 +1429,7 @@ function refreshContext() {
         );
         button.dataset.build = kind;
         button.dataset.locked = String(!available);
-        button.innerHTML = `${icon(isTree(kind) ? "sprout" : isAnimal(kind) ? "harvest" : "build")}<strong>${item.name}</strong><span class="plan-cost${blockedMetric(state.coins < cost)}">${icon("coin")}${cost}</span><span class="plan-duration${blockedMetric(final)}">${icon("duration")}${delay + 1}</span><small class="plan-benefit">${buildingBenefit(kind)}</small>${harvestPrice(kind)}${!available ? `<small class="plan-requirement action-blocker">${icon("locked")}${requirement}</small>` : ""}${rule ? `<small class="plan-rule action-blocker">${icon("locked")}${rule.slice(3)}</small>` : ""}`;
+        button.innerHTML = `${icon(isTree(kind) ? "sprout" : isAnimal(kind) ? "harvest" : "build")}<strong>${item.name}</strong><span class="plan-cost${blockedMetric(state.coins < cost)}">${icon("coin")}${cost}</span><span class="plan-duration${blockedMetric(final)}">${icon("duration")}${delay + 1}</span>${benefitMarkup(kind)}${harvestPrice(kind)}${!available ? `<small class="plan-requirement action-blocker">${icon("locked")}<span>${requirement}</span></small>` : ""}${rule ? `<small class="plan-rule action-blocker">${icon("locked")}<span>${rule.slice(3)}</span></small>` : ""}`;
         grid.append(button);
       }
     }

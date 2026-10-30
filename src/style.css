@@ -2758,3 +2758,28 @@ button.crisis-card {
   justify-self: stretch;
   text-align: left;
 }
+
+/* Keep lock artwork separate from a naturally wrapping requirement. */
+#tile-actions .plan-grid .plan-requirement,
+#tile-actions .plan-grid .plan-rule,
+.upcoming-unlocks .action-blocker {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 4px;
+  text-align: left;
+  line-height: 1.3;
+}
+#tile-actions .plan-grid .tree-maturity {
+  grid-column: 1 / -1;
+}
+.tree-maturity {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.tree-maturity .pixel-icon {
+  width: 24px;
+  height: 24px;
+}

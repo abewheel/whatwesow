@@ -44,6 +44,11 @@ for (const viewport of [
       await expect(coop.locator(".plan-cost")).toHaveClass(/action-blocker/);
       await expect(coop.locator(".harvest-price")).toHaveText("48");
       await expect(coop.locator(".harvest-value-icon")).toBeVisible();
+      await expect(coop.locator(".plan-requirement")).toHaveCSS(
+        "display",
+        "grid",
+      );
+      await expect(coop).not.toContainText("Click to collect");
       await fits(page);
       await page.evaluate(() => window.scrollTo(0, 0));
       await coop.locator(".plan-requirement").scrollIntoViewIfNeeded();
@@ -53,6 +58,11 @@ for (const viewport of [
         });
       await page.locator('[data-category="trees"]').tap();
       const apple = page.locator('[data-build="apple"]');
+      await expect(apple.locator(".tree-maturity")).toHaveText("3y");
+      await expect(
+        page.locator('[data-build="oak"] .tree-maturity'),
+      ).toHaveText("10y");
+      await expect(apple).not.toContainText("First apples");
       await expect(apple.locator(".harvest-price")).toHaveText("39");
       await expect(
         page.locator('[data-build="oak"] .harvest-price'),
