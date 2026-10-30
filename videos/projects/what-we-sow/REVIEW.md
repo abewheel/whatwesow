@@ -23,3 +23,11 @@ The first full run passed all 404 unit tests and 217 browser tests, but failed a
 ## Final validation
 
 The settled candidate passed full `pnpm validate`: formatting, lint, type checks, all 404 unit tests, production build, all 219 development browser tests and both production tests. No retries or omitted tests. Main remained at 68f3809 through the final freshness check.
+
+## Opening jump correction
+
+Frame-by-frame inspection found a camera setup frame at the start of the dirty-farm clip. Its −0.45-second pre-roll included the last camera adjustment; the following frame snapped to the settled view. Only the dirty take now starts at its action mark with zero pre-roll. It retains 5.6 seconds, and all subsequent clips, captions, transitions and audio timing remain unchanged. HyperFrames checks pass, and the first-frame/next-frame snapshots show stable terrain framing. Final encoded-file verification follows before publishing.
+
+The corrected encoded opening was inspected at 0, 1/30, 0.1, 0.2, 0.5 and 1 seconds and through the 5–5.6-second crossfade. The first two frames’ static terrain differs only by compression noise (mean channel differences below 0.4/255), confirming no camera displacement. The selected-media manifest confirms only dirty.mp4 changed. Two independent combined reviewers found no actionable code, security or visual findings.
+
+The replacement web file has 1,650 frames / 55.000 video seconds, 55.018 container seconds and 17,959,537 bytes. Full decoding found no errors. Focused HyperFrames checks, production build, both production browser checks and real-browser opening playback on desktop, portrait WebKit and landscape WebKit passed. Current player screenshots were inspected. No game or test code changed; the full game suite was not repeated for this source-trim correction.

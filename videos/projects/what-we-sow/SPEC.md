@@ -15,3 +15,5 @@ The six-second outro uses the actual start-menu image, its original radial gradi
 Banned: mixed crops in the loss shot, village/HUD clutter there, a mid-edge notch, the alternative-choice beat, permanent tree labels, frozen farming tails, fabricated interface text, bouncy typography, particle overlays and distorted sprite proportions.
 
 The extra 24–28-second farm close-up is removed. The loss caption reads “No right to refuse.” The outro runs 49–55 seconds, and the score fades from 53 to 55.
+
+The first shot starts at its recorded action mark, after the capture camera has settled. It uses no negative pre-roll. Other source ranges and all timeline timing remain unchanged.

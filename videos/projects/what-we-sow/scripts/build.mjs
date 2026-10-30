@@ -5,8 +5,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const local = `${root}/assets/local/v2`;
 await mkdir(`${root}/compositions`, { recursive: true });
 const edits = [];
-async function cut(name, take, start, end, duration) {
-  const offset = -0.45;
+async function cut(name, take, start, end, duration, offset = -0.45) {
   const path = `${local}/${name}.mp4`;
   if (!process.env.SKIP_CUTS)
     execFileSync("ffmpeg", [
@@ -70,7 +69,8 @@ for (const [id, d] of [
   ["small", 5.6],
   ["medium", 5.6],
 ])
-  await cut(id, id, events[id].action, events[id].worked + 0.15, d);
+  // The opening must start after camera setup, not in its last pre-roll frame.
+  await cut(id, id, events[id].action, events[id].worked + 0.15, d, id === "dirty" ? 0 : -0.45);
 const estateEvents = Object.fromEntries(
   JSON.parse(
     await readFile(`${root}/assets/local/v4/estate-timing.json`, "utf8"),
@@ -89,7 +89,7 @@ await writeFile(
     {
       sourceCommit: "68f3809",
       offsetNote:
-        "-0.45s recorder alignment; all actions captured in real browser",
+        "Opening starts at its action mark to exclude camera setup; other clips retain -0.45s pre-roll. All actions captured in real browser.",
       edits,
     },
     null,

@@ -1,12 +1,12 @@
 {
   "sourceCommit": "68f3809",
-  "offsetNote": "-0.45s recorder alignment; all actions captured in real browser",
+  "offsetNote": "Opening starts at its action mark to exclude camera setup; other clips retain -0.45s pre-roll. All actions captured in real browser.",
   "edits": [
     {
       "name": "dirty",
       "take": "dirty",
-      "in": 17.508,
-      "out": 24.773,
+      "in": 17.958,
+      "out": 25.223,
       "duration": 5.6
     },
     {
