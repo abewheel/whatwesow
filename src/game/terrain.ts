@@ -54,6 +54,13 @@ export function groundFrame(cell: Cell, material: GroundMaterial) {
   return materials.indexOf(material) * 16 + wrap(cell.row) * 4 + wrap(cell.col);
 }
 
+// Reuse source pixels and means across seasons. Pixel reads can force a GPU
+// readback, and these four source samples never change during a scene's life.
+const sourceSamples = new WeakMap<
+  object,
+  { pixels: ImageData; mean: number[] }[]
+>();
+
 /** Bake the painted surfaces once per season, rather than shading pixels per draw. */
 export function prepareGround(scene: Phaser.Scene, season: Season) {
   const key = `ground-${season}`;
@@ -68,21 +75,37 @@ export function prepareGround(scene: Phaser.Scene, season: Season) {
   const paint = surface.getContext("2d")!;
   const samples: HTMLCanvasElement[] = [];
   for (let material = 0; material < 4; material++) {
-    paint.drawImage(
-      source,
-      ((material % 2) * source.width) / 2,
-      (Math.floor(material / 2) * source.height) / 2,
-      source.width / 2,
-      source.height / 2,
-      0,
-      0,
+    let cached = sourceSamples.get(source);
+    if (!cached) {
+      cached = [];
+      sourceSamples.set(source, cached);
+    }
+    if (!cached[material]) {
+      paint.drawImage(
+        source,
+        ((material % 2) * source.width) / 2,
+        (Math.floor(material / 2) * source.height) / 2,
+        source.width / 2,
+        source.height / 2,
+        0,
+        0,
+        512,
+        512,
+      );
+      const pixels = paint.getImageData(0, 0, 512, 512);
+      const mean = [0, 0, 0];
+      for (let i = 0; i < pixels.data.length; i += 4)
+        for (let c = 0; c < 3; c++) mean[c] += pixels.data[i + c];
+      for (let c = 0; c < 3; c++) mean[c] /= 512 * 512;
+      cached[material] = { pixels, mean };
+    }
+    const { mean } = cached[material];
+    const original = cached[material].pixels;
+    const pixels = new ImageData(
+      new Uint8ClampedArray(original.data),
       512,
       512,
     );
-    const pixels = paint.getImageData(0, 0, 512, 512);
-    const mean = [0, 0, 0];
-    for (let i = 0; i < pixels.data.length; i += 4)
-      for (let c = 0; c < 3; c++) mean[c] += pixels.data[i + c] / (512 * 512);
     for (let i = 0; i < pixels.data.length; i += 4)
       for (let c = 0; c < 3; c++)
         pixels.data[i + c] = Math.max(

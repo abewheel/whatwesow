@@ -133,6 +133,7 @@ export class FarmScene extends Phaser.Scene {
   private view = { x: 0, y: 0, width: 800, height: 600, zoom: 1 };
   private drawnView?: typeof this.view;
   private sortedFarmerDepth?: number;
+  private layoutTargets?: PlotTarget[];
   setViewport(x: number, y: number, width: number, height: number, zoom = 1) {
     this.view = { x, y, width, height, zoom };
     if (this.ground) {
@@ -745,6 +746,7 @@ export class FarmScene extends Phaser.Scene {
   setState(
     state: MacroState & MicroState & { farmerVariant?: "male" | "female" },
   ) {
+    if (this.farm === state) return;
     this.fadeRemovedEntities(state);
     this.farm = state;
     if (this.farmer) this.farmer.variant = state.farmerVariant ?? "male";
@@ -854,17 +856,48 @@ export class FarmScene extends Phaser.Scene {
       this.entityViews.set(object.name, views);
     }
     const plotMap = new Map(this.farm.plotCells.map((c, i) => [cellKey(c), i]));
-    const targets: PlotTarget[] = [];
+    this.layoutTargets ??= Array.from(
+      { length: WORLD_SIZE * WORLD_SIZE },
+      (_, i) => {
+        const row = Math.floor(i / WORLD_SIZE),
+          col = i % WORLD_SIZE;
+        return {
+          row,
+          col,
+          ...projectCell({ row, col }),
+          width: 64,
+          height: 32,
+        };
+      },
+    ).sort((a, b) => a.row + a.col - b.row - b.col || a.row - b.row);
+    const targets = publishLayout ? [...this.layoutTargets] : [];
     // Crisis marks drawn this frame, published below for development checks.
     const marks = { dry: 0, withered: 0, taken: 0, sealed: 0, council: "" };
-    for (let sum = 0; sum < WORLD_SIZE * 2; sum++)
-      for (let row = 0; row < WORLD_SIZE; row++) {
+    // Invert the isometric projection to visit only cells inside the cached view.
+    const minSum = Math.max(0, Math.ceil((view.y - 40 - WORLD_TOP) / 16));
+    const maxSum = Math.min(
+      WORLD_SIZE * 2 - 2,
+      Math.floor((view.y + view.height / view.zoom + 40 - WORLD_TOP) / 16),
+    );
+    for (let sum = minSum; sum <= maxSum; sum++) {
+      const minRow = Math.max(
+        0,
+        sum - WORLD_SIZE + 1,
+        Math.ceil(
+          (sum -
+            (view.x + view.width / view.zoom + 40 - WORLD_WIDTH / 2) / 32) /
+            2,
+        ),
+      );
+      const maxRow = Math.min(
+        WORLD_SIZE - 1,
+        sum,
+        Math.floor((sum - (view.x - 40 - WORLD_WIDTH / 2) / 32) / 2),
+      );
+      for (let row = minRow; row <= maxRow; row++) {
         const col = sum - row;
-        if (col < 0 || col >= WORLD_SIZE) continue;
         const { x, y } = projectCell({ row, col }),
           index = plotMap.get(cellKey({ row, col }));
-        if (publishLayout)
-          targets.push({ row, col, x, y, width: 64, height: 32 });
         if (!visible(x, y, 40)) continue;
         this.groundArt!.tile(
           { row, col },
@@ -925,6 +958,7 @@ export class FarmScene extends Phaser.Scene {
         }
         remember(`plot:${cellKey({ row, col })}`, plotStart);
       }
+    }
     // Phaser sorts by the depth below; equal depths retain placement order,
     // which the artwork hit test also uses.
     for (const s of this.farm.structures) {
