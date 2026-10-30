@@ -844,6 +844,7 @@ export class FarmScene extends Phaser.Scene {
       this.season,
       projectCell,
       this.policy,
+      view,
     );
     for (const object of scenery.list) {
       if (this.fadingViews.has(object) || !object.name.startsWith("debris:"))

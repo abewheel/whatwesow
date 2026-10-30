@@ -186,6 +186,22 @@ dialog,
   left: 0;
   pointer-events: none;
 }
+/* Clip the unscaled target layout to the zoomed world scroll bounds. */
+#farm-targets {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  pointer-events: none;
+}
+#farm-target-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+#farm-target-layer .plot-hit {
+  pointer-events: auto;
+}
 #farm canvas {
   display: block;
   image-rendering: pixelated;

@@ -94,6 +94,7 @@ export function drawDebris(
   season: MacroState["season"],
   project: Project,
   policy?: FarmPolicy,
+  view?: { x: number; y: number; width: number; height: number; zoom: number },
 ) {
   const frame = seasonFrame(season);
   let currentId = "";
@@ -115,6 +116,17 @@ export function drawDebris(
     const col = (flip ? contact.row + contact.width : contact.col) * scale;
     const x = point.x + (frontCol - col - frontRow + row) / 2;
     const y = point.y + (frontRow - row + frontCol - col) / 4;
+    // Cull using the artwork bounds, including overhangs and both fallen-tree arms.
+    // The scene supplies its buffered view so small pans need no new sprites.
+    const height = scene.textures.getFrame(atlas, index).cutHeight * scale;
+    if (
+      view &&
+      (x + width < view.x ||
+        y + height < view.y ||
+        x > view.x + view.width / view.zoom ||
+        y > view.y + view.height / view.zoom)
+    )
+      return;
     const image = scene.add
       .image(x, y, atlas, index)
       .setOrigin(0, 0)

@@ -129,7 +129,7 @@ const councilWaiting = "The council is waiting for your answer.";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `<main><section class="farm-card" aria-label="Farm overview">
-<div id="farm" tabindex="0" aria-label="Farm. Drag to pan, scroll to zoom. WASD or arrow keys move the farmer; E or Space interacts ahead."><div id="farm-world"><div id="farm-renderer"></div></div></div>
+<div id="farm" tabindex="0" aria-label="Farm. Drag to pan, scroll to zoom. WASD or arrow keys move the farmer; E or Space interacts ahead."><div id="farm-world"><div id="farm-renderer"></div><div id="farm-targets"><div id="farm-target-layer"></div></div></div></div>
 <header class="hud-top"><div class="farm-title"><h1>What We Sow</h1></div><div class="hud-right"><div class="farm-overview"><output id="season"></output><section id="farm-status" aria-label="Farm status"><span id="empty-plots" role="img"></span><span id="growing-plots" role="img"></span><span id="harvest-ready" role="img"></span></section><div class="field-note"><strong id="farm-message" role="status">Tap a target, or use WASD/arrows then E/Space.</strong><span id="farm-summary" class="sr-only"></span></div></div><div class="corner-controls" role="group" aria-label="Farm controls"><button id="open-menu" aria-haspopup="dialog" aria-label="Open farm menu">${icon("menu")}<span class="sr-only">Menu</span></button><button id="open-actions" aria-label="Open action menu" aria-keyshortcuts="E Space" title="Interact ahead (E / Space)">${icon("build")}</button></div></div><button id="council-meeting" aria-haspopup="dialog" hidden>Council meeting</button></header>
 <div class="hud-bottom">
 <section class="farm-tools" aria-label="Farming tools"><div class="work-tools mode-bar"><button id="farm-mode" hidden>Cancel placement</button><p id="placement-hint" hidden></p></div></section></div>
@@ -1896,6 +1896,7 @@ viewport.addEventListener("scroll", () => {
   if (!viewportFrame) viewportFrame = requestAnimationFrame(updateViewport);
 });
 new ResizeObserver(updateViewport).observe(viewport);
+const targetLayer = document.querySelector<HTMLElement>("#farm-target-layer")!;
 const cellButtons = new Map<string, HTMLButtonElement>();
 function setZoom(
   value: number,
@@ -1911,16 +1912,9 @@ function setZoom(
   zoom = next;
   world.style.width = `${WORLD_WIDTH * zoom}px`;
   world.style.height = `${WORLD_HEIGHT * zoom}px`;
-  for (const [key, button] of cellButtons) {
-    const [row, col] = key.split(",").map(Number),
-      p = projectCell({ row, col });
-    Object.assign(button.style, {
-      left: `${p.x * zoom}px`,
-      top: `${p.y * zoom}px`,
-      width: `${64 * zoom}px`,
-      height: `${32 * zoom}px`,
-    });
-  }
+  // Keep tile geometry in world coordinates. A pinch updates one transform,
+  // rather than rewriting four styles on each of the estate's 4,096 targets.
+  targetLayer.style.transform = `scale(${zoom})`;
   viewport.scrollLeft = center.x * zoom - anchor.x;
   viewport.scrollTop = center.y * zoom - anchor.y;
   if (drag) {
@@ -2597,12 +2591,12 @@ scene.onLayout = (targets) => {
           showPreview(target);
       });
       Object.assign(button.style, {
-        left: `${target.x * zoom}px`,
-        top: `${target.y * zoom}px`,
-        width: `${64 * zoom}px`,
-        height: `${32 * zoom}px`,
+        left: `${target.x}px`,
+        top: `${target.y}px`,
+        width: "64px",
+        height: "32px",
       });
-      world.append(button);
+      targetLayer.append(button);
       cellButtons.set(key, button);
     }
     const index = plotMap.get(key),

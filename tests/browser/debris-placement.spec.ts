@@ -1,10 +1,14 @@
 import { test, expect } from "./fixtures";
+import { setCameraCell } from "./helpers";
 import { readFarm, setFarm, closeActions } from "./context-helpers";
 
 test("every seasonal obstacle contacts its occupied tiles", async ({
   page,
 }) => {
   await page.goto("/?instance=validation-debris-contacts");
+  // Keep every obstacle in the buffered viewport now that off-screen art is culled.
+  await setCameraCell(page, "row", "16");
+  await setCameraCell(page, "column", "27");
   const state = await readFarm(page);
   state.plotCells = [];
   state.plotIds = [];
