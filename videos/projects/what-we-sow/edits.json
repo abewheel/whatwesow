@@ -1,33 +1,33 @@
 {
-  "sourceCommit": "68f3809",
+  "sourceCommit": "8a4cd39",
   "offsetNote": "Opening starts at its action mark to exclude camera setup; other clips retain -0.45s pre-roll. All actions captured in real browser.",
   "edits": [
     {
       "name": "dirty",
       "take": "dirty",
-      "in": 17.958,
-      "out": 25.223,
+      "in": 19.783,
+      "out": 26.505,
       "duration": 5.6
     },
     {
       "name": "small",
       "take": "small",
-      "in": 11.882000000000001,
-      "out": 17.495,
+      "in": 13.179,
+      "out": 19.393,
       "duration": 5.6
     },
     {
       "name": "medium",
       "take": "medium",
-      "in": 12.5,
-      "out": 18.223,
+      "in": 13.472000000000001,
+      "out": 19.497999999999998,
       "duration": 5.6
     },
     {
       "name": "estate",
       "take": "../v4/estate",
-      "in": 16.12,
-      "out": 25.863,
+      "in": 17.699,
+      "out": 25.727999999999998,
       "duration": 9
     }
   ]

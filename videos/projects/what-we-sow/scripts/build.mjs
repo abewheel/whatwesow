@@ -70,7 +70,14 @@ for (const [id, d] of [
   ["medium", 5.6],
 ])
   // The opening must start after camera setup, not in its last pre-roll frame.
-  await cut(id, id, events[id].action, events[id].worked + 0.15, d, id === "dirty" ? 0 : -0.45);
+  await cut(
+    id,
+    id,
+    events[id].action,
+    events[id].worked + 0.15,
+    d,
+    id === "dirty" ? 0 : -0.45,
+  );
 const estateEvents = Object.fromEntries(
   JSON.parse(
     await readFile(`${root}/assets/local/v4/estate-timing.json`, "utf8"),
@@ -87,7 +94,7 @@ await writeFile(
   `${root}/edits.json`,
   JSON.stringify(
     {
-      sourceCommit: "68f3809",
+      sourceCommit: "8a4cd39",
       offsetNote:
         "Opening starts at its action mark to exclude camera setup; other clips retain -0.45s pre-roll. All actions captured in real browser.",
       edits,
@@ -156,11 +163,17 @@ code = `tl.fromTo('#confiscation-before-camera',${JSON.stringify(dense)},{...${J
 await scene("consequence", 10, body, code);
 // Hold the actual pre-selection council image. The cursor selects the same Ada
 // argument as the recorded rights take; cut on its press, before any result UI.
-body = plate("defend-choice", "rights-council", 0, 2).replace("alt=", "data-hold alt=") +
+body =
+  plate("defend-choice", "rights-council", 0, 2).replace(
+    "alt=",
+    "data-hold alt=",
+  ) +
   '<div class="camera" id="defend-pointer-camera" data-layout-allow-overflow><div class="clip" id="defend-pointer" data-start="0" data-duration="2" data-track-index="2" aria-hidden="true"><div id="defend-cursor" style="position:absolute;width:60px;height:76px;transform-origin:3px 2px"><svg viewBox="0 0 30 38" width="60" height="76"><path d="M3 2L3 31L11 23L17 35L23 32L17 20L28 20Z" fill="#fff7da" stroke="#362819" stroke-width="2.4"/></svg></div></div></div>' +
-  densePlate("defend-kept", "confiscation-before", 2, 2);
+  plate("defend-kept", "winter-estate", 2, 2)
+    .replace("assets/local/v2/", "assets/local/v4/")
+    .replace("alt=", "data-hold alt=");
 const defenseFrame = pose(1.125, 960, 480);
-code = `tl.fromTo('#defend-choice-camera',${JSON.stringify(defenseFrame)},{...${JSON.stringify(defenseFrame)},duration:2},0);tl.fromTo('#defend-pointer-camera',${JSON.stringify(defenseFrame)},{...${JSON.stringify(defenseFrame)},duration:2},0);tl.fromTo('#defend-cursor',{x:980,y:830},{x:1411,y:696,duration:1.25,ease:'power2.inOut'},.35);tl.to('#defend-cursor',{scale:.82,duration:.1,ease:'power1.in'},1.9);tl.fromTo('#defend-kept-camera',${JSON.stringify(dense)},{...${JSON.stringify(dense)},duration:2},2);`;
+code = `tl.fromTo('#defend-choice-camera',${JSON.stringify(defenseFrame)},{...${JSON.stringify(defenseFrame)},duration:2},0);tl.fromTo('#defend-pointer-camera',${JSON.stringify(defenseFrame)},{...${JSON.stringify(defenseFrame)},duration:2},0);tl.fromTo('#defend-cursor',{x:980,y:830},{x:1411,y:696,duration:1.25,ease:'power2.inOut'},.35);tl.to('#defend-cursor',{scale:.82,duration:.1,ease:'power1.in'},1.9);tl.fromTo('#defend-kept-camera',${JSON.stringify(pose(1))},{...${JSON.stringify(pose(1))},duration:2},2);`;
 await scene("defend", 4, body, code);
 body =
   '<div class="camera" id="close-landscape-camera" data-layout-allow-overflow><img class="clip" id="close-landscape" src="assets/local/v2/start-background.jpg" data-start="0" data-duration="6" data-track-index="0" alt="The actual start menu landscape"></div><div class="clip" id="close-shade" data-start="0" data-duration="6" data-track-index="2" aria-hidden="true" style="background:linear-gradient(#08160e66,#08160e66),radial-gradient(ellipse at center,#162b20a6 0%,#162b2033 55%,transparent 85%)"></div><div class="clip" id="close-words" data-start=".2" data-duration="5.8" data-track-index="3" data-layout-allow-overlap><div class="title" style="top:410px;left:0;width:1920px;text-align:center;font-size:112px" data-var-text="title">What We Sow</div><div class="url" style="top:555px;left:0;width:1920px;text-align:center">whatwesow.com</div></div>';

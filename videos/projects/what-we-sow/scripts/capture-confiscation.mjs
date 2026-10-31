@@ -51,7 +51,7 @@ async function open(
   await page.goto(`${base}?instance=validation-film-v2-${id}`);
   await page.getByRole("button", { name: "Male farmer", exact: true }).click();
   await page.locator("#begin-farm").click();
-  await expect(page.locator("#startup")).toBeHidden();
+  await expect(page.locator("#startup")).toBeHidden({ timeout: 60000 });
   return {
     page,
     context,
@@ -72,7 +72,7 @@ async function open(
 }
 async function apply(page, state) {
   await page.reload();
-  await expect(page.locator("#startup")).toBeHidden();
+  await expect(page.locator("#startup")).toBeHidden({ timeout: 60000 });
   await page.keyboard.press("Escape");
   if (!(await page.getByLabel("Work on").isVisible()))
     await page.getByText("Playtest tools", { exact: true }).click();
@@ -84,7 +84,7 @@ async function apply(page, state) {
     "State applied and saved.",
   );
   await page.reload();
-  await expect(page.locator("#startup")).toBeHidden();
+  await expect(page.locator("#startup")).toBeHidden({ timeout: 60000 });
   await page.addStyleTag({
     content: ".dev-panel, #crisis-test {display:none!important}",
   });
@@ -178,6 +178,7 @@ try {
     });
     const pending = endTurn(parseState(s)).state;
     const before = answerCrisis(pending, "E-OBJ").state;
+    before.season = "fall";
     // Explicit cinematic fixture requested for the film. No production rule changes.
     const after = globalThis.structuredClone(before);
     const taken = cells.filter((c) => c.row < 28 && c.col >= 48);

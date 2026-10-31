@@ -51,7 +51,7 @@ async function open(
   await page.goto(`${base}?instance=validation-film-v2-${id}`);
   await page.getByRole("button", { name: "Male farmer", exact: true }).click();
   await page.locator("#begin-farm").click();
-  await expect(page.locator("#startup")).toBeHidden();
+  await expect(page.locator("#startup")).toBeHidden({ timeout: 60000 });
   return {
     page,
     context,
@@ -72,7 +72,7 @@ async function open(
 }
 async function apply(page, state) {
   await page.reload();
-  await expect(page.locator("#startup")).toBeHidden();
+  await expect(page.locator("#startup")).toBeHidden({ timeout: 60000 });
   await page.keyboard.press("Escape");
   if (!(await page.getByLabel("Work on").isVisible()))
     await page.getByText("Playtest tools", { exact: true }).click();
@@ -84,7 +84,7 @@ async function apply(page, state) {
     "State applied and saved.",
   );
   await page.reload();
-  await expect(page.locator("#startup")).toBeHidden();
+  await expect(page.locator("#startup")).toBeHidden({ timeout: 60000 });
   await page.addStyleTag({
     content: ".dev-panel, #crisis-test {display:none!important}",
   });
@@ -162,7 +162,7 @@ try {
     const { crops } = await import("/src/micro/state.ts");
     const s = globalThis.structuredClone(seed);
     s.year = 9;
-    s.season = "summer";
+    s.season = "fall";
     s.crises = [];
     s.farmerVariant = "male";
     s.coins = 28000;
@@ -249,6 +249,32 @@ try {
   await p.waitForTimeout(600);
   t.mark("end");
   await t.finish();
+  const winter = globalThis.structuredClone(estate);
+  winter.year = 10;
+  winter.season = "winter";
+  winter.plots = winter.plots.map(() => null);
+  await writeFile(
+    `${project}/fixtures/estate-winter.json`,
+    JSON.stringify(winter, null, 2),
+  );
+  const last = await open("winter-estate", undefined, false);
+  await apply(last.page, winter);
+  await frame(last.page, "100%", 20, 20);
+  await last.page.evaluate(() => {
+    const farm = document.querySelector("#farm"),
+      cell = document.querySelector('[data-cell="20,20"]');
+    const r = cell.getBoundingClientRect(),
+      b = farm.getBoundingClientRect();
+    farm.scrollBy(0, r.y + r.height / 2 - (b.y + b.height * 0.65));
+  });
+  await last.page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  await last.page.screenshot({ path: `${out}/winter-estate.png` });
+  await last.finish();
   await writeFile(
     `${out}/capture.json`,
     JSON.stringify({ diagnostics }, null, 2),

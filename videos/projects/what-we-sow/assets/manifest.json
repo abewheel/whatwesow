@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "68f3809",
+  "sourceCommit": "8a4cd39",
   "renderer": "hyperframes@0.8.214",
   "dimensions": [
     1920,
@@ -46,33 +46,33 @@
     },
     {
       "path": "assets/local/v2/dirty.mp4",
-      "bytes": 3245902,
-      "sha256": "0e5607986cc81fb8701b979d1e9c557fd093ce8a8f2455c2ae5c2238f430d1c6",
-      "source": "What We Sow gameplay at 68f3809"
+      "bytes": 3292636,
+      "sha256": "04982e5bbf6e7833de58f9a2f8fff494748dcbc18e336f81040a4fc69d7e0936",
+      "source": "What We Sow gameplay at 8a4cd39"
     },
     {
       "path": "assets/local/v2/estate.mp4",
-      "bytes": 4234259,
-      "sha256": "aefa2ee9b4f619fb10147ff09b8c5e7e395ad2ef28cbb5a1b15b3742d2f36428",
+      "bytes": 4331314,
+      "sha256": "1ce5cf991e3c6306c4ed7ebf1563904007c65e9e1eab99d9db695b63fcf2765e",
       "source": "What We Sow estate capture: 96 plots, 13 buildings, 11 oaks; native game presentation, no tree-label patch"
     },
     {
       "path": "assets/local/v2/medium.mp4",
-      "bytes": 3415962,
-      "sha256": "2f622670ec5fae07f64557959db653504df99f6eca0812ec04d51b4f2c410654",
-      "source": "What We Sow gameplay at 68f3809"
+      "bytes": 4762542,
+      "sha256": "5cac509e93566476daa387b5021b4fdf76de613a1123a7ba7481ee97461af149",
+      "source": "What We Sow gameplay at 8a4cd39"
     },
     {
       "path": "assets/local/v2/rights-council.png",
-      "bytes": 2904962,
-      "sha256": "dfaf1555c01d04debfb48ec713e56fe4d5a616c6b3e78fc45a4d5adf9fbe5f04",
-      "source": "What We Sow gameplay at 68f3809"
+      "bytes": 2915765,
+      "sha256": "53c7c79d9adbf70da3260a02c7929d19dd4cb2d202a2e6552ce4c848cc729939",
+      "source": "What We Sow gameplay at 8a4cd39"
     },
     {
       "path": "assets/local/v2/small.mp4",
-      "bytes": 5651620,
-      "sha256": "134ec5ab206675e7a6736c52d04420fb97751c85159aebb1796418855df5d081",
-      "source": "What We Sow gameplay at 68f3809"
+      "bytes": 5119357,
+      "sha256": "872fccd3b430fa6e92e6169a9fc99a5ae4981132cc1ab01c1a47e60a92c9725d",
+      "source": "What We Sow gameplay at 8a4cd39"
     },
     {
       "path": "assets/local/v2/start-background.jpg",
@@ -82,15 +82,21 @@
     },
     {
       "path": "assets/local/v3/confiscation-after.png",
-      "bytes": 3110556,
-      "sha256": "2f75b9146b1d4bae3c01bb98b84e29214550d0bd765d6945a42b0a7976411d97",
+      "bytes": 3074837,
+      "sha256": "cf985a01d229e6c872c47992684e1d65e0f7766543baa6770af910422dad07bf",
       "source": "Requested cinematic fixture rendered in What We Sow: 1600 uniform corn plots, 256-plot corner loss with updated seized-ground artwork; production rule unchanged"
     },
     {
       "path": "assets/local/v3/confiscation-before.png",
-      "bytes": 2623577,
-      "sha256": "0a077e16da61d6e1cd14e359fb2282df1ae624e1f090efe417402d7318e0cb52",
+      "bytes": 2588411,
+      "sha256": "23cabe0286f06dd253098b84abe051d40c1ee361ec3416fc871b564b0de3ae81",
       "source": "Requested cinematic fixture rendered in What We Sow: 1600 uniform corn plots, 256-plot corner loss with updated seized-ground artwork; production rule unchanged"
+    },
+    {
+      "path": "assets/local/v4/winter-estate.png",
+      "bytes": 3829121,
+      "sha256": "9674849f0b4c62e8da79354544b58f3fe7cd936ac782ff8e795a7bc9eb1b1665",
+      "source": "What We Sow estate capture: 96 plots, 13 buildings, 11 oaks; native game presentation, no tree-label patch"
     }
   ]
 }

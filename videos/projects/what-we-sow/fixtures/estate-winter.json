@@ -1,0 +1,830 @@
+{
+  "version": 3,
+  "buildingLayout": 2,
+  "honeyReady": true,
+  "selfBuilt": true,
+  "debris": [],
+  "seeds": {
+    "radish": 0,
+    "tomato": 0,
+    "pumpkin": 0,
+    "turnip": 10,
+    "carrot": 0,
+    "corn": 0
+  },
+  "premiumSeeds": {
+    "radish": 0,
+    "tomato": 0,
+    "pumpkin": 0,
+    "turnip": 0,
+    "carrot": 0,
+    "corn": 0
+  },
+  "harvests": {
+    "radish": 0,
+    "tomato": 0,
+    "pumpkin": 0,
+    "turnip": 0,
+    "carrot": 0,
+    "corn": 0
+  },
+  "opportunities": [
+    "coop",
+    "dairy",
+    "sheepfold",
+    "shed",
+    "corn",
+    "mill",
+    "greenhouse",
+    "market",
+    "well",
+    "barn"
+  ],
+  "nextStructureId": 25,
+  "nextPlotId": 97,
+  "plotIds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96
+  ],
+  "coins": 28000,
+  "plots": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "soilLevel": 0,
+  "plotCells": [
+    {
+      "row": 16,
+      "col": 8
+    },
+    {
+      "row": 16,
+      "col": 9
+    },
+    {
+      "row": 16,
+      "col": 10
+    },
+    {
+      "row": 16,
+      "col": 11
+    },
+    {
+      "row": 17,
+      "col": 8
+    },
+    {
+      "row": 17,
+      "col": 9
+    },
+    {
+      "row": 17,
+      "col": 10
+    },
+    {
+      "row": 17,
+      "col": 11
+    },
+    {
+      "row": 18,
+      "col": 8
+    },
+    {
+      "row": 18,
+      "col": 9
+    },
+    {
+      "row": 18,
+      "col": 10
+    },
+    {
+      "row": 18,
+      "col": 11
+    },
+    {
+      "row": 16,
+      "col": 14
+    },
+    {
+      "row": 16,
+      "col": 15
+    },
+    {
+      "row": 16,
+      "col": 16
+    },
+    {
+      "row": 16,
+      "col": 17
+    },
+    {
+      "row": 17,
+      "col": 14
+    },
+    {
+      "row": 17,
+      "col": 15
+    },
+    {
+      "row": 17,
+      "col": 16
+    },
+    {
+      "row": 17,
+      "col": 17
+    },
+    {
+      "row": 18,
+      "col": 14
+    },
+    {
+      "row": 18,
+      "col": 15
+    },
+    {
+      "row": 18,
+      "col": 16
+    },
+    {
+      "row": 18,
+      "col": 17
+    },
+    {
+      "row": 16,
+      "col": 20
+    },
+    {
+      "row": 16,
+      "col": 21
+    },
+    {
+      "row": 16,
+      "col": 22
+    },
+    {
+      "row": 16,
+      "col": 23
+    },
+    {
+      "row": 17,
+      "col": 20
+    },
+    {
+      "row": 17,
+      "col": 21
+    },
+    {
+      "row": 17,
+      "col": 22
+    },
+    {
+      "row": 17,
+      "col": 23
+    },
+    {
+      "row": 18,
+      "col": 20
+    },
+    {
+      "row": 18,
+      "col": 21
+    },
+    {
+      "row": 18,
+      "col": 22
+    },
+    {
+      "row": 18,
+      "col": 23
+    },
+    {
+      "row": 16,
+      "col": 26
+    },
+    {
+      "row": 16,
+      "col": 27
+    },
+    {
+      "row": 16,
+      "col": 28
+    },
+    {
+      "row": 16,
+      "col": 29
+    },
+    {
+      "row": 17,
+      "col": 26
+    },
+    {
+      "row": 17,
+      "col": 27
+    },
+    {
+      "row": 17,
+      "col": 28
+    },
+    {
+      "row": 17,
+      "col": 29
+    },
+    {
+      "row": 18,
+      "col": 26
+    },
+    {
+      "row": 18,
+      "col": 27
+    },
+    {
+      "row": 18,
+      "col": 28
+    },
+    {
+      "row": 18,
+      "col": 29
+    },
+    {
+      "row": 21,
+      "col": 8
+    },
+    {
+      "row": 21,
+      "col": 9
+    },
+    {
+      "row": 21,
+      "col": 10
+    },
+    {
+      "row": 21,
+      "col": 11
+    },
+    {
+      "row": 22,
+      "col": 8
+    },
+    {
+      "row": 22,
+      "col": 9
+    },
+    {
+      "row": 22,
+      "col": 10
+    },
+    {
+      "row": 22,
+      "col": 11
+    },
+    {
+      "row": 23,
+      "col": 8
+    },
+    {
+      "row": 23,
+      "col": 9
+    },
+    {
+      "row": 23,
+      "col": 10
+    },
+    {
+      "row": 23,
+      "col": 11
+    },
+    {
+      "row": 21,
+      "col": 14
+    },
+    {
+      "row": 21,
+      "col": 15
+    },
+    {
+      "row": 21,
+      "col": 16
+    },
+    {
+      "row": 21,
+      "col": 17
+    },
+    {
+      "row": 22,
+      "col": 14
+    },
+    {
+      "row": 22,
+      "col": 15
+    },
+    {
+      "row": 22,
+      "col": 16
+    },
+    {
+      "row": 22,
+      "col": 17
+    },
+    {
+      "row": 23,
+      "col": 14
+    },
+    {
+      "row": 23,
+      "col": 15
+    },
+    {
+      "row": 23,
+      "col": 16
+    },
+    {
+      "row": 23,
+      "col": 17
+    },
+    {
+      "row": 21,
+      "col": 20
+    },
+    {
+      "row": 21,
+      "col": 21
+    },
+    {
+      "row": 21,
+      "col": 22
+    },
+    {
+      "row": 21,
+      "col": 23
+    },
+    {
+      "row": 22,
+      "col": 20
+    },
+    {
+      "row": 22,
+      "col": 21
+    },
+    {
+      "row": 22,
+      "col": 22
+    },
+    {
+      "row": 22,
+      "col": 23
+    },
+    {
+      "row": 23,
+      "col": 20
+    },
+    {
+      "row": 23,
+      "col": 21
+    },
+    {
+      "row": 23,
+      "col": 22
+    },
+    {
+      "row": 23,
+      "col": 23
+    },
+    {
+      "row": 21,
+      "col": 26
+    },
+    {
+      "row": 21,
+      "col": 27
+    },
+    {
+      "row": 21,
+      "col": 28
+    },
+    {
+      "row": 21,
+      "col": 29
+    },
+    {
+      "row": 22,
+      "col": 26
+    },
+    {
+      "row": 22,
+      "col": 27
+    },
+    {
+      "row": 22,
+      "col": 28
+    },
+    {
+      "row": 22,
+      "col": 29
+    },
+    {
+      "row": 23,
+      "col": 26
+    },
+    {
+      "row": 23,
+      "col": 27
+    },
+    {
+      "row": 23,
+      "col": 28
+    },
+    {
+      "row": 23,
+      "col": 29
+    }
+  ],
+  "structures": [
+    {
+      "row": 10,
+      "col": 17,
+      "kind": "home",
+      "id": 1,
+      "level": 1
+    },
+    {
+      "row": 3,
+      "col": 8,
+      "kind": "market",
+      "id": 2,
+      "level": 2
+    },
+    {
+      "row": 3,
+      "col": 17,
+      "kind": "mill",
+      "id": 3,
+      "level": 2
+    },
+    {
+      "row": 3,
+      "col": 26,
+      "kind": "greenhouse",
+      "id": 4,
+      "level": 2
+    },
+    {
+      "row": 10,
+      "col": 8,
+      "kind": "shed",
+      "id": 5,
+      "level": 2
+    },
+    {
+      "row": 10,
+      "col": 26,
+      "kind": "greenhouse",
+      "id": 6,
+      "level": 2
+    },
+    {
+      "row": 10,
+      "col": 33,
+      "kind": "well",
+      "id": 7,
+      "level": 2
+    },
+    {
+      "product": false,
+      "row": 16,
+      "col": 34,
+      "kind": "beehive",
+      "id": 8,
+      "level": 1
+    },
+    {
+      "product": false,
+      "row": 20,
+      "col": 34,
+      "kind": "beehive",
+      "id": 9,
+      "level": 1
+    },
+    {
+      "product": false,
+      "row": 26,
+      "col": 7,
+      "kind": "sheepfold",
+      "id": 10,
+      "level": 2
+    },
+    {
+      "product": false,
+      "row": 26,
+      "col": 17,
+      "kind": "dairy",
+      "id": 11,
+      "level": 2
+    },
+    {
+      "product": false,
+      "row": 26,
+      "col": 27,
+      "kind": "coop",
+      "id": 12,
+      "level": 2
+    },
+    {
+      "row": 34,
+      "col": 17,
+      "kind": "barn",
+      "id": 13,
+      "level": 2
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 3,
+      "col": 4,
+      "kind": "oak",
+      "id": 14,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 9,
+      "col": 4,
+      "kind": "oak",
+      "id": 15,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 15,
+      "col": 4,
+      "kind": "oak",
+      "id": 16,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 21,
+      "col": 4,
+      "kind": "oak",
+      "id": 17,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 27,
+      "col": 4,
+      "kind": "oak",
+      "id": 18,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 3,
+      "col": 34,
+      "kind": "oak",
+      "id": 19,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 7,
+      "col": 38,
+      "kind": "oak",
+      "id": 20,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 13,
+      "col": 38,
+      "kind": "oak",
+      "id": 21,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 19,
+      "col": 38,
+      "kind": "oak",
+      "id": 22,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 25,
+      "col": 38,
+      "kind": "oak",
+      "id": 23,
+      "level": 1
+    },
+    {
+      "age": 80,
+      "product": false,
+      "row": 31,
+      "col": 38,
+      "kind": "oak",
+      "id": 24,
+      "level": 1
+    }
+  ],
+  "year": 10,
+  "season": "winter",
+  "crises": [],
+  "farmerVariant": "male"
+}

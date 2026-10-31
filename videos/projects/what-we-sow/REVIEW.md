@@ -1,33 +1,15 @@
-# October 30 visual refresh
+# Seasonal video revision
 
-The 55-second screenplay is unchanged. All selected gameplay was re-recorded at 68f3809, including the latest walking and rear-work artwork, revised HUD/crop menus and direct harvesting. The capture scripts now click ripe plots once and wait for the resulting empty plot, matching the current game controls. No production game source changes are part of this refresh.
+The cut now progresses through the four seasons using actual game artwork: spring rough land, summer planting, autumn harvest and estate, autumn council/field loss, then the intact winter estate at 47–49 seconds. Winter uses empty plots and snowy scenery. The winter plate retains the same manicured layout and buildings as the autumn estate, with the calendar advanced to year ten. The start-menu illustration remains the outro.
 
-The male farmer clears, plants and harvests through the rough, small, medium and manicured estate stages. The estate remains year nine before the year-ten council, with varied buildings, repeated crop beds, paired greenhouses and hives, and oaks. No apple tree appears. The captured Ada choice was exercised through the real council UI. All capture diagnostics report no unexpected browser or network errors.
+All selected gameplay was re-recorded at 8a4cd39. The council is staged as a valid pending autumn state, with the actual Ada selection exercised; production crisis timing and game rules are unchanged. The uniform-corn corner fixture is also rendered in autumn. Capture loading checks now allow up to 60 seconds for seasonal artwork to finish preparing.
 
-Uniform corn still fills the loss shot; a 256-field square is removed from the northeast corner of a 1,600-field cinematic fixture. The matched crop excludes HUD and village clutter. This staging does not change the production rule. The defense beat retains its fixed council framing, large cursor on Ada, press at 46.9 seconds and immediate intact-land cut at 47 seconds. No result-screen zoom. The dark sunset outro ends at 55 seconds, with a two-second music fade.
+The screenplay, sparse captions, 55-second timeline, large Ada cursor, press/cut timing and dark outro remain unchanged. The zero-pre-roll opening fix is retained. Focused visual, media and playback results follow as completed. Audio is measured, not auditioned.
 
-Final visual, encoding, playback, review and validation results are recorded below as completed. Audio is measured, not auditioned.
+## Verification
 
-## Media and playback verification
+HyperFrames checks pass with no runtime errors. Beat and phone sheets, all seams, detailed season snapshots and four contact sheets from the encoded file were opened and inspected. The first-frame framing is stable. Two independent combined code/security/visual reviewers found no actionable findings, and all 15 selected asset hashes match.
 
-HyperFrames checks pass, with the intentional caption-track density warning. Beat and phone sheets, all scene seams, and four contact sheets from the encoded web file were opened and inspected. The direct-harvest footage shows work and rewards without the former action-menu pauses. Two independent combined code/security/visual reviewers reported no actionable findings. All 14 selected asset hashes match the manifest.
+The delivered web file is H.264/yuv420p with AAC, 1920 × 1080 at 30 fps, exactly 1,650 video frames / 55.000 video seconds. The container is 55.018 seconds and 18,011,833 bytes. Full decode and black-interval checks found no errors or black intervals.
 
-The web file is H.264/yuv420p with AAC at 1920 × 1080, 30 fps, exactly 1,650 video frames / 55.000 video seconds. AAC padding extends the container to 55.018 seconds. Its 17,970,370 bytes fit Pages. Full decoding and black-interval checks found no errors or black intervals. Audio measures −19.1 LUFS integrated and −3.9 dB true peak, without clipping; measured, not auditioned.
-
-The exact delivered file passed real-browser playback on desktop Chromium, 320 × 568 touch WebKit and 667 × 375 touch WebKit. Muted autoplay, 55-second duration, visible Play, separate-tab game navigation and null opener passed, with no console or network errors. Current screenshots were inspected, and the dedicated local game instance was stopped.
-
-## Validation reliability fixes
-
-The first full run passed all 404 unit tests and 217 browser tests, but failed a small-phone render-cache measurement and the land-menu test’s transient walking assertion. The cache measurement now waits for the startup cover to close and main to become interactive before DOM-driven pans. The land-menu test now checks completed adjacent position and facing instead of polling a short-lived walk frame; its menu, category, deletion, balance and persistence checks remain. No tests are omitted and no retries are added. The two focused specs passed all four tests. A fresh independent combined review found no actionable findings in these fixes or the film.
-
-## Final validation
-
-The settled candidate passed full `pnpm validate`: formatting, lint, type checks, all 404 unit tests, production build, all 219 development browser tests and both production tests. No retries or omitted tests. Main remained at 68f3809 through the final freshness check.
-
-## Opening jump correction
-
-Frame-by-frame inspection found a camera setup frame at the start of the dirty-farm clip. Its −0.45-second pre-roll included the last camera adjustment; the following frame snapped to the settled view. Only the dirty take now starts at its action mark with zero pre-roll. It retains 5.6 seconds, and all subsequent clips, captions, transitions and audio timing remain unchanged. HyperFrames checks pass, and the first-frame/next-frame snapshots show stable terrain framing. Final encoded-file verification follows before publishing.
-
-The corrected encoded opening was inspected at 0, 1/30, 0.1, 0.2, 0.5 and 1 seconds and through the 5–5.6-second crossfade. The first two frames’ static terrain differs only by compression noise (mean channel differences below 0.4/255), confirming no camera displacement. The selected-media manifest confirms only dirty.mp4 changed. Two independent combined reviewers found no actionable code, security or visual findings.
-
-The replacement web file has 1,650 frames / 55.000 video seconds, 55.018 container seconds and 17,959,537 bytes. Full decoding found no errors. Focused HyperFrames checks, production build, both production browser checks and real-browser opening playback on desktop, portrait WebKit and landscape WebKit passed. Current player screenshots were inspected. No game or test code changed; the full game suite was not repeated for this source-trim correction.
+The production build and both production browser checks passed. The exact file passed desktop Chromium, 320 × 568 touch WebKit and 667 × 375 touch WebKit playback, muted autoplay, visible Play and separate-tab game navigation, with no console or network errors. All current player screenshots were opened and inspected. No production game code changed; the full game browser suite was not repeated for this video-only revision.

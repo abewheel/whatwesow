@@ -51,7 +51,7 @@ async function open(
   await page.goto(`${base}?instance=validation-film-v2-${id}`);
   await page.getByRole("button", { name: "Male farmer", exact: true }).click();
   await page.locator("#begin-farm").click();
-  await expect(page.locator("#startup")).toBeHidden();
+  await expect(page.locator("#startup")).toBeHidden({ timeout: 60000 });
   return {
     page,
     context,
@@ -72,7 +72,7 @@ async function open(
 }
 async function apply(page, state) {
   await page.reload();
-  await expect(page.locator("#startup")).toBeHidden();
+  await expect(page.locator("#startup")).toBeHidden({ timeout: 60000 });
   await page.keyboard.press("Escape");
   if (!(await page.getByLabel("Work on").isVisible()))
     await page.getByText("Playtest tools", { exact: true }).click();
@@ -84,7 +84,7 @@ async function apply(page, state) {
     "State applied and saved.",
   );
   await page.reload();
-  await expect(page.locator("#startup")).toBeHidden();
+  await expect(page.locator("#startup")).toBeHidden({ timeout: 60000 });
   await page.addStyleTag({
     content: ".dev-panel, #crisis-test {display:none!important}",
   });
@@ -178,7 +178,7 @@ try {
       s.farmerVariant = "male";
       s.debris = [];
       s.year = stage === "small" ? 2 : stage === "medium" ? 6 : 9;
-      s.season = "summer";
+      s.season = stage === "small" ? "summer" : "fall";
       s.coins = stage === "small" ? 180 : stage === "medium" ? 2500 : 12000;
       s.seeds.turnip = 10;
       s.structures = [{ id: 1, kind: "home", row: 11, col: 14, level: 1 }];
@@ -237,6 +237,8 @@ try {
     start.season = "winter";
     start.plots = start.plots.map(() => null);
     const pending = endTurn(start).state;
+    // Stage this authored crisis in autumn for the film's seasonal sequence.
+    pending.season = "fall";
     const taking = answerCrisis(pending, "E-PRO-M").state;
     const compensation =
       taking.coins - answerCrisis(pending, "E-OBJ").state.coins;
@@ -247,6 +249,7 @@ try {
       medium,
       big,
       start: parseState(start),
+      pending: parseState(pending),
       taken: cells,
       compensation,
       focus: {
@@ -323,11 +326,9 @@ try {
   for (const [id, pick, count] of [["rights", "E-OBJ", 81]]) {
     const t = await open(id);
     const p = t.page;
-    await apply(p, states.start);
-    await frame(p, "200%", states.focus.row, states.focus.col);
+    // Load a valid pending council state; entering the saved farm opens it.
+    await apply(p, states.pending);
     t.mark("before");
-    await click(p, home(p));
-    await click(p, p.locator("#next-season"));
     await expect(p.locator("#crisis")).toBeVisible({ timeout: 60000 });
     t.mark("council");
     await p.mouse.move(35, 1000);

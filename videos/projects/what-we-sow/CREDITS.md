@@ -1,7 +1,7 @@
 # Sources and credits
 
 Gameplay, portraits, pixel artwork, and fonts: What We Sow, captured from this
-repository at `68f3809`. The development saves stage supported game states;
+repository at `8a4cd39`. The development saves stage supported game states;
 actions, choices, and outcomes are recorded from the real game.
 
 Music: **Quiet Village 1**, Holizna, from
@@ -21,3 +21,5 @@ Animation runtime: local GSAP 3.15.0 from the pinned HyperFrames distribution;
 its original license header is preserved in `assets/gsap.min.js`.
 
 The confiscation shot is a requested cinematic fixture captured directly from the updated game renderer: 1,600 uniform corn fields with a 256-field square removed from the northeast field corner. This scale differs from the live crisis's four-field effect. Source saves and scripts preserve that distinction. Tree labels need no filming patch on this game revision. The outro uses the actual start-menu landscape with its radial shade plus a 40% dark wash.
+
+Seasonal terrain, buildings, trees and winter snow are actual game renders. The autumn council is staged from a parsed pending crisis state; the production trigger calendar is unchanged. The winter estate uses empty plots, matching winter crop rules.

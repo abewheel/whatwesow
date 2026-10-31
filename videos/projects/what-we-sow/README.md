@@ -43,10 +43,12 @@ Recapture before rebuilding on a different game commit, and recalibrate raw
 recording timestamps against actual frames. Do not treat video recorder
 wall-clock marks as frame-exact timestamps.
 
-The current 55-second film uses gameplay re-recorded at 68f3809, including the latest walking and rear-work art, HUD, crop menus and direct harvesting. SCRIPT.md contains its exact captions. `node scripts/capture-confiscation.mjs` records a uniform-corn fixture with a 256-field square removed from its northeast corner. This stages scale without changing production rules. The tracked seed is fixtures/confiscation-seed.json.
+The current 55-second film uses gameplay re-recorded at 8a4cd39, including the latest walking and rear-work art, HUD, crop menus and direct harvesting. SCRIPT.md contains its exact captions. `node scripts/capture-confiscation.mjs` records a uniform-corn fixture with a 256-field square removed from its northeast corner. This stages scale without changing production rules. The tracked seed is fixtures/confiscation-seed.json.
 
 `node scripts/capture-estate.mjs` refreshes the year-nine estate and actual male-farmer harvests. Its valid save is fixtures/estate.json. Tree nameplates are now absent in the game itself; no source interception is used.
 
 Run capture-revision.mjs, capture-estate.mjs and capture-confiscation.mjs before build.mjs to refresh all selected media. `SKIP_CUTS=1 node scripts/build.mjs` rewrites the editable scenes without recutting the clips. Review each new capture and recalibrate recording timecodes as needed. The generator verifies that each output clip has its declared duration.
 
 The loss shot uses a tight matching crop with no village or mixed crops. The updated county/drought captions are in SCRIPT.md. The live /video page uses the separately compressed web copy under public/media; preserve its 25 MiB per-file hosting limit when updating it.
+
+The seasonal cut starts in spring, moves to summer planting and autumn harvest/council scenes, then ends the gameplay on the intact winter estate. capture-estate.mjs also writes fixtures/estate-winter.json and assets/local/v4/winter-estate.png. The council uses a staged valid pending autumn state; live crisis triggers remain unchanged.
